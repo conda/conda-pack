@@ -25,8 +25,13 @@ from . import pack, CondaPackException, __version__
               type=click.Path(),
               required=False,
               help="Output zip file. Defaults to the environment name.")
+@click.option("--packed-prefix",
+              type=click.Path(),
+              required=False,
+              help=("Directory prefix in the archive to the conda "
+                    "environment. Defaults to the environment name."))
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output):
+def cli(name, prefix, output, packed_prefix):
     """
     Package an existing conda environment into a zip file
 
@@ -35,7 +40,7 @@ def cli(name, prefix, output):
         conda-pack -p /home/ubuntu/myenv
         conda-pack -n myenv -o myenv.zip
     """
-    pack(name=name, prefix=prefix, output=output)
+    pack(name=name, prefix=prefix, output=output, packed_prefix=packed_prefix)
 
 
 _py3_err_msg = """

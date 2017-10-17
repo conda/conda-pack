@@ -19,14 +19,13 @@ class CondaPackException(Exception):
     pass
 
 
-def zip_dir(directory, fname):
+def zip_dir(directory, fname, prefix):
     # The top-level folder in the zipfile
-    env_name = os.path.splitext(os.path.split(fname)[-1])[0]
     zFile = zipfile.ZipFile(fname, "w", allowZip64=True,
                             compression=zipfile.ZIP_DEFLATED)
     try:
         for root, dirs, files in os.walk(directory, followlinks=True):
-            to_root = os.path.join(env_name, os.path.relpath(root, directory))
+            to_root = os.path.join(prefix, os.path.relpath(root, directory))
             for f in files:
                 from_path = os.path.join(root, f)
                 to_path = os.path.join(to_root, f)
@@ -35,7 +34,7 @@ def zip_dir(directory, fname):
         zFile.close()
 
 
-def pack(name=None, prefix=None, output=None):
+def pack(name=None, prefix=None, output=None, packed_prefix=None):
     """Package an existing conda environment into a zip file
 
     Parameters
@@ -47,6 +46,10 @@ def pack(name=None, prefix=None, output=None):
     output : str, optional
         The path of the output file. Defaults to the environment name with a
         ``.zip`` suffix (e.g. ``my_env.zip``).
+    packed_prefix : str, optional
+        Once unpacked, the relative path to the conda environment. By default
+        this is a single directory with the same name as the environment (e.g.
+        ``my_env``).
 
     Returns
     -------
@@ -74,12 +77,20 @@ def pack(name=None, prefix=None, output=None):
         else:
             env_dir = info2['default_prefix']
 
+    # The name of the environment
+    env_name = os.path.basename(env_dir)
+
     if not output:
-        env_name = os.path.basename(env_dir)
         output = os.extsep.join([env_name, 'zip'])
+
+    if not packed_prefix:
+        packed_prefix = env_name
+    else:
+        # Ensure the prefix is a relative path
+        packed_prefix = packed_prefix.strip(os.path.sep)
 
     if os.path.exists(output):
         raise CondaPackException("File %r already exists" % output)
 
-    zip_dir(env_dir, output)
+    zip_dir(env_dir, output, packed_prefix)
     return output
