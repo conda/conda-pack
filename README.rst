@@ -13,14 +13,13 @@ On the source machine
 .. code:: bash
 
     # Pack environment my_env into my_env.zip
-    $ conda-pack -n my_env
+    $ conda pack -n my_env
 
     # Pack environment my_env into out_name.zip
-    $ conda-pack -n my_env -o new_name.zip
+    $ conda pack -n my_env -o new_name.zip
 
-    # Pack environment located at an explicit path into
-    # my_env.zip
-    $ conda-pack -p /explicit/path/to/my_env
+    # Pack environment located at an explicit path into my_env.zip
+    $ conda pack -p /explicit/path/to/my_env
 
 On the target machine
 
