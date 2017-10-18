@@ -32,14 +32,7 @@ from . import pack, CondaPackException, __version__
                     "environment. Defaults to the environment name."))
 @click.version_option(prog_name="conda-pack", version=__version__)
 def cli(name, prefix, output, packed_prefix):
-    """
-    Package an existing conda environment into a zip file
-
-    Usage:
-        conda-pack -n myenv
-        conda-pack -p /home/ubuntu/myenv
-        conda-pack -n myenv -o myenv.zip
-    """
+    """Package an existing conda environment into a zip file"""
     pack(name=name, prefix=prefix, output=output, packed_prefix=packed_prefix)
 
 
