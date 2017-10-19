@@ -30,10 +30,16 @@ from . import pack, CondaPackException, __version__
               required=False,
               help=("Directory prefix in the archive to the conda "
                     "environment. Defaults to the environment name."))
+@click.option("--quiet",
+              "-q",
+              is_flag=True,
+              default=False,
+              help="Do not report progress")
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output, packed_prefix):
+def cli(name, prefix, output, packed_prefix, quiet):
     """Package an existing conda environment into a zip file"""
-    pack(name=name, prefix=prefix, output=output, packed_prefix=packed_prefix)
+    pack(name=name, prefix=prefix, output=output, packed_prefix=packed_prefix,
+         verbose=not quiet)
 
 
 _py3_err_msg = """

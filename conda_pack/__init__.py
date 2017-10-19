@@ -5,7 +5,10 @@ import json
 import os
 import sys
 import zipfile
+from contextlib import closing
 from subprocess import check_output
+
+from ._progress import progressbar
 
 __all__ = ('pack',)
 
@@ -58,22 +61,23 @@ def check_no_editable_packages(path):
         raise CondaPackException(msg)
 
 
-def zip_dir(directory, fname, prefix):
-    # The top-level folder in the zipfile
-    zFile = zipfile.ZipFile(fname, "w", allowZip64=True,
+def zip_dir(directory, fname, prefix, verbose=False):
+    paths = []
+    for from_root, _, files in os.walk(directory, followlinks=True):
+        to_root = os.path.join(prefix, os.path.relpath(from_root, directory))
+        paths.extend((os.path.join(from_root, f), os.path.join(to_root, f))
+                     for f in files)
+
+    zfile = zipfile.ZipFile(fname, "w", allowZip64=True,
                             compression=zipfile.ZIP_DEFLATED)
-    try:
-        for root, dirs, files in os.walk(directory, followlinks=True):
-            to_root = os.path.join(prefix, os.path.relpath(root, directory))
-            for f in files:
-                from_path = os.path.join(root, f)
-                to_path = os.path.join(to_root, f)
-                zFile.write(from_path, to_path)
-    finally:
-        zFile.close()
+
+    with closing(zfile), progressbar(paths, enabled=verbose) as paths2:
+        for from_path, to_path in paths2:
+            zfile.write(from_path, to_path)
 
 
-def pack(name=None, prefix=None, output=None, packed_prefix=None):
+def pack(name=None, prefix=None, output=None, packed_prefix=None,
+         verbose=True):
     """Package an existing conda environment into a zip file
 
     Parameters
@@ -89,6 +93,8 @@ def pack(name=None, prefix=None, output=None, packed_prefix=None):
         Once unpacked, the relative path to the conda environment. By default
         this is a single directory with the same name as the environment (e.g.
         ``my_env``).
+    verbose : bool, optional
+        If True, progress is reported to stdout. Default is False.
 
     Returns
     -------
@@ -132,5 +138,8 @@ def pack(name=None, prefix=None, output=None, packed_prefix=None):
     if os.path.exists(output):
         raise CondaPackException("File %r already exists" % output)
 
-    zip_dir(env_dir, output, packed_prefix)
+    if verbose:
+        print("Packing environment at %r to %r" % (env_dir, output))
+
+    zip_dir(env_dir, output, packed_prefix, verbose=verbose)
     return output
