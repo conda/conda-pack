@@ -35,11 +35,15 @@ from . import pack, CondaPackException, __version__
               is_flag=True,
               default=False,
               help="Do not report progress")
+@click.option("--record",
+              required=False,
+              type=click.Path(),
+              help="If provided, a detailed log is written here")
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output, packed_prefix, quiet):
+def cli(name, prefix, output, packed_prefix, quiet, record):
     """Package an existing conda environment into a zip file"""
     pack(name=name, prefix=prefix, output=output, packed_prefix=packed_prefix,
-         verbose=not quiet)
+         verbose=not quiet, record=record)
 
 
 _py3_err_msg = """

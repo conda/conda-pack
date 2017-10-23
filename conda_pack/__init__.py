@@ -61,7 +61,10 @@ def check_no_editable_packages(path):
         raise CondaPackException(msg)
 
 
-def zip_dir(directory, fname, prefix, verbose=False):
+def zip_dir(directory, fname, prefix, verbose=False, record=None):
+    if record is not None and os.path.exists(record):
+        raise CondaPackException("record file %r already exists" % record)
+
     paths = []
     for from_root, _, files in os.walk(directory, followlinks=True):
         to_root = os.path.join(prefix, os.path.relpath(from_root, directory))
@@ -75,9 +78,14 @@ def zip_dir(directory, fname, prefix, verbose=False):
         for from_path, to_path in paths2:
             zfile.write(from_path, to_path)
 
+    if record is not None:
+        with open(record, 'w') as f:
+            template = "%s -> %s" + os.linesep
+            f.writelines(template % p for p in paths)
+
 
 def pack(name=None, prefix=None, output=None, packed_prefix=None,
-         verbose=True):
+         verbose=False, record=None):
     """Package an existing conda environment into a zip file
 
     Parameters
@@ -95,6 +103,8 @@ def pack(name=None, prefix=None, output=None, packed_prefix=None,
         ``my_env``).
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
+    record : str, optional
+        File path. If provided, a detailed log is written here.
 
     Returns
     -------
@@ -141,5 +151,5 @@ def pack(name=None, prefix=None, output=None, packed_prefix=None,
     if verbose:
         print("Packing environment at %r to %r" % (env_dir, output))
 
-    zip_dir(env_dir, output, packed_prefix, verbose=verbose)
+    zip_dir(env_dir, output, packed_prefix, verbose=verbose, record=record)
     return output
