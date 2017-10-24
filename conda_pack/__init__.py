@@ -4,6 +4,7 @@ import glob
 import json
 import os
 import sys
+import tarfile
 import zipfile
 from contextlib import closing
 from subprocess import check_output
@@ -61,32 +62,38 @@ def check_no_editable_packages(path):
         raise CondaPackException(msg)
 
 
-def zip_dir(directory, fname, prefix, verbose=False, record=None):
-    if record is not None and os.path.exists(record):
-        raise CondaPackException("record file %r already exists" % record)
+def get_output_and_format(env_name, output, format='infer'):
+    if format == 'infer':
+        if output is None or output.endswith('.zip'):
+            format = 'zip'
+        elif output.endswith('.tar.gz') or output.endswith('.tgz'):
+            format = 'tar.gz'
+        elif output.endswith('.tar.bz2') or output.endswith('.tbz2'):
+            format = 'tar.bz2'
+        elif output.endswith('.tar'):
+            format = 'tar'
+        else:
+            # Default to zip
+            format = 'zip'
+    elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
+        raise CondaPackException("Unknown format %r" % format)
 
-    paths = []
-    for from_root, _, files in os.walk(directory, followlinks=True):
-        to_root = os.path.join(prefix, os.path.relpath(from_root, directory))
-        paths.extend((os.path.join(from_root, f), os.path.join(to_root, f))
-                     for f in files)
+    if output is None:
+        output = os.extsep.join([env_name, format])
 
-    zfile = zipfile.ZipFile(fname, "w", allowZip64=True,
-                            compression=zipfile.ZIP_DEFLATED)
-
-    with closing(zfile), progressbar(paths, enabled=verbose) as paths2:
-        for from_path, to_path in paths2:
-            zfile.write(from_path, to_path)
-
-    if record is not None:
-        with open(record, 'w') as f:
-            template = "%s -> %s" + os.linesep
-            f.writelines(template % p for p in paths)
+    return output, format
 
 
-def pack(name=None, prefix=None, output=None, packed_prefix=None,
-         verbose=False, record=None):
-    """Package an existing conda environment into a zip file
+_tar_mode = {'tar.gz': 'w:gz',
+             'tgz': 'w:gz',
+             'tar.bz2': 'w:bz2',
+             'tbz2': 'w:bz2',
+             'tar': 'w'}
+
+
+def pack(name=None, prefix=None, output=None, format='infer',
+         packed_prefix=None, verbose=False, record=None):
+    """Package an existing conda environment into an archive file.
 
     Parameters
     ----------
@@ -97,6 +104,9 @@ def pack(name=None, prefix=None, output=None, packed_prefix=None,
     output : str, optional
         The path of the output file. Defaults to the environment name with a
         ``.zip`` suffix (e.g. ``my_env.zip``).
+    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}, optional
+        The archival format to use. By default this is inferred by the output
+        file extension, falling back to `zip` if a non-standard extension.
     packed_prefix : str, optional
         Once unpacked, the relative path to the conda environment. By default
         this is a single directory with the same name as the environment (e.g.
@@ -136,20 +146,50 @@ def pack(name=None, prefix=None, output=None, packed_prefix=None,
     # The name of the environment
     env_name = os.path.basename(env_dir)
 
-    if not output:
-        output = os.extsep.join([env_name, 'zip'])
-
     if not packed_prefix:
         packed_prefix = env_name
     else:
         # Ensure the prefix is a relative path
         packed_prefix = packed_prefix.strip(os.path.sep)
 
+    # The output path and archive format
+    output, format = get_output_and_format(env_name, output, format)
+
     if os.path.exists(output):
         raise CondaPackException("File %r already exists" % output)
+
+    if record is not None and os.path.exists(record):
+        raise CondaPackException("record file %r already exists" % record)
 
     if verbose:
         print("Packing environment at %r to %r" % (env_dir, output))
 
-    zip_dir(env_dir, output, packed_prefix, verbose=verbose, record=record)
+    # Collect all the paths to write
+    paths = []
+    for from_root, _, files in os.walk(env_dir, followlinks=True):
+        to_root = os.path.join(packed_prefix,
+                               os.path.relpath(from_root, env_dir))
+        paths.extend((os.path.join(from_root, f), os.path.join(to_root, f))
+                     for f in files)
+
+    if format == 'zip':
+        archive = zipfile.ZipFile(output, "w", allowZip64=True,
+                                  compression=zipfile.ZIP_DEFLATED)
+    else:
+        archive = tarfile.open(name=output, mode=_tar_mode[format],
+                               dereference=True)
+
+    with closing(archive), progressbar(paths, enabled=verbose) as paths2:
+        if format == 'zip':
+            for from_path, to_path in paths2:
+                archive.write(from_path, to_path)
+        else:
+            for from_path, to_path in paths2:
+                archive.add(from_path, to_path, recursive=False)
+
+    if record is not None:
+        with open(record, 'w') as f:
+            template = "%s -> %s" + os.linesep
+            f.writelines(template % p for p in paths)
+
     return output

@@ -30,6 +30,15 @@ from . import pack, CondaPackException, __version__
               required=False,
               help=("Directory prefix in the archive to the conda "
                     "environment. Defaults to the environment name."))
+@click.option("--format",
+              type=click.Choice(['infer', 'zip', 'tar.gz', 'tgz',
+                                 'tar.bz2', 'tbz2', 'tar']),
+              required=False,
+              default='infer',
+              show_default=True,
+              help=("The archival format to use. By default this is inferred "
+                    "by the output file extension, falling back to `zip` if a "
+                    "non-standard extension."))
 @click.option("--quiet",
               "-q",
               is_flag=True,
@@ -40,10 +49,10 @@ from . import pack, CondaPackException, __version__
               type=click.Path(),
               help="If provided, a detailed log is written here")
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output, packed_prefix, quiet, record):
-    """Package an existing conda environment into a zip file"""
-    pack(name=name, prefix=prefix, output=output, packed_prefix=packed_prefix,
-         verbose=not quiet, record=record)
+def cli(name, prefix, output, format, packed_prefix, quiet, record):
+    """Package an existing conda environment into an archive file."""
+    pack(name=name, prefix=prefix, output=output, format=format,
+         packed_prefix=packed_prefix, verbose=not quiet, record=record)
 
 
 _py3_err_msg = """
