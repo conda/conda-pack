@@ -5,6 +5,20 @@ Conda-Pack
 environments. This is useful for deploying code in a consistent environment,
 potentially in a location where python/conda isn't already installed.
 
+
+Install
+-------
+
+Currently there is no release. The easiest way to install is to ``pip install``
+from the git repo:
+
+.. code:: bash
+
+    pip install git+https://github.com/jcrist/conda-pack.git
+
+It's recommended to install in your root conda environment - the ``conda pack``
+command will then be available in all sub-environments as well.
+
 Usage
 -----
 
