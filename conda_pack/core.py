@@ -3,8 +3,14 @@ import json
 import os
 import shlex
 import sys
+import warnings
 from functools import partial
 from collections import namedtuple
+
+
+class CondaPackException(Exception):
+    """Internal exception to report to user"""
+    pass
 
 
 on_win = sys.platform == 'win32'
@@ -33,11 +39,6 @@ def find_py_source(path, ignore=True):
             return None
 
 
-class CondaPackException(Exception):
-    """Internal exception to report to user"""
-    pass
-
-
 def find_site_packages(prefix):
     # Ensure there is exactly one version of python installed
     pythons = []
@@ -63,6 +64,28 @@ def find_site_packages(prefix):
     major_minor = python_version[:3]  # e.g. '3.5.1'[:3]
 
     return 'lib/python%s/site-packages' % major_minor
+
+
+def check_no_editable_packages(prefix, site_packages):
+    pth_files = glob.glob(os.path.join(prefix, site_packages, '*.pth'))
+    editable_packages = set()
+    for pth_fil in pth_files:
+        dirname = os.path.dirname(pth_fil)
+        with open(pth_fil) as pth:
+            for line in pth:
+                if line.startswith('#'):
+                    continue
+                line = line.rstrip()
+                if line:
+                    location = os.path.normpath(os.path.join(dirname, line))
+                    if not location.startswith(prefix):
+                        editable_packages.add(line)
+    if editable_packages:
+        msg = ("Cannot pack an environment with editable packages\n"
+               "installed (e.g. from `python setup.py develop` or\n "
+               "`pip install -e`). Editable packages found:\n\n"
+               "%s") % '\n'.join('- %s' % p for p in sorted(editable_packages))
+        raise CondaPackException(msg)
 
 
 def read_noarch_type(pkg):
@@ -214,16 +237,8 @@ def make_noarch_python_extra(prefix, path):
     return File(source, path, prefix_info=prefix_info, is_symlink=False)
 
 
-def load_package(prefix, site_packages, meta_json):
-    with open(meta_json) as fil:
-        info = json.load(fil)
+def load_managed_package(info, prefix, site_packages):
     pkg = info['link']['source']
-
-    if not os.path.exists(pkg):
-        # Package cache is cleared, return list of unmanaged files
-        # to properly handle prefix replacement ourselves.
-        # TODO: add optional warning when uncached files are found.
-        return [make_unmanaged(prefix, f) for f in info['files']]
 
     noarch_type = read_noarch_type(pkg)
 
@@ -259,20 +274,59 @@ def load_package(prefix, site_packages, meta_json):
     return files
 
 
-def load_environment(prefix, unmanaged=True):
+_uncached_error = """
+Conda-managed packages were found without entries in the package cache. This
+is usually due to `conda clean -p` being unaware of symlinked or copied
+packages. Uncached packages:
+
+{0}"""
+
+_uncached_warning = """\
+{0}
+
+Continuing with packing, treating these packages as if they were unmanaged
+files (e.g. from `pip`). This is usually fine, but may cause issues as
+prefixes aren't be handled as robustly.""".format(_uncached_error)
+
+
+def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
+    # Check if it's a conda environment
     conda_meta = os.path.join(prefix, 'conda-meta')
     if not os.path.exists(conda_meta):
         raise CondaPackException("Path %r is not a conda environment" % prefix)
 
+    # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
+    # Check that no editable packages are installed
+    check_no_editable_packages(prefix, site_packages)
+
     files = []
+    uncached = []
     for path in os.listdir(conda_meta):
         if path.endswith('.json'):
-            meta_json = os.path.join(conda_meta, path)
-            files.extend(load_package(prefix, site_packages, meta_json))
+            with open(os.path.join(conda_meta, path)) as fil:
+                info = json.load(fil)
+            pkg = info['link']['source']
+
+            if not os.path.exists(pkg):
+                # Package cache is cleared, return list of unmanaged files
+                # to properly handle prefix replacement ourselves.
+                new_files = [make_unmanaged(prefix, f) for f in info['files']]
+                uncached.append((info['name'], info['version'], info['url']))
+            else:
+                new_files = load_managed_package(info, prefix, site_packages)
+
+            files.extend(new_files)
 
     if unmanaged:
         files.extend(collect_unmanaged(prefix, files))
+
+    if uncached and on_missing_cache in ('warn', 'raise'):
+        packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
+        if on_missing_cache == 'warn':
+            warnings.warn(_uncached_warning.format(packages))
+        else:
+            raise CondaPackException(_uncached_error.format(packages))
 
     return files
