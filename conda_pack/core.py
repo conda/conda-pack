@@ -9,6 +9,28 @@ on_win = sys.platform == 'win32'
 bin_dir = 'Scripts' if on_win else 'bin'
 
 
+if sys.version_info.major == 2:
+    def source_from_cache(path):
+        if path.endswith('.pyc') or path.endswith('.pyo'):
+            return path[:-1]
+        raise ValueError("Path %s is not a python bytecode file" % path)
+else:
+    from importlib.util import source_from_cache
+
+
+def find_py_source(path, ignore=True):
+    """Find the source file for a given bytecode file.
+
+    If ignore is True, errors are swallowed and None is returned"""
+    if not ignore:
+        return source_from_cache(path)
+    else:
+        try:
+            return source_from_cache(path)
+        except (NotImplementedError, ValueError):
+            return None
+
+
 class CondaPackException(Exception):
     """Internal exception to report to user"""
     pass
@@ -134,7 +156,7 @@ def collect_unmanaged(prefix, managed):
     return [UnmanagedFile(p) for p in res
             if not (p.endswith('~') or
                     p.endswith('.DS_Store') or
-                    (p.endswith('.pyc') and p[:-1] in managed))]
+                    (find_py_source(p) in managed))]
 
 
 class EnvScanner(object):
