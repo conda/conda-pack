@@ -5,6 +5,7 @@ import json
 import os
 import shlex
 import warnings
+from fnmatch import fnmatch
 from functools import partial
 from subprocess import check_output
 
@@ -24,7 +25,13 @@ class CondaEnv(object):
         self.files = files
 
     def __repr__(self):
-        return 'CondaEnv<%r>' % self.prefix
+        return 'CondaEnv<%r, %d files>' % (self.prefix, len(self))
+
+    def __len__(self):
+        return len(self.files)
+
+    def __iter__(self):
+        return iter(self.files)
 
     @classmethod
     def from_prefix(cls, prefix, **kwargs):
@@ -38,6 +45,30 @@ class CondaEnv(object):
     @classmethod
     def from_default(cls, **kwargs):
         return cls.from_prefix(name_to_prefix(), **kwargs)
+
+    def _filter(self, pred, inverse=False):
+        if isinstance(pred, str):
+            def func(f):
+                return fnmatch(f.target, pred)
+        elif callable(pred):
+            func = pred
+        else:
+            raise TypeError("pred must be callable or a filepattern")
+
+        if inverse:
+            files = [f for f in self.files if not func(f)]
+        else:
+            files = [f for f in self.files if func(f)]
+
+        return CondaEnv(self.prefix, files)
+
+    def filter(self, pred):
+        """Keep all files that match ``pred``"""
+        return self._filter(pred)
+
+    def remove(self, pred):
+        """Remove all files that match ``pred``"""
+        return self._filter(pred, inverse=True)
 
 
 class File(object):
