@@ -3,6 +3,8 @@ import json
 import os
 import shlex
 import sys
+from functools import partial
+from collections import namedtuple
 
 
 on_win = sys.platform == 'win32'
@@ -95,32 +97,44 @@ def read_has_prefix(path):
     return out
 
 
-class ManagedFile(object):
-    __slots__ = ('source', 'target', 'link_type',
-                 'prefix_placeholder', 'file_mode')
+PrefixInfo = namedtuple('PrefixInfo', ['placeholder', 'mode'],
+                        module='conda_pack.core')
 
-    def __init__(self, source, target, link_type=None, prefix_placeholder=None,
-                 file_mode=None):
+
+class File(object):
+    """A single archive record.
+
+    Parameters
+    ----------
+    source : str
+        Absolute path to the source.
+    target : str
+        Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
+    prefix_info : PrefixInfo or None, optional
+        Information about any prefixes that may need replacement.
+    is_symlink : bool, optional
+        Whether the file is a symlink to another file in the environment. If
+        True, will be archived as a symlink (if the storage allows it), if
+        False (default) file will be copied.
+    """
+    __slots__ = ('source', 'target', 'prefix_info', 'is_symlink')
+
+    def __init__(self, source, target, prefix_info=None, is_symlink=False):
         self.source = source
         self.target = target
-        self.link_type = link_type
-        self.prefix_placeholder = prefix_placeholder
-        self.file_mode = file_mode
+        self.prefix_info = prefix_info
+        self.is_symlink = is_symlink
+
+    @property
+    def is_unmanaged(self):
+        return self.prefix_info and self.prefix_info.mode == 'unmanaged'
+
+    @property
+    def kind(self):
+        return 'unmanaged' if self.is_unmanaged else 'managed'
 
     def __repr__(self):
-        return 'ManagedFile<%r>' % self.target
-
-
-class UnmanagedFile(object):
-    __slots__ = ('path',)
-
-    def __init__(self, path):
-        self.path = path
-
-    source = target = property(lambda self: self.path)
-
-    def __repr__(self):
-        return 'UnmanagedFile<%r>' % self.target
+        return 'File<%r, %r>' % (self.target, self.kind)
 
 
 def collect_unmanaged(prefix, managed):
@@ -153,96 +167,112 @@ def collect_unmanaged(prefix, managed):
     res -= managed
     res -= remove
 
-    return [UnmanagedFile(p) for p in res
+    return [make_unmanaged(prefix, p) for p in res
             if not (p.endswith('~') or
                     p.endswith('.DS_Store') or
                     (find_py_source(p) in managed))]
 
 
-class EnvScanner(object):
-    def __init__(self, prefix):
-        self.prefix = prefix
-        self.conda_meta = os.path.join(prefix, 'conda-meta')
-        if not os.path.exists(self.conda_meta):
-            raise CondaPackException("Path %r is not a conda "
-                                     "environment" % prefix)
+def make_managed(pkg, _path, path_type=None, prefix_placeholder=None,
+                 file_mode=None, **ignored):
+    prefix_info = (None if prefix_placeholder is None else
+                   PrefixInfo(prefix_placeholder, file_mode))
+    return File(os.path.join(pkg, _path),
+                _path,
+                prefix_info=prefix_info,
+                is_symlink=(path_type == 'softlink'))
 
-        self.site_packages = find_site_packages(prefix)
 
-    def _make_file_noarch_python(self, pkg, _path, path_type=None,
-                                 prefix_placeholder=None, file_mode=None,
-                                 **ignored):
-        if _path.startswith('site-packages/'):
-            target = self.site_packages + _path[13:]
-        elif _path.startswith('python-scripts/'):
-            target = bin_dir + _path[14:]
+def make_unmanaged(prefix, path):
+    source = os.path.join(prefix, path)
+    return File(source, path, prefix_info=PrefixInfo(prefix, 'unmanaged'),
+                is_symlink=os.path.islink(source))
+
+
+def make_noarch_python(site_packages, pkg, _path, path_type=None,
+                       prefix_placeholder=None, file_mode=None, **ignored):
+    if _path.startswith('site-packages/'):
+        target = site_packages + _path[13:]
+    elif _path.startswith('python-scripts/'):
+        target = bin_dir + _path[14:]
+    else:
+        target = _path
+
+    prefix_info = (None if prefix_placeholder is None else
+                   PrefixInfo(prefix_placeholder, file_mode))
+
+    return File(os.path.join(pkg, _path),
+                target,
+                prefix_info=prefix_info,
+                is_symlink=(path_type == 'softlink'))
+
+
+def make_noarch_python_extra(prefix, path):
+    source = os.path.join(prefix, path)
+    prefix_info = (None if path.endswith('.pyc')
+                   else PrefixInfo(prefix, 'text'))
+    return File(source, path, prefix_info=prefix_info, is_symlink=False)
+
+
+def load_package(prefix, site_packages, meta_json):
+    with open(meta_json) as fil:
+        info = json.load(fil)
+    pkg = info['link']['source']
+
+    if not os.path.exists(pkg):
+        # Package cache is cleared, return list of unmanaged files
+        # to properly handle prefix replacement ourselves.
+        # TODO: add optional warning when uncached files are found.
+        return [make_unmanaged(prefix, f) for f in info['files']]
+
+    noarch_type = read_noarch_type(pkg)
+
+    if noarch_type == 'python':
+        make_file = partial(make_noarch_python, site_packages)
+    else:
+        make_file = make_managed
+
+    paths_json = os.path.join(pkg, 'info', 'paths.json')
+    if os.path.exists(paths_json):
+        with open(paths_json) as fil:
+            paths = json.load(fil)
+
+        files = [make_file(pkg, **r) for r in paths['paths']]
+    else:
+        with open(os.path.join(pkg, 'info', 'files')) as fil:
+            paths = [f.strip() for f in fil]
+
+        has_prefix = os.path.join(pkg, 'info', 'has_prefix')
+
+        if os.path.exists(has_prefix):
+            prefixes = read_has_prefix(has_prefix)
+            files = [make_file(pkg, p, None, *prefixes.get(p, ()))
+                     for p in paths]
         else:
-            target = _path
-        return ManagedFile(os.path.join(pkg, _path), target, path_type,
-                           prefix_placeholder, file_mode)
+            files = [make_file(pkg, p) for p in paths]
 
-    @staticmethod
-    def _make_file(pkg, _path, path_type=None, prefix_placeholder=None,
-                   file_mode=None, **ignored):
-        return ManagedFile(os.path.join(pkg, _path), _path, path_type,
-                           prefix_placeholder, file_mode)
+    if noarch_type == 'python':
+        seen = {i.target for i in files}
+        files.extend(make_noarch_python_extra(prefix, fil)
+                     for fil in info['files'] if fil not in seen)
 
-    def _load_package(self, meta_json):
-        with open(meta_json) as fil:
-            info = json.load(fil)
-        pkg = info['link']['source']
-
-        if not os.path.exists(pkg):
-            # Package cache is cleared, return list of unmanaged files
-            # to properly handle prefix replacement ourselves.
-            # TODO: add optional warning when uncached files are found.
-            return [UnmanagedFile(f) for f in info['files']]
-
-        noarch_type = read_noarch_type(pkg)
-
-        if noarch_type == 'python':
-            make_file = self._make_file_noarch_python
-        else:
-            make_file = self._make_file
-
-        paths_json = os.path.join(pkg, 'info', 'paths.json')
-        if os.path.exists(paths_json):
-            with open(paths_json) as fil:
-                paths = json.load(fil)
-
-            files = [make_file(pkg, **r) for r in paths['paths']]
-        else:
-            with open(os.path.join(pkg, 'info', 'files')) as fil:
-                paths = [f.strip() for f in fil]
-
-            has_prefix = os.path.join(pkg, 'info', 'has_prefix')
-
-            if os.path.exists(has_prefix):
-                prefixes = read_has_prefix(has_prefix)
-                files = [make_file(pkg, p, None, *prefixes.get(p, ()))
-                         for p in paths]
-            else:
-                files = [make_file(pkg, p) for p in paths]
-
-        if noarch_type == 'python':
-            seen = {i.target for i in files}
-            files.extend(ManagedFile(fil, fil, None) for fil in info['files']
-                         if fil not in seen)
-
-        return files
-
-    def get_files(self, unmanaged=True):
-        files = []
-        for path in os.listdir(self.conda_meta):
-            if path.endswith('.json'):
-                meta_json = os.path.join(self.conda_meta, path)
-                files.extend(self._load_package(meta_json))
-
-        if unmanaged:
-            files.extend(collect_unmanaged(self.prefix, files))
-
-        return files
+    return files
 
 
 def load_environment(prefix, unmanaged=True):
-    return EnvScanner(prefix).get_files(unmanaged=unmanaged)
+    conda_meta = os.path.join(prefix, 'conda-meta')
+    if not os.path.exists(conda_meta):
+        raise CondaPackException("Path %r is not a conda environment" % prefix)
+
+    site_packages = find_site_packages(prefix)
+
+    files = []
+    for path in os.listdir(conda_meta):
+        if path.endswith('.json'):
+            meta_json = os.path.join(conda_meta, path)
+            files.extend(load_package(prefix, site_packages, meta_json))
+
+    if unmanaged:
+        files.extend(collect_unmanaged(prefix, files))
+
+    return files
