@@ -1,11 +1,16 @@
+from __future__ import absolute_import
+
 import glob
 import json
 import os
 import shlex
-import sys
 import warnings
 from functools import partial
-from collections import namedtuple
+from subprocess import check_output
+
+from .compat import on_win, default_encoding, find_py_source
+
+__all__ = ('CondaPackException', 'CondaEnv')
 
 
 class CondaPackException(Exception):
@@ -13,30 +18,74 @@ class CondaPackException(Exception):
     pass
 
 
-on_win = sys.platform == 'win32'
-bin_dir = 'Scripts' if on_win else 'bin'
+class CondaEnv(object):
+    def __init__(self, prefix, files):
+        self.prefix = prefix
+        self.files = files
+
+    def __repr__(self):
+        return 'CondaEnv<%r>' % self.prefix
+
+    @classmethod
+    def from_prefix(cls, prefix, **kwargs):
+        files = load_environment(prefix, **kwargs)
+        return cls(prefix, files)
+
+    @classmethod
+    def from_name(cls, name, **kwargs):
+        return cls.from_prefix(name_to_prefix(name), **kwargs)
+
+    @classmethod
+    def from_default(cls, **kwargs):
+        return cls.from_prefix(name_to_prefix(), **kwargs)
 
 
-if sys.version_info.major == 2:
-    def source_from_cache(path):
-        if path.endswith('.pyc') or path.endswith('.pyo'):
-            return path[:-1]
-        raise ValueError("Path %s is not a python bytecode file" % path)
-else:
-    from importlib.util import source_from_cache
+class File(object):
+    """A single archive record.
+
+    Parameters
+    ----------
+    source : str
+        Absolute path to the source.
+    target : str
+        Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
+    prefix_info : PrefixInfo or None, optional
+        Information about any prefixes that may need replacement.
+    is_symlink : bool, optional
+        Whether the file is a symlink to another file in the environment. If
+        True, will be archived as a symlink (if the storage allows it), if
+        False (default) file will be copied.
+    """
+    __slots__ = ('source', 'target', 'prefix_info', 'is_symlink')
+
+    def __init__(self, source, target, prefix_info=None, is_symlink=False):
+        self.source = source
+        self.target = target
+        self.prefix_info = prefix_info
+        self.is_symlink = is_symlink
+
+    @property
+    def is_unmanaged(self):
+        return self.prefix_info and self.prefix_info.mode == 'unmanaged'
+
+    @property
+    def kind(self):
+        return 'unmanaged' if self.is_unmanaged else 'managed'
+
+    def __repr__(self):
+        return 'File<%r, %r>' % (self.target, self.kind)
 
 
-def find_py_source(path, ignore=True):
-    """Find the source file for a given bytecode file.
+class PrefixInfo(object):
+    """Information on prefix replacement"""
+    __slots__ = ('placeholder', 'mode')
 
-    If ignore is True, errors are swallowed and None is returned"""
-    if not ignore:
-        return source_from_cache(path)
-    else:
-        try:
-            return source_from_cache(path)
-        except (NotImplementedError, ValueError):
-            return None
+    def __init__(self, placeholder, mode):
+        self.placeholder = placeholder
+        self.mode = mode
+
+    def __repr__(self):
+        return 'PrefixInfo<%s>' % self.mode
 
 
 def find_site_packages(prefix):
@@ -88,6 +137,22 @@ def check_no_editable_packages(prefix, site_packages):
         raise CondaPackException(msg)
 
 
+def name_to_prefix(name=None):
+    info = check_output("conda info --json", shell=True).decode(default_encoding)
+    info2 = json.loads(info)
+
+    if name:
+        env_lk = {os.path.basename(e): e for e in info2['envs']}
+        try:
+            prefix = env_lk[name]
+        except KeyError:
+            raise CondaPackException("Environment name %r doesn't exist" % name)
+    else:
+        prefix = ['default_prefix']
+
+    return prefix
+
+
 def read_noarch_type(pkg):
     for file_name in ['link.json', 'package_metadata.json']:
         path = os.path.join(pkg, 'info', file_name)
@@ -118,46 +183,6 @@ def read_has_prefix(path):
             else:
                 raise ValueError("Failed to parse has_prefix file")
     return out
-
-
-PrefixInfo = namedtuple('PrefixInfo', ['placeholder', 'mode'],
-                        module='conda_pack.core')
-
-
-class File(object):
-    """A single archive record.
-
-    Parameters
-    ----------
-    source : str
-        Absolute path to the source.
-    target : str
-        Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
-    prefix_info : PrefixInfo or None, optional
-        Information about any prefixes that may need replacement.
-    is_symlink : bool, optional
-        Whether the file is a symlink to another file in the environment. If
-        True, will be archived as a symlink (if the storage allows it), if
-        False (default) file will be copied.
-    """
-    __slots__ = ('source', 'target', 'prefix_info', 'is_symlink')
-
-    def __init__(self, source, target, prefix_info=None, is_symlink=False):
-        self.source = source
-        self.target = target
-        self.prefix_info = prefix_info
-        self.is_symlink = is_symlink
-
-    @property
-    def is_unmanaged(self):
-        return self.prefix_info and self.prefix_info.mode == 'unmanaged'
-
-    @property
-    def kind(self):
-        return 'unmanaged' if self.is_unmanaged else 'managed'
-
-    def __repr__(self):
-        return 'File<%r, %r>' % (self.target, self.kind)
 
 
 def collect_unmanaged(prefix, managed):
@@ -212,12 +237,15 @@ def make_unmanaged(prefix, path):
                 is_symlink=os.path.islink(source))
 
 
+_bin_dir = 'Scripts' if on_win else 'bin'
+
+
 def make_noarch_python(site_packages, pkg, _path, path_type=None,
                        prefix_placeholder=None, file_mode=None, **ignored):
     if _path.startswith('site-packages/'):
         target = site_packages + _path[13:]
     elif _path.startswith('python-scripts/'):
-        target = bin_dir + _path[14:]
+        target = _bin_dir + _path[14:]
     else:
         target = _path
 
@@ -291,6 +319,8 @@ prefixes aren't be handled as robustly.""".format(_uncached_error)
 
 def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
     # Check if it's a conda environment
+    if not os.path.exists(prefix):
+        raise CondaPackException("Environment path %r doesn't exist" % prefix)
     conda_meta = os.path.join(prefix, 'conda-meta')
     if not os.path.exists(conda_meta):
         raise CondaPackException("Path %r is not a conda environment" % prefix)
