@@ -192,6 +192,12 @@ class EnvScanner(object):
             info = json.load(fil)
         pkg = info['link']['source']
 
+        if not os.path.exists(pkg):
+            # Package cache is cleared, return list of unmanaged files
+            # to properly handle prefix replacement ourselves.
+            # TODO: add optional warning when uncached files are found.
+            return [UnmanagedFile(f) for f in info['files']]
+
         noarch_type = read_noarch_type(pkg)
 
         if noarch_type == 'python':
