@@ -6,6 +6,7 @@ import sys
 
 
 on_win = sys.platform == 'win32'
+bin_dir = 'Scripts' if on_win else 'bin'
 
 
 class CondaPackException(Exception):
@@ -14,7 +15,7 @@ class CondaPackException(Exception):
 
 
 def find_site_packages(prefix):
-    # Ensure there is at most one version of python installed
+    # Ensure there is exactly one version of python installed
     pythons = []
     for fn in glob.glob(os.path.join(prefix, 'conda-meta', 'python-*.json')):
         with open(fn) as fil:
@@ -27,7 +28,8 @@ def find_site_packages(prefix):
                                  "python found in prefix %r" % prefix)
 
     elif not pythons:
-        return None
+        raise CondaPackException("Unexpected failure, no version of python "
+                                 "found in prefix %r" % prefix)
 
     # Only a single version of python installed in this environment
     if on_win:
@@ -71,7 +73,7 @@ def read_has_prefix(path):
     return out
 
 
-class Record(object):
+class ManagedFile(object):
     __slots__ = ('source', 'target', 'link_type',
                  'prefix_placeholder', 'file_mode')
 
@@ -84,58 +86,19 @@ class Record(object):
         self.file_mode = file_mode
 
     def __repr__(self):
-        return 'Record<%r>' % self.target
+        return 'ManagedFile<%r>' % self.target
 
 
-def load_package(site_packages, meta_json):
-    with open(meta_json) as fil:
-        info = json.load(fil)
-    pkg = info['link']['source']
+class UnmanagedFile(object):
+    __slots__ = ('path',)
 
-    noarch_type = read_noarch_type(pkg)
+    def __init__(self, path):
+        self.path = path
 
-    if noarch_type == 'python':
-        def record(_path, path_type=None, prefix_placeholder=None,
-                   file_mode=None, **ignored):
-            if _path.startswith('site-packages/'):
-                target = site_packages + _path[13:]
-            elif _path.startswith('python-scripts/'):
-                bin_dir = 'Scripts' if on_win else 'bin'
-                target = bin_dir + _path[14:]
-            else:
-                target = _path
-            return Record(os.path.join(pkg, _path), target, path_type,
-                          prefix_placeholder, file_mode)
-    else:
-        def record(_path, path_type=None, prefix_placeholder=None,
-                   file_mode=None, **ignored):
-            return Record(os.path.join(pkg, _path), _path, path_type,
-                          prefix_placeholder, file_mode)
+    source = target = property(lambda self: self.path)
 
-    paths_json = os.path.join(pkg, 'info', 'paths.json')
-    if os.path.exists(paths_json):
-        with open(paths_json) as fil:
-            paths = json.load(fil)
-
-        files = [record(**r) for r in paths['paths']]
-    else:
-        with open(os.path.join(pkg, 'info', 'files')) as fil:
-            paths = [f.strip() for f in fil]
-
-        has_prefix = os.path.join(pkg, 'info', 'has_prefix')
-
-        if os.path.exists(has_prefix):
-            prefixes = read_has_prefix(has_prefix)
-            files = [record(p, None, *prefixes.get(p, ())) for p in paths]
-        else:
-            files = [record(p) for p in paths]
-
-    if noarch_type == 'python':
-        seen = {i.target for i in files}
-        files.extend(Record(fil, fil, None) for fil in info['files']
-                     if fil not in seen)
-
-    return files
+    def __repr__(self):
+        return 'UnmanagedFile<%r>' % self.target
 
 
 def collect_unmanaged(prefix, managed):
@@ -168,28 +131,90 @@ def collect_unmanaged(prefix, managed):
     res -= managed
     res -= remove
 
-    return [p for p in res
+    return [UnmanagedFile(p) for p in res
             if not (p.endswith('~') or
                     p.endswith('.DS_Store') or
                     (p.endswith('.pyc') and p[:-1] in managed))]
 
 
+class EnvScanner(object):
+    def __init__(self, prefix):
+        self.prefix = prefix
+        self.conda_meta = os.path.join(prefix, 'conda-meta')
+        if not os.path.exists(self.conda_meta):
+            raise CondaPackException("Path %r is not a conda "
+                                     "environment" % prefix)
+
+        self.site_packages = find_site_packages(prefix)
+
+    def _make_file_noarch_python(self, pkg, _path, path_type=None,
+                                 prefix_placeholder=None, file_mode=None,
+                                 **ignored):
+        if _path.startswith('site-packages/'):
+            target = self.site_packages + _path[13:]
+        elif _path.startswith('python-scripts/'):
+            target = bin_dir + _path[14:]
+        else:
+            target = _path
+        return ManagedFile(os.path.join(pkg, _path), target, path_type,
+                           prefix_placeholder, file_mode)
+
+    @staticmethod
+    def _make_file(pkg, _path, path_type=None, prefix_placeholder=None,
+                   file_mode=None, **ignored):
+        return ManagedFile(os.path.join(pkg, _path), _path, path_type,
+                           prefix_placeholder, file_mode)
+
+    def _load_package(self, meta_json):
+        with open(meta_json) as fil:
+            info = json.load(fil)
+        pkg = info['link']['source']
+
+        noarch_type = read_noarch_type(pkg)
+
+        if noarch_type == 'python':
+            make_file = self._make_file_noarch_python
+        else:
+            make_file = self._make_file
+
+        paths_json = os.path.join(pkg, 'info', 'paths.json')
+        if os.path.exists(paths_json):
+            with open(paths_json) as fil:
+                paths = json.load(fil)
+
+            files = [make_file(pkg, **r) for r in paths['paths']]
+        else:
+            with open(os.path.join(pkg, 'info', 'files')) as fil:
+                paths = [f.strip() for f in fil]
+
+            has_prefix = os.path.join(pkg, 'info', 'has_prefix')
+
+            if os.path.exists(has_prefix):
+                prefixes = read_has_prefix(has_prefix)
+                files = [make_file(pkg, p, None, *prefixes.get(p, ()))
+                         for p in paths]
+            else:
+                files = [make_file(pkg, p) for p in paths]
+
+        if noarch_type == 'python':
+            seen = {i.target for i in files}
+            files.extend(ManagedFile(fil, fil, None) for fil in info['files']
+                         if fil not in seen)
+
+        return files
+
+    def get_files(self, unmanaged=True):
+        files = []
+        for path in os.listdir(self.conda_meta):
+            if path.endswith('.json'):
+                meta_json = os.path.join(self.conda_meta, path)
+                files.extend(self._load_package(meta_json))
+
+        if unmanaged:
+            files.extend(collect_unmanaged(self.prefix, files))
+
+        return files
+
+
 def load_environment(prefix, unmanaged=True):
-    conda_meta = os.path.join(prefix, 'conda-meta')
-    if not os.path.exists(conda_meta):
-        raise CondaPackException("Path %r is not a conda environment" % prefix)
-
-    site_packages = find_site_packages(prefix)
-
-    managed_files = []
-    for path in os.listdir(conda_meta):
-        if path.endswith('.json'):
-            managed_files.extend(load_package(site_packages,
-                                              os.path.join(conda_meta, path)))
-
-    if unmanaged:
-        unmanaged_files = collect_unmanaged(prefix, managed_files)
-    else:
-        unmanaged_files = None
-
-    return managed_files, unmanaged_files
+    return EnvScanner(prefix).get_files(unmanaged=unmanaged)
