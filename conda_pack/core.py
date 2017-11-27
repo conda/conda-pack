@@ -1,6 +1,11 @@
+import glob
 import json
 import os
 import shlex
+import sys
+
+
+on_win = sys.platform == 'win32'
 
 
 class CondaPackException(Exception):
@@ -8,12 +13,33 @@ class CondaPackException(Exception):
     pass
 
 
-# String is split so as not to appear in the file bytes unintentionally
-PREFIX_PLACEHOLDER = ('/opt/anaconda1anaconda2'
-                      'anaconda3')
+def find_site_packages(prefix):
+    # Ensure there is at most one version of python installed
+    pythons = []
+    for fn in glob.glob(os.path.join(prefix, 'conda-meta', 'python-*.json')):
+        with open(fn) as fil:
+            meta = json.load(fil)
+        if meta['name'] == 'python':
+            pythons.append(meta)
+
+    if len(pythons) > 1:
+        raise CondaPackException("Unexpected failure, multiple versions of "
+                                 "python found in prefix %r" % prefix)
+
+    elif not pythons:
+        return None
+
+    # Only a single version of python installed in this environment
+    if on_win:
+        return 'Lib/site-packages'
+
+    python_version = pythons[0]['version']
+    major_minor = python_version[:3]  # e.g. '3.5.1'[:3]
+
+    return 'lib/python%s/site-packages' % major_minor
 
 
-def noarch_type(pkg):
+def read_noarch_type(pkg):
     for file_name in ['link.json', 'package_metadata.json']:
         path = os.path.join(pkg, 'info', file_name)
         if os.path.exists(path):
@@ -26,7 +52,12 @@ def noarch_type(pkg):
     return None
 
 
-def _load_has_prefix(path):
+# String is split so as not to appear in the file bytes unintentionally
+PREFIX_PLACEHOLDER = ('/opt/anaconda1anaconda2'
+                      'anaconda3')
+
+
+def read_has_prefix(path):
     out = {}
     with open(path) as fil:
         for line in fil:
@@ -40,51 +71,71 @@ def _load_has_prefix(path):
     return out
 
 
-class FileRecord(object):
-    __slots__ = ('path', 'path_type', 'file_mode', 'prefix_placeholder')
+class Record(object):
+    __slots__ = ('source', 'target', 'link_type',
+                 'prefix_placeholder', 'file_mode')
 
-    def __init__(self, _path, path_type, prefix_placeholder=None,
-                 file_mode=None, **ignored):
-        self.path = _path
-        self.path_type = path_type
+    def __init__(self, source, target, link_type=None, prefix_placeholder=None,
+                 file_mode=None):
+        self.source = source
+        self.target = target
+        self.link_type = link_type
         self.prefix_placeholder = prefix_placeholder
         self.file_mode = file_mode
 
     def __repr__(self):
-        return 'FileRecord<%r>' % self.path
+        return 'Record<%r>' % self.target
 
 
-class Package(object):
-    __slots__ = ('root', 'files')
+def load_package(site_packages, meta_json):
+    with open(meta_json) as fil:
+        info = json.load(fil)
+    pkg = info['link']['source']
 
-    def __init__(self, root, files):
-        self.root = root
-        self.files = files
+    noarch_type = read_noarch_type(pkg)
 
-    def __repr__(self):
-        return 'Package<%r, %d files>' % (self.root, len(self.files))
-
-    @classmethod
-    def from_path(cls, root):
-        paths_json = os.path.join(root, 'info', 'paths.json')
-        if os.path.exists(paths_json):
-            with open(paths_json) as fil:
-                paths = json.load(fil)
-            files = [FileRecord(**r) for r in paths['paths']]
-        else:
-            with open(os.path.join(root, 'info', 'files')) as fil:
-                paths = [f.strip() for f in fil]
-
-            has_prefix = os.path.join(root, 'info', 'has_prefix')
-
-            if os.path.exists(has_prefix):
-                prefixes = _load_has_prefix(has_prefix)
-                files = [FileRecord(p, 'hardlink', *prefixes.get(p, ()))
-                         for p in paths]
+    if noarch_type == 'python':
+        def record(_path, path_type=None, prefix_placeholder=None,
+                   file_mode=None, **ignored):
+            if _path.startswith('site-packages/'):
+                target = site_packages + _path[13:]
+            elif _path.startswith('python-scripts/'):
+                bin_dir = 'Scripts' if on_win else 'bin'
+                target = bin_dir + _path[14:]
             else:
-                files = [FileRecord(p, 'hardlink') for p in paths]
+                target = _path
+            return Record(os.path.join(pkg, _path), target, path_type,
+                          prefix_placeholder, file_mode)
+    else:
+        def record(_path, path_type=None, prefix_placeholder=None,
+                   file_mode=None, **ignored):
+            return Record(os.path.join(pkg, _path), _path, path_type,
+                          prefix_placeholder, file_mode)
 
-        return cls(root, files)
+    paths_json = os.path.join(pkg, 'info', 'paths.json')
+    if os.path.exists(paths_json):
+        with open(paths_json) as fil:
+            paths = json.load(fil)
+
+        files = [record(**r) for r in paths['paths']]
+    else:
+        with open(os.path.join(pkg, 'info', 'files')) as fil:
+            paths = [f.strip() for f in fil]
+
+        has_prefix = os.path.join(pkg, 'info', 'has_prefix')
+
+        if os.path.exists(has_prefix):
+            prefixes = read_has_prefix(has_prefix)
+            files = [record(p, None, *prefixes.get(p, ())) for p in paths]
+        else:
+            files = [record(p) for p in paths]
+
+    if noarch_type == 'python':
+        seen = {i.target for i in files}
+        files.extend(Record(fil, fil, None) for fil in info['files']
+                     if fil not in seen)
+
+    return files
 
 
 def collect_unmanaged(prefix, managed):
@@ -113,48 +164,32 @@ def collect_unmanaged(prefix, managed):
                         dirs.remove(d)
                         res.add(join(root2, d))
 
+    managed = {i.target for i in managed}
     res -= managed
     res -= remove
 
-    return {p for p in res
+    return [p for p in res
             if not (p.endswith('~') or
                     p.endswith('.DS_Store') or
-                    (p.endswith('.pyc') and p[:-1] in managed))}
+                    (p.endswith('.pyc') and p[:-1] in managed))]
 
 
-class Environment(object):
-    __slots__ = ('prefix', 'packages', 'unmanaged')
+def load_environment(prefix, unmanaged=True):
+    conda_meta = os.path.join(prefix, 'conda-meta')
+    if not os.path.exists(conda_meta):
+        raise CondaPackException("Path %r is not a conda environment" % prefix)
 
-    def __init__(self, prefix, packages, unmanaged=None):
-        self.prefix = prefix
-        self.packages = packages
-        self.unmanaged = unmanaged
+    site_packages = find_site_packages(prefix)
 
-    def __repr__(self):
-        npackages = len(self.packages)
-        nfiles = sum(len(p.files) for p in self.packages)
-        return ('Environment<%r, %d packages, '
-                '%d files>') % (self.prefix, npackages, nfiles)
+    managed_files = []
+    for path in os.listdir(conda_meta):
+        if path.endswith('.json'):
+            managed_files.extend(load_package(site_packages,
+                                              os.path.join(conda_meta, path)))
 
-    @classmethod
-    def from_prefix(cls, prefix, unmanaged=True):
-        conda_meta = os.path.join(prefix, 'conda-meta')
-        if not os.path.exists(conda_meta):
-            raise CondaPackException("Path %r is not a conda "
-                                     "environment" % prefix)
+    if unmanaged:
+        unmanaged_files = collect_unmanaged(prefix, managed_files)
+    else:
+        unmanaged_files = None
 
-        packages = []
-        for path in os.listdir(conda_meta):
-            if path.endswith('.json'):
-                with open(os.path.join(conda_meta, path)) as fil:
-                    info = json.load(fil)
-                source = info['link']['source']
-                packages.append(Package.from_path(source))
-
-        if unmanaged:
-            managed = set(f.path for p in packages for f in p.files)
-            unmanaged = collect_unmanaged(prefix, managed)
-        else:
-            unmanaged = None
-
-        return cls(prefix, packages, unmanaged)
+    return managed_files, unmanaged_files
