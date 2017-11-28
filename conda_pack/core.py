@@ -333,7 +333,7 @@ def name_to_prefix(name=None):
         except KeyError:
             raise CondaPackException("Environment name %r doesn't exist" % name)
     else:
-        prefix = ['default_prefix']
+        prefix = info2['default_prefix']
 
     return prefix
 
