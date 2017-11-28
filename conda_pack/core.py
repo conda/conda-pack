@@ -4,12 +4,17 @@ import glob
 import json
 import os
 import shlex
+import tarfile
 import warnings
+import zipfile
+from contextlib import closing
 from fnmatch import fnmatch
 from functools import partial
 from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
+from ._progress import progressbar
+
 
 __all__ = ('CondaPackException', 'CondaEnv')
 
@@ -32,6 +37,11 @@ class CondaEnv(object):
 
     def __iter__(self):
         return iter(self.files)
+
+    @property
+    def name(self):
+        """The name of the environment"""
+        return os.path.basename(self.prefix)
 
     @classmethod
     def from_prefix(cls, prefix, **kwargs):
@@ -69,6 +79,100 @@ class CondaEnv(object):
     def remove(self, pred):
         """Remove all files that match ``pred``"""
         return self._filter(pred, inverse=True)
+
+    def _output_and_format(self, output, format='infer'):
+        if format == 'infer':
+            if output is None or output.endswith('.zip'):
+                format = 'zip'
+            elif output.endswith('.tar.gz') or output.endswith('.tgz'):
+                format = 'tar.gz'
+            elif output.endswith('.tar.bz2') or output.endswith('.tbz2'):
+                format = 'tar.bz2'
+            elif output.endswith('.tar'):
+                format = 'tar'
+            else:
+                # Default to zip
+                format = 'zip'
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
+            raise CondaPackException("Unknown format %r" % format)
+
+        if output is None:
+            output = os.extsep.join([self.name, format])
+
+        return output, format
+
+    def pack(self, output=None, format='infer', packed_prefix=None,
+             verbose=False, record=None):
+        """Package the conda environment into an archive file.
+
+        Parameters
+        ----------
+        output : str, optional
+            The path of the output file. Defaults to the environment name with a
+            ``.zip`` suffix (e.g. ``my_env.zip``).
+        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}
+            The archival format to use. By default this is inferred by the
+            output file extension, falling back to `zip` if a non-standard
+            extension.
+        packed_prefix : str, optional
+            Once unpacked, the relative path to the conda environment. By
+            default this is a single directory with the same name as the
+            environment (e.g.  ``my_env``).
+        verbose : bool, optional
+            If True, progress is reported to stdout. Default is False.
+        record : str, optional
+            File path. If provided, a detailed log is written here.
+
+        Returns
+        -------
+        out_path : str
+            The path to the zipped environment.
+        """
+        if not packed_prefix:
+            packed_prefix = self.name
+        else:
+            # Ensure the prefix is a relative path
+            packed_prefix = packed_prefix.strip(os.path.sep)
+
+        # The output path and archive format
+        output, format = self._output_and_format(output, format)
+
+        if os.path.exists(output):
+            raise CondaPackException("File %r already exists" % output)
+
+        if record is not None and os.path.exists(record):
+            raise CondaPackException("record file %r already exists" % record)
+
+        if verbose:
+            print("Packing environment at %r to %r" % (self.prefix, output))
+
+        if format == 'zip':
+            archive = zipfile.ZipFile(output, "w", allowZip64=True,
+                                      compression=zipfile.ZIP_DEFLATED)
+
+            def add(f):
+                target = os.path.join(packed_prefix, f.target)
+                archive.write(f.source, os.path.join(packed_prefix, f.target))
+                return f.source, target
+
+        else:
+            archive = tarfile.open(name=output, mode=_tar_mode[format],
+                                   dereference=False)
+
+            def add(f):
+                target = os.path.join(packed_prefix, f.target)
+                archive.add(f.source, target, recursive=False)
+                return f.source, target
+
+        with closing(archive), progressbar(self.files, enabled=verbose) as files:
+            records = [add(f) for f in files]
+
+        if record is not None:
+            with open(record, 'w') as f:
+                template = "%s -> %s" + os.linesep
+                f.writelines(template % r for r in records)
+
+        return output
 
 
 class File(object):
@@ -117,6 +221,13 @@ class PrefixInfo(object):
 
     def __repr__(self):
         return 'PrefixInfo<%s>' % self.mode
+
+
+_tar_mode = {'tar.gz': 'w:gz',
+             'tgz': 'w:gz',
+             'tar.bz2': 'w:bz2',
+             'tbz2': 'w:bz2',
+             'tar': 'w'}
 
 
 def find_site_packages(prefix):
