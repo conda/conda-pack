@@ -236,15 +236,12 @@ class File(object):
         self.prefix_info = prefix_info
 
     @property
-    def is_unmanaged(self):
-        return self.prefix_info and self.prefix_info.mode == 'unmanaged'
-
-    @property
-    def kind(self):
-        return 'unmanaged' if self.is_unmanaged else 'managed'
+    def is_conda(self):
+        return (self.prefix_info is None or
+                self.prefix_info.mode == 'unknown')
 
     def __repr__(self):
-        return 'File<%r, %r>' % (self.target, self.kind)
+        return 'File<%r, is_conda=%r>' % (self.target, self.is_conda)
 
 
 class PrefixInfo(object):
