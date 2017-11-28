@@ -227,18 +227,13 @@ class File(object):
         Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
     prefix_info : PrefixInfo or None, optional
         Information about any prefixes that may need replacement.
-    is_symlink : bool, optional
-        Whether the file is a symlink to another file in the environment. If
-        True, will be archived as a symlink (if the storage allows it), if
-        False (default) file will be copied.
     """
-    __slots__ = ('source', 'target', 'prefix_info', 'is_symlink')
+    __slots__ = ('source', 'target', 'prefix_info')
 
-    def __init__(self, source, target, prefix_info=None, is_symlink=False):
+    def __init__(self, source, target, prefix_info=None):
         self.source = source
         self.target = target
         self.prefix_info = prefix_info
-        self.is_symlink = is_symlink
 
     @property
     def is_unmanaged(self):
@@ -460,27 +455,23 @@ def collect_unmanaged(prefix, managed):
                     (find_py_source(p) in managed))]
 
 
-def make_managed(pkg, _path, path_type=None, prefix_placeholder=None,
-                 file_mode=None, **ignored):
+def make_managed(pkg, _path, prefix_placeholder=None, file_mode=None,
+                 **ignored):
     prefix_info = (None if prefix_placeholder is None else
                    PrefixInfo(prefix_placeholder, file_mode))
-    return File(os.path.join(pkg, _path),
-                _path,
-                prefix_info=prefix_info,
-                is_symlink=(path_type == 'softlink'))
+    return File(os.path.join(pkg, _path), _path, prefix_info=prefix_info)
 
 
 def make_unmanaged(prefix, path):
     source = os.path.join(prefix, path)
-    return File(source, path, prefix_info=PrefixInfo(prefix, 'unmanaged'),
-                is_symlink=os.path.islink(source))
+    return File(source, path, prefix_info=PrefixInfo(prefix, 'unmanaged'))
 
 
 _bin_dir = 'Scripts' if on_win else 'bin'
 
 
-def make_noarch_python(site_packages, pkg, _path, path_type=None,
-                       prefix_placeholder=None, file_mode=None, **ignored):
+def make_noarch_python(site_packages, pkg, _path, prefix_placeholder=None,
+                       file_mode=None, **ignored):
     if _path.startswith('site-packages/'):
         target = site_packages + _path[13:]
     elif _path.startswith('python-scripts/'):
@@ -491,17 +482,14 @@ def make_noarch_python(site_packages, pkg, _path, path_type=None,
     prefix_info = (None if prefix_placeholder is None else
                    PrefixInfo(prefix_placeholder, file_mode))
 
-    return File(os.path.join(pkg, _path),
-                target,
-                prefix_info=prefix_info,
-                is_symlink=(path_type == 'softlink'))
+    return File(os.path.join(pkg, _path), target, prefix_info=prefix_info)
 
 
 def make_noarch_python_extra(prefix, path):
     source = os.path.join(prefix, path)
     prefix_info = (None if path.endswith('.pyc')
                    else PrefixInfo(prefix, 'text'))
-    return File(source, path, prefix_info=prefix_info, is_symlink=False)
+    return File(source, path, prefix_info=prefix_info)
 
 
 def load_managed_package(info, prefix, site_packages):
@@ -528,7 +516,7 @@ def load_managed_package(info, prefix, site_packages):
 
         if os.path.exists(has_prefix):
             prefixes = read_has_prefix(has_prefix)
-            files = [make_file(pkg, p, None, *prefixes.get(p, ()))
+            files = [make_file(pkg, p, *prefixes.get(p, ()))
                      for p in paths]
         else:
             files = [make_file(pkg, p) for p in paths]
