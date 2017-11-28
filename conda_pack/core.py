@@ -4,16 +4,13 @@ import glob
 import json
 import os
 import shlex
-import stat
-import tarfile
 import warnings
-import zipfile
-from contextlib import closing
 from fnmatch import fnmatch
 from functools import partial
 from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
+from .formats import archive
 from ._progress import progressbar
 
 
@@ -155,26 +152,14 @@ class CondaEnv(object):
         if verbose:
             print("Packing environment at %r to %r" % (self.prefix, output))
 
-        if format == 'zip':
-            archive = zipfile.ZipFile(output, "w", allowZip64=True,
-                                      compression=zipfile.ZIP_DEFLATED)
+        records = []
 
-            def add(f):
-                target = os.path.join(packed_prefix, f.target)
-                zip_add(archive, f.source, target, zip_symlinks)
-                return f.source, target
-
-        else:
-            archive = tarfile.open(name=output, mode=_tar_mode[format],
-                                   dereference=False)
-
-            def add(f):
-                target = os.path.join(packed_prefix, f.target)
-                archive.add(f.source, target, recursive=False)
-                return f.source, target
-
-        with closing(archive), progressbar(self.files, enabled=verbose) as files:
-            records = [add(f) for f in files]
+        with archive(output, format, zip_symlinks=zip_symlinks) as arc:
+            with progressbar(self.files, enabled=verbose) as files:
+                for f in files:
+                    target = os.path.join(packed_prefix, f.target)
+                    arc.add(f.source, target)
+                    records.append((f.source, target))
 
         if record is not None:
             with open(record, 'w') as f:
@@ -182,38 +167,6 @@ class CondaEnv(object):
                 f.writelines(template % r for r in records)
 
         return output
-
-
-def zip_add(zfile, source, target, zip_symlinks=False):
-    try:
-        st = os.lstat(source)
-        is_link = stat.S_ISLNK(st.st_mode)
-        is_dir = stat.S_ISDIR(st.st_mode)
-    except (OSError, AttributeError):
-        is_link = False
-
-    if is_link:
-        if zip_symlinks:
-            info = zipfile.ZipInfo(target)
-            info.create_system = 3
-            info.external_attr = (st.st_mode & 0xFFFF) << 16
-            if is_dir:
-                info.external_attr |= 0x10  # MS-DOS directory flag
-            zfile.writestr(info, os.readlink(source))
-        else:
-            if is_dir:
-                for root, dirs, files in os.walk(source, followlinks=True):
-                    root2 = os.path.join(target, os.path.relpath(root, source))
-                    for fil in files:
-                        zfile.write(os.path.join(root, fil),
-                                    os.path.join(root2, fil))
-                    if not dirs and not files:
-                        # root is an empty directory, write it now
-                        zfile.write(root, root2)
-            else:
-                zfile.write(source, target)
-    else:
-        zfile.write(source, target)
 
 
 class File(object):
@@ -254,13 +207,6 @@ class PrefixInfo(object):
 
     def __repr__(self):
         return 'PrefixInfo<%s>' % self.mode
-
-
-_tar_mode = {'tar.gz': 'w:gz',
-             'tgz': 'w:gz',
-             'tar.bz2': 'w:bz2',
-             'tbz2': 'w:bz2',
-             'tar': 'w'}
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
