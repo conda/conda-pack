@@ -16,7 +16,7 @@ from .compat import on_win, default_encoding, find_py_source
 from ._progress import progressbar
 
 
-__all__ = ('CondaPackException', 'CondaEnv')
+__all__ = ('CondaPackException', 'CondaEnv', 'pack')
 
 
 class CondaPackException(Exception):
@@ -228,6 +228,49 @@ _tar_mode = {'tar.gz': 'w:gz',
              'tar.bz2': 'w:bz2',
              'tbz2': 'w:bz2',
              'tar': 'w'}
+
+
+def pack(name=None, prefix=None, output=None, format='infer',
+         packed_prefix=None, verbose=False, record=None):
+    """Package an existing conda environment into an archive file.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the conda environment to pack.
+    prefix : str, optional
+        A path to a conda environment to pack.
+    output : str, optional
+        The path of the output file. Defaults to the environment name with a
+        ``.zip`` suffix (e.g. ``my_env.zip``).
+    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}, optional
+        The archival format to use. By default this is inferred by the output
+        file extension, falling back to `zip` if a non-standard extension.
+    packed_prefix : str, optional
+        Once unpacked, the relative path to the conda environment. By default
+        this is a single directory with the same name as the environment (e.g.
+        ``my_env``).
+    verbose : bool, optional
+        If True, progress is reported to stdout. Default is False.
+    record : str, optional
+        File path. If provided, a detailed log is written here.
+
+    Returns
+    -------
+    out_path : str
+        The path to the zipped environment.
+    """
+    if name and prefix:
+        raise CondaPackException("Cannot specify both ``name`` and ``prefix``")
+    elif prefix:
+        env = CondaEnv.from_prefix(prefix)
+    elif name:
+        env = CondaEnv.from_name(name)
+    else:
+        env = CondaEnv.from_default()
+
+    return env.pack(output=output, format=format, packed_prefix=packed_prefix,
+                    verbose=verbose, record=record)
 
 
 def find_site_packages(prefix):

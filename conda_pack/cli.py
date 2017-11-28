@@ -5,7 +5,8 @@ import traceback
 
 import click
 
-from . import pack, CondaPackException, __version__
+from . import __version__
+from .core import pack, CondaPackException
 
 
 @click.command()
