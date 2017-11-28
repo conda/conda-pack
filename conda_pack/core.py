@@ -4,6 +4,7 @@ import glob
 import json
 import os
 import shlex
+import stat
 import tarfile
 import warnings
 import zipfile
@@ -102,7 +103,7 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', packed_prefix=None,
-             verbose=False, record=None):
+             verbose=False, record=None, zip_symlinks=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -112,7 +113,7 @@ class CondaEnv(object):
             ``.zip`` suffix (e.g. ``my_env.zip``).
         format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}
             The archival format to use. By default this is inferred by the
-            output file extension, falling back to `zip` if a non-standard
+            output file extension, falling back to ``zip`` if a non-standard
             extension.
         packed_prefix : str, optional
             Once unpacked, the relative path to the conda environment. By
@@ -122,6 +123,14 @@ class CondaEnv(object):
             If True, progress is reported to stdout. Default is False.
         record : str, optional
             File path. If provided, a detailed log is written here.
+        zip_symlinks : bool, optional
+            Symbolic links aren't supported by the Zip standard, but are
+            supported by *many* common Zip implementations. If True, store
+            symbolic links in the archive, instead of the file referred to
+            by the link. This can avoid storing multiple copies of the same
+            files. *Note that the resulting archive may silently fail on
+            decompression if the ``unzip`` implementation doesn't support
+            symlinks*. Default is False. Ignored if format isn't ``zip``.
 
         Returns
         -------
@@ -152,7 +161,7 @@ class CondaEnv(object):
 
             def add(f):
                 target = os.path.join(packed_prefix, f.target)
-                archive.write(f.source, os.path.join(packed_prefix, f.target))
+                zip_add(archive, f.source, target, zip_symlinks)
                 return f.source, target
 
         else:
@@ -173,6 +182,38 @@ class CondaEnv(object):
                 f.writelines(template % r for r in records)
 
         return output
+
+
+def zip_add(zfile, source, target, zip_symlinks=False):
+    try:
+        st = os.lstat(source)
+        is_link = stat.S_ISLNK(st.st_mode)
+        is_dir = stat.S_ISDIR(st.st_mode)
+    except (OSError, AttributeError):
+        is_link = False
+
+    if is_link:
+        if zip_symlinks:
+            info = zipfile.ZipInfo(target)
+            info.create_system = 3
+            info.external_attr = (st.st_mode & 0xFFFF) << 16
+            if is_dir:
+                info.external_attr |= 0x10  # MS-DOS directory flag
+            zfile.writestr(info, os.readlink(source))
+        else:
+            if is_dir:
+                for root, dirs, files in os.walk(source, followlinks=True):
+                    root2 = os.path.join(target, os.path.relpath(root, source))
+                    for fil in files:
+                        zfile.write(os.path.join(root, fil),
+                                    os.path.join(root2, fil))
+                    if not dirs and not files:
+                        # root is an empty directory, write it now
+                        zfile.write(root, root2)
+            else:
+                zfile.write(source, target)
+    else:
+        zfile.write(source, target)
 
 
 class File(object):
@@ -231,7 +272,8 @@ _tar_mode = {'tar.gz': 'w:gz',
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         packed_prefix=None, verbose=False, record=None):
+         packed_prefix=None, verbose=False, record=None,
+         zip_symlinks=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -254,6 +296,14 @@ def pack(name=None, prefix=None, output=None, format='infer',
         If True, progress is reported to stdout. Default is False.
     record : str, optional
         File path. If provided, a detailed log is written here.
+    zip_symlinks : bool, optional
+        Symbolic links aren't supported by the Zip standard, but are supported
+        by *many* common Zip implementations. If True, store symbolic links in
+        the archive, instead of the file referred to by the link. This can
+        avoid storing multiple copies of the same files. *Note that the
+        resulting archive may silently fail on decompression if the ``unzip``
+        implementation doesn't support symlinks*. Default is False. Ignored if
+        format isn't ``zip``.
 
     Returns
     -------
@@ -270,7 +320,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
         env = CondaEnv.from_default()
 
     return env.pack(output=output, format=format, packed_prefix=packed_prefix,
-                    verbose=verbose, record=record)
+                    verbose=verbose, record=record, zip_symlinks=zip_symlinks)
 
 
 def find_site_packages(prefix):

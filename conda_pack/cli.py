@@ -40,6 +40,17 @@ from .core import pack, CondaPackException
               help=("The archival format to use. By default this is inferred "
                     "by the output file extension, falling back to `zip` if a "
                     "non-standard extension."))
+@click.option("--zip-symlinks",
+              is_flag=True,
+              default=False,
+              help=("Symbolic links aren't supported by the Zip standard, but "
+                    "are supported by *many* common Zip implementations. If "
+                    "set, store symbolic links in the archive, instead of the "
+                    "file referred to by the link. This can avoid storing "
+                    "multiple copies of the same files. *Note that the "
+                    "resulting archive may silently fail on decompression if "
+                    "the ``unzip`` implementation doesn't support symlinks*. "
+                    "Ignored if format isn't ``zip``."))
 @click.option("--quiet",
               "-q",
               is_flag=True,
@@ -50,10 +61,12 @@ from .core import pack, CondaPackException
               type=click.Path(),
               help="If provided, a detailed log is written here")
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output, format, packed_prefix, quiet, record):
+def cli(name, prefix, output, format, packed_prefix, zip_symlinks, quiet,
+        record):
     """Package an existing conda environment into an archive file."""
     pack(name=name, prefix=prefix, output=output, format=format,
-         packed_prefix=packed_prefix, verbose=not quiet, record=record)
+         zip_symlinks=zip_symlinks, packed_prefix=packed_prefix,
+         verbose=not quiet, record=record)
 
 
 _py3_err_msg = """
