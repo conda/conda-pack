@@ -10,20 +10,20 @@ _tar_mode = {'tar.gz': 'w:gz',
              'tar': 'w'}
 
 
-def archive(path, format, zip_symlinks=False):
+def archive(fileobj, format, zip_symlinks=False):
     if format == 'zip':
-        return ZipArchive(path, zip_symlinks=zip_symlinks)
+        return ZipArchive(fileobj, zip_symlinks=zip_symlinks)
     else:
-        return TarArchive(path, _tar_mode[format])
+        return TarArchive(fileobj, _tar_mode[format])
 
 
 class TarArchive(object):
-    def __init__(self, path, mode):
-        self.path = path
+    def __init__(self, fileobj, mode):
+        self.fileobj = fileobj
         self.mode = mode
 
     def __enter__(self):
-        self.archive = tarfile.open(name=self.path, mode=self.mode,
+        self.archive = tarfile.open(fileobj=self.fileobj, mode=self.mode,
                                     dereference=False)
         return self
 
@@ -35,12 +35,12 @@ class TarArchive(object):
 
 
 class ZipArchive(object):
-    def __init__(self, path, zip_symlinks=False):
-        self.path = path
+    def __init__(self, fileobj, zip_symlinks=False):
+        self.fileobj = fileobj
         self.zip_symlinks = zip_symlinks
 
     def __enter__(self):
-        self.archive = zipfile.ZipFile(self.path, "w", allowZip64=True,
+        self.archive = zipfile.ZipFile(self.fileobj, "w", allowZip64=True,
                                        compression=zipfile.ZIP_DEFLATED)
         return self
 

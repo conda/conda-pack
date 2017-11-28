@@ -4,6 +4,8 @@ import glob
 import json
 import os
 import shlex
+import shutil
+import tempfile
 import warnings
 from fnmatch import fnmatch
 from functools import partial
@@ -154,12 +156,23 @@ class CondaEnv(object):
 
         records = []
 
-        with archive(output, format, zip_symlinks=zip_symlinks) as arc:
-            with progressbar(self.files, enabled=verbose) as files:
-                for f in files:
-                    target = os.path.join(packed_prefix, f.target)
-                    arc.add(f.source, target)
-                    records.append((f.source, target))
+        fd, temp_path = tempfile.mkstemp()
+
+        try:
+            with open(fd, 'wb') as temp_file:
+                with archive(temp_file, format, zip_symlinks=zip_symlinks) as arc:
+                    with progressbar(self.files, enabled=verbose) as files:
+                        for f in files:
+                            target = os.path.join(packed_prefix, f.target)
+                            arc.add(f.source, target)
+                            records.append((f.source, target))
+        except Exception:
+            # Writing failed, remove tempfile
+            os.remove(temp_path)
+            raise
+        else:
+            # Writing succeeded, move archive to desired location
+            shutil.move(temp_path, output)
 
         if record is not None:
             with open(record, 'w') as f:
