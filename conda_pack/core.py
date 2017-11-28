@@ -443,8 +443,12 @@ def collect_unmanaged(prefix, managed):
 
                 for d in dirs:
                     if islink(join(root, d)):
-                        dirs.remove(d)
+                        # Add symbolic directory directly
                         res.add(join(root2, d))
+
+                if not dirs and not files:
+                    # root2 is an empty directory, add it
+                    res.add(root2)
 
     managed = {i.target for i in managed}
     res -= managed
