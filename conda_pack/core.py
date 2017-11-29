@@ -131,7 +131,7 @@ class CondaEnv(object):
 
         return output, format
 
-    def pack(self, output=None, format='infer', packed_prefix=None,
+    def pack(self, output=None, format='infer', arcroot=None,
              verbose=False, record=None, zip_symlinks=False):
         """Package the conda environment into an archive file.
 
@@ -144,10 +144,9 @@ class CondaEnv(object):
             The archival format to use. By default this is inferred by the
             output file extension, falling back to ``zip`` if a non-standard
             extension.
-        packed_prefix : str, optional
-            Once unpacked, the relative path to the conda environment. By
-            default this is a single directory with the same name as the
-            environment (e.g.  ``my_env``).
+        arcroot : str, optional
+            The relative in the archive to the conda environment. Defaults to
+            the environment name.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         record : str, optional
@@ -166,11 +165,11 @@ class CondaEnv(object):
         out_path : str
             The path to the zipped environment.
         """
-        if not packed_prefix:
-            packed_prefix = self.name
+        if not arcroot:
+            arcroot = self.name
         else:
             # Ensure the prefix is a relative path
-            packed_prefix = packed_prefix.strip(os.path.sep)
+            arcroot = arcroot.strip(os.path.sep)
 
         # The output path and archive format
         output, format = self._output_and_format(output, format)
@@ -193,7 +192,7 @@ class CondaEnv(object):
                 with archive(temp_file, format, zip_symlinks=zip_symlinks) as arc:
                     with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
-                            target = os.path.join(packed_prefix, f.target)
+                            target = os.path.join(arcroot, f.target)
                             arc.add(f.source, target)
                             records.append((f.source, target))
         except Exception:
@@ -253,7 +252,7 @@ class PrefixInfo(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         packed_prefix=None, verbose=False, record=None,
+         arcroot=None, verbose=False, record=None,
          zip_symlinks=False):
     """Package an existing conda environment into an archive file.
 
@@ -269,10 +268,9 @@ def pack(name=None, prefix=None, output=None, format='infer',
     format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}, optional
         The archival format to use. By default this is inferred by the output
         file extension, falling back to `zip` if a non-standard extension.
-    packed_prefix : str, optional
-        Once unpacked, the relative path to the conda environment. By default
-        this is a single directory with the same name as the environment (e.g.
-        ``my_env``).
+    arcroot : str, optional
+        The relative in the archive to the conda environment. Defaults to the
+        environment name.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     record : str, optional
@@ -304,7 +302,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
     else:
         env = CondaEnv.from_default()
 
-    return env.pack(output=output, format=format, packed_prefix=packed_prefix,
+    return env.pack(output=output, format=format, arcroot=arcroot,
                     verbose=verbose, record=record, zip_symlinks=zip_symlinks)
 
 

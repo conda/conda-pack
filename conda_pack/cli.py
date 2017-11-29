@@ -26,11 +26,11 @@ from .core import pack, CondaPackException, context
               type=click.Path(),
               required=False,
               help="Output zip file. Defaults to the environment name.")
-@click.option("--packed-prefix",
+@click.option("--arcroot",
               type=click.Path(),
               required=False,
-              help=("Directory prefix in the archive to the conda "
-                    "environment. Defaults to the environment name."))
+              help=("The relative in the archive to the conda environment. "
+                    "Defaults to the environment name."))
 @click.option("--format",
               type=click.Choice(['infer', 'zip', 'tar.gz', 'tgz',
                                  'tar.bz2', 'tbz2', 'tar']),
@@ -61,12 +61,12 @@ from .core import pack, CondaPackException, context
               type=click.Path(),
               help="If provided, a detailed log is written here")
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output, format, packed_prefix, zip_symlinks, quiet,
+def cli(name, prefix, output, format, arcroot, zip_symlinks, quiet,
         record):
     """Package an existing conda environment into an archive file."""
     pack(name=name, prefix=prefix, output=output, format=format,
-         zip_symlinks=zip_symlinks, packed_prefix=packed_prefix,
-         verbose=not quiet, record=record)
+         zip_symlinks=zip_symlinks, arcroot=arcroot, verbose=not quiet,
+         record=record)
 
 
 _py3_err_msg = """
