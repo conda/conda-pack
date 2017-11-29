@@ -6,7 +6,7 @@ import traceback
 import click
 
 from . import __version__
-from .core import pack, CondaPackException
+from .core import pack, CondaPackException, context
 
 
 @click.command()
@@ -89,7 +89,8 @@ def main():
 
     # run main
     try:
-        cli()
+        with context.set_cli():
+            cli()
     except CondaPackException as e:
         click.echo("CondaPackError: %s" % e, err=True)
         sys.exit(1)

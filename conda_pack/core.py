@@ -7,6 +7,7 @@ import shlex
 import shutil
 import tempfile
 import warnings
+from contextlib import contextmanager
 from fnmatch import fnmatch
 from functools import partial
 from subprocess import check_output
@@ -17,6 +18,35 @@ from ._progress import progressbar
 
 
 __all__ = ('CondaPackException', 'CondaEnv', 'pack')
+
+
+class _Context(object):
+    def __init__(self):
+        self.is_cli = False
+
+    def warn(self, msg):
+        if self.is_cli:
+            import click
+            click.echo(msg + '\n', err=True)
+        else:
+            warnings.warn(msg)
+
+    def log(self, msg):
+        if self.is_cli:
+            import click
+            click.echo(msg)
+        else:
+            print(msg)
+
+    @contextmanager
+    def set_cli(self):
+        old = self.is_cli
+        self.is_cli = True
+        yield
+        self.is_cli = old
+
+
+context = _Context()
 
 
 class CondaPackException(Exception):
@@ -152,7 +182,7 @@ class CondaEnv(object):
             raise CondaPackException("record file %r already exists" % record)
 
         if verbose:
-            print("Packing environment at %r to %r" % (self.prefix, output))
+            context.log("Packing environment at %r to %r" % (self.prefix, output))
 
         records = []
 
@@ -263,7 +293,11 @@ def pack(name=None, prefix=None, output=None, format='infer',
     """
     if name and prefix:
         raise CondaPackException("Cannot specify both ``name`` and ``prefix``")
-    elif prefix:
+
+    if verbose:
+        context.log("Collecting packages...")
+
+    if prefix:
         env = CondaEnv.from_prefix(prefix)
     elif name:
         env = CondaEnv.from_name(name)
@@ -538,7 +572,7 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
     if uncached and on_missing_cache in ('warn', 'raise'):
         packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
         if on_missing_cache == 'warn':
-            warnings.warn(_uncached_warning.format(packages))
+            context.warn(_uncached_warning.format(packages))
         else:
             raise CondaPackException(_uncached_error.format(packages))
 
