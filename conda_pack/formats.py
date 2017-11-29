@@ -2,6 +2,7 @@ import os
 import stat
 import zipfile
 import tarfile
+from io import BytesIO
 
 _tar_mode = {'tar.gz': 'w:gz',
              'tgz': 'w:gz',
@@ -32,6 +33,11 @@ class TarArchive(object):
 
     def add(self, source, target):
         self.archive.add(source, target, recursive=False)
+
+    def add_bytes(self, source, sourcebytes, target):
+        info = self.archive.gettarinfo(source, target)
+        info.size = len(sourcebytes)
+        self.archive.addfile(info, BytesIO(sourcebytes))
 
 
 class ZipArchive(object):
@@ -77,3 +83,7 @@ class ZipArchive(object):
                     self.archive.write(source, target)
         else:
             self.archive.write(source, target)
+
+    def add_bytes(self, source, sourcebytes, target):
+        info = zipfile.ZipInfo.from_file(source, target)
+        self.archive.writestr(info, sourcebytes)
