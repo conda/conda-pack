@@ -9,7 +9,6 @@ import tempfile
 import warnings
 from contextlib import contextmanager
 from fnmatch import fnmatch
-from functools import partial
 from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
@@ -18,6 +17,11 @@ from ._progress import progressbar
 
 
 __all__ = ('CondaPackException', 'CondaEnv', 'pack')
+
+
+class CondaPackException(Exception):
+    """Internal exception to report to user"""
+    pass
 
 
 class _Context(object):
@@ -47,11 +51,6 @@ class _Context(object):
 
 
 context = _Context()
-
-
-class CondaPackException(Exception):
-    """Internal exception to report to user"""
-    pass
 
 
 class CondaEnv(object):
@@ -131,8 +130,8 @@ class CondaEnv(object):
 
         return output, format
 
-    def pack(self, output=None, format='infer', arcroot=None,
-             verbose=False, record=None, zip_symlinks=False):
+    def pack(self, output=None, format='infer', arcroot=None, verbose=False,
+             record=None, zip_symlinks=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -220,40 +219,30 @@ class File(object):
         Absolute path to the source.
     target : str
         Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
-    prefix_info : PrefixInfo or None, optional
-        Information about any prefixes that may need replacement.
+    is_conda : bool, optional
+        Whether the file was installed by conda, or comes from somewhere else.
+    file_mode : {None, 'text', 'binary', 'noarch', 'unknown'}, optional
+        The type of record.
+    prefix_placeholder : None or str, optional
+        The prefix placeholder in the file (if any)
     """
-    __slots__ = ('source', 'target', 'prefix_info')
+    __slots__ = ('source', 'target', 'is_conda', 'file_mode',
+                 'prefix_placeholder')
 
-    def __init__(self, source, target, prefix_info=None):
+    def __init__(self, source, target, is_conda=True, file_mode=None,
+                 prefix_placeholder=None):
         self.source = source
         self.target = target
-        self.prefix_info = prefix_info
-
-    @property
-    def is_conda(self):
-        return (self.prefix_info is None or
-                self.prefix_info.mode == 'unknown')
+        self.is_conda = is_conda
+        self.file_mode = file_mode
+        self.prefix_placeholder = prefix_placeholder
 
     def __repr__(self):
         return 'File<%r, is_conda=%r>' % (self.target, self.is_conda)
 
 
-class PrefixInfo(object):
-    """Information on prefix replacement"""
-    __slots__ = ('placeholder', 'mode')
-
-    def __init__(self, placeholder, mode):
-        self.placeholder = placeholder
-        self.mode = mode
-
-    def __repr__(self):
-        return 'PrefixInfo<%s>' % self.mode
-
-
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot=None, verbose=False, record=None,
-         zip_symlinks=False):
+         arcroot=None, verbose=False, record=None, zip_symlinks=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -437,47 +426,33 @@ def collect_unmanaged(prefix, managed):
     res -= managed
     res -= remove
 
-    return [make_unmanaged(prefix, p) for p in res
-            if not (p.endswith('~') or
-                    p.endswith('.DS_Store') or
-                    (find_py_source(p) in managed))]
-
-
-def make_managed(pkg, _path, prefix_placeholder=None, file_mode=None,
-                 **ignored):
-    prefix_info = (None if prefix_placeholder is None else
-                   PrefixInfo(prefix_placeholder, file_mode))
-    return File(os.path.join(pkg, _path), _path, prefix_info=prefix_info)
-
-
-def make_unmanaged(prefix, path):
-    source = os.path.join(prefix, path)
-    return File(source, path, prefix_info=PrefixInfo(prefix, 'unmanaged'))
+    return [File(os.path.join(prefix, p), p, is_conda=False,
+                 prefix_placeholder=None, file_mode='unknown')
+            for p in res if not (p.endswith('~') or
+                                 p.endswith('.DS_Store') or
+                                 (find_py_source(p) in managed))]
 
 
 _bin_dir = 'Scripts' if on_win else 'bin'
 
 
-def make_noarch_python(site_packages, pkg, _path, prefix_placeholder=None,
-                       file_mode=None, **ignored):
-    if _path.startswith('site-packages/'):
-        target = site_packages + _path[13:]
-    elif _path.startswith('python-scripts/'):
-        target = _bin_dir + _path[14:]
+def managed_file(is_noarch, site_packages, pkg, _path, prefix_placeholder=None,
+                 file_mode=None, **ignored):
+    if is_noarch:
+        if _path.startswith('site-packages/'):
+            target = site_packages + _path[13:]
+        elif _path.startswith('python-scripts/'):
+            target = _bin_dir + _path[14:]
+        else:
+            target = _path
     else:
         target = _path
 
-    prefix_info = (None if prefix_placeholder is None else
-                   PrefixInfo(prefix_placeholder, file_mode))
-
-    return File(os.path.join(pkg, _path), target, prefix_info=prefix_info)
-
-
-def make_noarch_python_extra(prefix, path):
-    source = os.path.join(prefix, path)
-    prefix_info = (None if path.endswith('.pyc')
-                   else PrefixInfo(prefix, 'text'))
-    return File(source, path, prefix_info=prefix_info)
+    return File(os.path.join(pkg, _path),
+                target,
+                is_conda=True,
+                prefix_placeholder=prefix_placeholder,
+                file_mode=file_mode)
 
 
 def load_managed_package(info, prefix, site_packages):
@@ -485,17 +460,15 @@ def load_managed_package(info, prefix, site_packages):
 
     noarch_type = read_noarch_type(pkg)
 
-    if noarch_type == 'python':
-        make_file = partial(make_noarch_python, site_packages)
-    else:
-        make_file = make_managed
+    is_noarch = noarch_type == 'python'
 
     paths_json = os.path.join(pkg, 'info', 'paths.json')
     if os.path.exists(paths_json):
         with open(paths_json) as fil:
             paths = json.load(fil)
 
-        files = [make_file(pkg, **r) for r in paths['paths']]
+        files = [managed_file(is_noarch, site_packages, pkg, **r)
+                 for r in paths['paths']]
     else:
         with open(os.path.join(pkg, 'info', 'files')) as fil:
             paths = [f.strip() for f in fil]
@@ -504,16 +477,20 @@ def load_managed_package(info, prefix, site_packages):
 
         if os.path.exists(has_prefix):
             prefixes = read_has_prefix(has_prefix)
-            files = [make_file(pkg, p, *prefixes.get(p, ()))
-                     for p in paths]
+            files = [managed_file(is_noarch, site_packages, pkg, p,
+                                  *prefixes.get(p, ())) for p in paths]
         else:
-            files = [make_file(pkg, p) for p in paths]
+            files = [managed_file(is_noarch, site_packages, pkg, p)
+                     for p in paths]
 
     if noarch_type == 'python':
         seen = {i.target for i in files}
-        files.extend(make_noarch_python_extra(prefix, fil)
-                     for fil in info['files'] if fil not in seen)
-
+        for fil in info['files']:
+            if fil not in seen:
+                file_mode = 'noarch' if fil.startswith(_bin_dir) else None
+                f = File(os.path.join(prefix, fil), fil, is_conda=True,
+                         prefix_placeholder=None, file_mode=file_mode)
+                files.append(f)
     return files
 
 
@@ -555,9 +532,11 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
             pkg = info['link']['source']
 
             if not os.path.exists(pkg):
-                # Package cache is cleared, return list of unmanaged files
-                # to properly handle prefix replacement ourselves.
-                new_files = [make_unmanaged(prefix, f) for f in info['files']]
+                # Package cache is cleared, set file_mode='unknown' to properly
+                # handle prefix replacement ourselves later.
+                new_files = [File(os.path.join(prefix, f), f, is_conda=True,
+                                  prefix_placeholder=None, file_mode='unknown')
+                             for f in info['files']]
                 uncached.append((info['name'], info['version'], info['url']))
             else:
                 new_files = load_managed_package(info, prefix, site_packages)
