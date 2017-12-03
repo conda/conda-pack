@@ -9,6 +9,7 @@ setup(name='conda-pack',
       description='Package conda environments for redistribution',
       install_requires=['click'],
       packages=['conda_pack'],
+      package_data={'conda_pack': ['scripts/posix/*']},
       entry_points='''
         [console_scripts]
         conda-pack=conda_pack.cli:main
