@@ -11,49 +11,62 @@ _tar_mode = {'tar.gz': 'w:gz',
              'tar': 'w'}
 
 
-def archive(fileobj, format, zip_symlinks=False):
+def archive(fileobj, arcroot, format, zip_symlinks=False):
     if format == 'zip':
-        return ZipArchive(fileobj, zip_symlinks=zip_symlinks)
+        return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks)
     else:
-        return TarArchive(fileobj, _tar_mode[format])
+        return TarArchive(fileobj, arcroot, _tar_mode[format])
 
 
-class TarArchive(object):
-    def __init__(self, fileobj, mode):
+class ArchiveBase(object):
+    def __exit__(self, *args):
+        self.archive.close()
+
+    def add(self, source, target):
+        target = os.path.join(self.arcroot, target)
+        self._add(source, target)
+        self.records.append((source, target))
+
+    def add_bytes(self, source, sourcebytes, target):
+        target = os.path.join(self.arcroot, target)
+        self._add_bytes(source, sourcebytes, target)
+        self.records.append((source, target))
+
+
+class TarArchive(ArchiveBase):
+    def __init__(self, fileobj, arcroot, mode):
         self.fileobj = fileobj
+        self.arcroot = arcroot
         self.mode = mode
 
     def __enter__(self):
         self.archive = tarfile.open(fileobj=self.fileobj, mode=self.mode,
                                     dereference=False)
+        self.records = []
         return self
 
-    def __exit__(self, *args):
-        self.archive.close()
-
-    def add(self, source, target):
+    def _add(self, source, target):
         self.archive.add(source, target, recursive=False)
 
-    def add_bytes(self, source, sourcebytes, target):
+    def _add_bytes(self, source, sourcebytes, target):
         info = self.archive.gettarinfo(source, target)
         info.size = len(sourcebytes)
         self.archive.addfile(info, BytesIO(sourcebytes))
 
 
-class ZipArchive(object):
-    def __init__(self, fileobj, zip_symlinks=False):
+class ZipArchive(ArchiveBase):
+    def __init__(self, fileobj, arcroot, zip_symlinks=False):
         self.fileobj = fileobj
+        self.arcroot = arcroot
         self.zip_symlinks = zip_symlinks
 
     def __enter__(self):
         self.archive = zipfile.ZipFile(self.fileobj, "w", allowZip64=True,
                                        compression=zipfile.ZIP_DEFLATED)
+        self.records = []
         return self
 
-    def __exit__(self, *args):
-        self.archive.close()
-
-    def add(self, source, target):
+    def _add(self, source, target):
         try:
             st = os.lstat(source)
             is_link = stat.S_ISLNK(st.st_mode)
@@ -84,6 +97,6 @@ class ZipArchive(object):
         else:
             self.archive.write(source, target)
 
-    def add_bytes(self, source, sourcebytes, target):
+    def _add_bytes(self, source, sourcebytes, target):
         info = zipfile.ZipInfo.from_file(source, target)
         self.archive.writestr(info, sourcebytes)

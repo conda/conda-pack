@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import glob
 import json
 import os
+import re
 import shlex
 import shutil
 import tempfile
@@ -13,7 +14,7 @@ from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
 from .formats import archive
-from .prefix_strategies import PREFIX_PLACEHOLDER
+from .prefixes import SHEBANG_REGEX
 from ._progress import progressbar
 
 
@@ -23,6 +24,22 @@ __all__ = ('CondaPackException', 'CondaEnv', 'pack')
 class CondaPackException(Exception):
     """Internal exception to report to user"""
     pass
+
+
+# String is split so as not to appear in the file bytes unintentionally
+PREFIX_PLACEHOLDER = ('/opt/anaconda1anaconda2'
+                      'anaconda3')
+
+BIN_DIR = 'Scripts' if on_win else 'bin'
+
+_current_dir = os.path.dirname(__file__)
+if on_win:
+    raise NotImplementedError("Windows support")
+else:
+    _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
+                 os.path.join(BIN_DIR, 'activate')),
+                (os.path.join(_current_dir, 'scripts', 'posix', 'deactivate'),
+                 os.path.join(BIN_DIR, 'deactivate'))]
 
 
 class _Context(object):
@@ -183,18 +200,19 @@ class CondaEnv(object):
         if verbose:
             context.log("Packing environment at %r to %r" % (self.prefix, output))
 
-        records = []
+        prefix = self.prefix
+        prefix_list = []
 
         fd, temp_path = tempfile.mkstemp()
 
         try:
             with open(fd, 'wb') as temp_file:
-                with archive(temp_file, format, zip_symlinks=zip_symlinks) as arc:
+                with archive(temp_file, arcroot, format,
+                             zip_symlinks=zip_symlinks) as arc:
                     with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
-                            target = os.path.join(arcroot, f.target)
-                            arc.add(f.source, target)
-                            records.append((f.source, target))
+                            addfile(prefix, arc, prefix_list, f)
+
         except Exception:
             # Writing failed, remove tempfile
             os.remove(temp_path)
@@ -206,7 +224,7 @@ class CondaEnv(object):
         if record is not None:
             with open(record, 'w') as f:
                 template = "%s -> %s" + os.linesep
-                f.writelines(template % r for r in records)
+                f.writelines(template % r for r in arc.records)
 
         return output
 
@@ -429,16 +447,13 @@ def collect_unmanaged(prefix, managed):
                                  (find_py_source(p) in managed))]
 
 
-_bin_dir = 'Scripts' if on_win else 'bin'
-
-
 def managed_file(is_noarch, site_packages, pkg, _path, prefix_placeholder=None,
                  file_mode=None, **ignored):
     if is_noarch:
         if _path.startswith('site-packages/'):
             target = site_packages + _path[13:]
         elif _path.startswith('python-scripts/'):
-            target = _bin_dir + _path[14:]
+            target = BIN_DIR + _path[14:]
         else:
             target = _path
     else:
@@ -483,7 +498,7 @@ def load_managed_package(info, prefix, site_packages):
         seen = {i.target for i in files}
         for fil in info['files']:
             if fil not in seen:
-                file_mode = 'unknown' if fil.startswith(_bin_dir) else None
+                file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
                 files.append(f)
@@ -542,6 +557,9 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
     if unmanaged:
         files.extend(collect_unmanaged(prefix, files))
 
+    # Add activate/deactivate scripts
+    files.extend(File(*s) for s in _scripts)
+
     if uncached and on_missing_cache in ('warn', 'raise'):
         packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
         if on_missing_cache == 'warn':
@@ -550,3 +568,88 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
             raise CondaPackException(_uncached_error.format(packages))
 
     return files
+
+
+def strip_prefix(data, prefix, placeholder=PREFIX_PLACEHOLDER):
+    try:
+        s = data.decode('utf-8')
+        if prefix in s:
+            data = s.replace(prefix, placeholder).encode('utf-8')
+        else:
+            placeholder = None
+    except UnicodeDecodeError:  # data is binary
+        placeholder = None
+
+    return data, placeholder
+
+
+def rewrite_shebang(data, target, prefix):
+    shebang_match = re.match(SHEBANG_REGEX, data, re.MULTILINE)
+    prefix_b = prefix.encode('utf-8')
+
+    if shebang_match:
+        # More than one occurrence of prefix, can't fully cleanup.
+        # Warn and return data unchanged
+        if data.count(prefix_b) > 1:
+            context.warn(("Executable %r not fully relocatable without "
+                          "running prefix cleanup script." % target))
+            return data, False
+
+        shebang, executable, options = shebang_match.groups()
+
+        if executable.startswith(prefix_b):
+            # shebang points inside environment, rewrite
+            executable_name = executable.decode('utf-8').split('/')[-1]
+            new_shebang = '#!/usr/bin/env %s%s' % (executable_name,
+                                                   options.decode('utf-8'))
+            data = data.replace(shebang, new_shebang.encode('utf-8'))
+
+        return data, True
+
+    return data, False
+
+
+def addfile(prefix, archive, prefix_list, file):
+    if file.file_mode is None:
+        archive.add(file.source, file.target)
+
+    elif os.path.isdir(file.source) or os.path.islink(file.source):
+        archive.add(file.source, file.target)
+
+    elif file.file_mode == 'unknown':
+        with open(file.source, 'rb') as fil:
+            data = fil.read()
+
+        data, prefix_placeholder = strip_prefix(data, prefix)
+
+        if prefix_placeholder is not None:
+            if file.target.startswith(BIN_DIR):
+                data, fixed = rewrite_shebang(data, file.target,
+                                                prefix_placeholder)
+            else:
+                fixed = False
+
+            if not fixed:
+                prefix_list.append((file.target, prefix_placeholder, 'text'))
+        archive.add_bytes(file.source, data, file.target)
+
+    elif file.file_mode == 'text':
+        if file.target.startswith(BIN_DIR):
+            with open(file.source, 'rb') as fil:
+                data = fil.read()
+
+            data, fixed = rewrite_shebang(data, file.target, file.prefix_placeholder)
+            archive.add_bytes(file.source, data, file.target)
+            if not fixed:
+                prefix_list.append((file.target, file.prefix_placeholder, 'text'))
+        else:
+            archive.add(file.source, file.target)
+            prefix_list.append((file.target, file.prefix_placeholder,
+                                file.file_mode))
+
+    elif file.file_mode == 'binary':
+        archive.add(file.source, file.target)
+        prefix_list.append((file.target, file.prefix_placeholder, file.file_mode))
+
+    else:
+        raise ValueError("unknown file_mode: %r" % file.file_mode)
