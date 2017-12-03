@@ -200,18 +200,18 @@ class CondaEnv(object):
         if verbose:
             context.log("Packing environment at %r to %r" % (self.prefix, output))
 
-        prefix = self.prefix
-        prefix_list = []
-
         fd, temp_path = tempfile.mkstemp()
 
         try:
             with open(fd, 'wb') as temp_file:
                 with archive(temp_file, arcroot, format,
                              zip_symlinks=zip_symlinks) as arc:
+                    packer = Packer(self.prefix, arc)
                     with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
-                            addfile(prefix, arc, prefix_list, f)
+                            packer.add(f)
+                        packer.finish()
+                    packer.warn()
 
         except Exception:
             # Writing failed, remove tempfile
@@ -584,15 +584,21 @@ def strip_prefix(data, prefix, placeholder=PREFIX_PLACEHOLDER):
 
 
 def rewrite_shebang(data, target, prefix):
+    """Rewrite a shebang header to ``#!usr/bin/env program...``.
+
+    Returns
+    -------
+    data : bytes
+    fixed : bool
+        Whether the script is runnable after the rewrite. `None` means there
+        was no shebang to begin with.
+    """
     shebang_match = re.match(SHEBANG_REGEX, data, re.MULTILINE)
     prefix_b = prefix.encode('utf-8')
 
     if shebang_match:
-        # More than one occurrence of prefix, can't fully cleanup.
-        # Warn and return data unchanged
         if data.count(prefix_b) > 1:
-            context.warn(("Executable %r not fully relocatable without "
-                          "running prefix cleanup script." % target))
+            # More than one occurrence of prefix, can't fully cleanup.
             return data, False
 
         shebang, executable, options = shebang_match.groups()
@@ -606,50 +612,72 @@ def rewrite_shebang(data, target, prefix):
 
         return data, True
 
-    return data, False
+    return data, None
 
 
-def addfile(prefix, archive, prefix_list, file):
-    if file.file_mode is None:
-        archive.add(file.source, file.target)
+class Packer(object):
+    def __init__(self, prefix, archive):
+        self.prefix = prefix
+        self.archive = archive
+        self.prefixes = []
+        self.bad_scripts = []
 
-    elif os.path.isdir(file.source) or os.path.islink(file.source):
-        archive.add(file.source, file.target)
+    def add(self, file):
+        if file.file_mode is None:
+            self.archive.add(file.source, file.target)
 
-    elif file.file_mode == 'unknown':
-        with open(file.source, 'rb') as fil:
-            data = fil.read()
+        elif os.path.isdir(file.source) or os.path.islink(file.source):
+            self.archive.add(file.source, file.target)
 
-        data, prefix_placeholder = strip_prefix(data, prefix)
-
-        if prefix_placeholder is not None:
-            if file.target.startswith(BIN_DIR):
-                data, fixed = rewrite_shebang(data, file.target,
-                                                prefix_placeholder)
-            else:
-                fixed = False
-
-            if not fixed:
-                prefix_list.append((file.target, prefix_placeholder, 'text'))
-        archive.add_bytes(file.source, data, file.target)
-
-    elif file.file_mode == 'text':
-        if file.target.startswith(BIN_DIR):
+        elif file.file_mode == 'unknown':
             with open(file.source, 'rb') as fil:
                 data = fil.read()
 
-            data, fixed = rewrite_shebang(data, file.target, file.prefix_placeholder)
-            archive.add_bytes(file.source, data, file.target)
-            if not fixed:
-                prefix_list.append((file.target, file.prefix_placeholder, 'text'))
+            data, prefix_placeholder = strip_prefix(data, self.prefix)
+
+            if prefix_placeholder is not None:
+                if file.target.startswith(BIN_DIR):
+                    data, fixed = rewrite_shebang(data, file.target,
+                                                  prefix_placeholder)
+                else:
+                    fixed = None
+
+                if not fixed:
+                    self.prefixes.append((file.target, prefix_placeholder, 'text'))
+                    if fixed is False:
+                        self.bad_scripts.append(file.target)
+            self.archive.add_bytes(file.source, data, file.target)
+
+        elif file.file_mode == 'text':
+            if file.target.startswith(BIN_DIR):
+                with open(file.source, 'rb') as fil:
+                    data = fil.read()
+
+                data, fixed = rewrite_shebang(data, file.target, file.prefix_placeholder)
+                self.archive.add_bytes(file.source, data, file.target)
+                if not fixed:
+                    self.prefixes.append((file.target, file.prefix_placeholder, 'text'))
+                    if fixed is False:
+                        self.bad_scripts.append(file.target)
+            else:
+                self.archive.add(file.source, file.target)
+                self.prefixes.append((file.target, file.prefix_placeholder,
+                                      file.file_mode))
+
+        elif file.file_mode == 'binary':
+            self.archive.add(file.source, file.target)
+            self.prefixes.append((file.target, file.prefix_placeholder, file.file_mode))
+
         else:
-            archive.add(file.source, file.target)
-            prefix_list.append((file.target, file.prefix_placeholder,
-                                file.file_mode))
+            raise ValueError("unknown file_mode: %r" % file.file_mode)
 
-    elif file.file_mode == 'binary':
-        archive.add(file.source, file.target)
-        prefix_list.append((file.target, file.prefix_placeholder, file.file_mode))
+    def finish(self):
+        # TODO: write prefix script
+        pass
 
-    else:
-        raise ValueError("unknown file_mode: %r" % file.file_mode)
+    def warn(self):
+        if self.bad_scripts:
+            msg = ("The following executables require running `fix_prefixes`\n"
+                   "after unpacking to work properly:\n"
+                   "%s") % ("\n".join("- %s" % s for s in self.bad_scripts))
+            context.warn(msg)
