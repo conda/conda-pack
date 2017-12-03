@@ -13,6 +13,7 @@ from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
 from .formats import archive
+from .prefix_strategies import PREFIX_PLACEHOLDER
 from ._progress import progressbar
 
 
@@ -221,7 +222,7 @@ class File(object):
         Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
     is_conda : bool, optional
         Whether the file was installed by conda, or comes from somewhere else.
-    file_mode : {None, 'text', 'binary', 'noarch', 'unknown'}, optional
+    file_mode : {None, 'text', 'binary', 'unknown'}, optional
         The type of record.
     prefix_placeholder : None or str, optional
         The prefix placeholder in the file (if any)
@@ -373,11 +374,6 @@ def read_noarch_type(pkg):
     return None
 
 
-# String is split so as not to appear in the file bytes unintentionally
-PREFIX_PLACEHOLDER = ('/opt/anaconda1anaconda2'
-                      'anaconda3')
-
-
 def read_has_prefix(path):
     out = {}
     with open(path) as fil:
@@ -487,7 +483,7 @@ def load_managed_package(info, prefix, site_packages):
         seen = {i.target for i in files}
         for fil in info['files']:
             if fil not in seen:
-                file_mode = 'noarch' if fil.startswith(_bin_dir) else None
+                file_mode = 'unknown' if fil.startswith(_bin_dir) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
                 files.append(f)
