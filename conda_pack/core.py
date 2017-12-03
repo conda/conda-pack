@@ -615,6 +615,24 @@ def rewrite_shebang(data, target, prefix):
     return data, None
 
 
+_fix_prefixes_template = """\
+{shebang}
+{prefixes_py}
+
+_prefix_records = [
+{prefix_records}
+]
+
+if __name__ == '__main__':
+    import os
+    script_dir = os.path.dirname(__file__)
+    new_prefix = os.path.dirname(script_dir)
+    for path, placeholder, mode in _prefix_records:
+        update_prefix(os.path.join(new_prefix, path), new_prefix,
+                      placeholder, mode=mode)
+"""
+
+
 class Packer(object):
     def __init__(self, prefix, archive):
         self.prefix = prefix
@@ -672,8 +690,26 @@ class Packer(object):
             raise ValueError("unknown file_mode: %r" % file.file_mode)
 
     def finish(self):
-        # TODO: write prefix script
-        pass
+        if not on_win:
+            shebang = '#!/usr/bin/env python'
+        else:
+            shebang = ''
+
+        prefix_records = ',\n'.join(repr(p) for p in self.prefixes)
+
+        with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
+            prefixes_py = fil.read()
+
+        script = _fix_prefixes_template.format(shebang=shebang,
+                                               prefix_records=prefix_records,
+                                               prefixes_py=prefixes_py)
+
+        with tempfile.NamedTemporaryFile(mode='w') as fil:
+            fil.write(script)
+            fil.flush()
+            st = os.stat(fil.name)
+            os.chmod(fil.name, st.st_mode | 0o111)  # make executable
+            self.archive.add(fil.name, os.path.join(BIN_DIR, 'fix_prefixes'))
 
     def warn(self):
         if self.bad_scripts:
