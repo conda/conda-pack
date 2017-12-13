@@ -25,12 +25,10 @@ class ArchiveBase(object):
     def add(self, source, target):
         target = os.path.join(self.arcroot, target)
         self._add(source, target)
-        self.records.append((source, target))
 
     def add_bytes(self, source, sourcebytes, target):
         target = os.path.join(self.arcroot, target)
         self._add_bytes(source, sourcebytes, target)
-        self.records.append((source, target))
 
 
 class TarArchive(ArchiveBase):
@@ -42,7 +40,6 @@ class TarArchive(ArchiveBase):
     def __enter__(self):
         self.archive = tarfile.open(fileobj=self.fileobj, mode=self.mode,
                                     dereference=False)
-        self.records = []
         return self
 
     def _add(self, source, target):
@@ -63,7 +60,6 @@ class ZipArchive(ArchiveBase):
     def __enter__(self):
         self.archive = zipfile.ZipFile(self.fileobj, "w", allowZip64=True,
                                        compression=zipfile.ZIP_DEFLATED)
-        self.records = []
         return self
 
     def _add(self, source, target):

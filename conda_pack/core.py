@@ -149,7 +149,7 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', arcroot=None, verbose=False,
-             record=None, zip_symlinks=False):
+             zip_symlinks=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -166,8 +166,6 @@ class CondaEnv(object):
             the environment name.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
-        record : str, optional
-            File path. If provided, a detailed log is written here.
         zip_symlinks : bool, optional
             Symbolic links aren't supported by the Zip standard, but are
             supported by *many* common Zip implementations. If True, store
@@ -194,9 +192,6 @@ class CondaEnv(object):
         if os.path.exists(output):
             raise CondaPackException("File %r already exists" % output)
 
-        if record is not None and os.path.exists(record):
-            raise CondaPackException("record file %r already exists" % record)
-
         if verbose:
             context.log("Packing environment at %r to %r" % (self.prefix, output))
 
@@ -211,7 +206,6 @@ class CondaEnv(object):
                         for f in files:
                             packer.add(f)
                         packer.finish()
-                    packer.warn()
 
         except Exception:
             # Writing failed, remove tempfile
@@ -220,11 +214,6 @@ class CondaEnv(object):
         else:
             # Writing succeeded, move archive to desired location
             shutil.move(temp_path, output)
-
-        if record is not None:
-            with open(record, 'w') as f:
-                template = "%s -> %s" + os.linesep
-                f.writelines(template % r for r in arc.records)
 
         return output
 
@@ -261,7 +250,7 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot=None, verbose=False, record=None, zip_symlinks=False):
+         arcroot=None, verbose=False, zip_symlinks=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -281,8 +270,6 @@ def pack(name=None, prefix=None, output=None, format='infer',
         environment name.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
-    record : str, optional
-        File path. If provided, a detailed log is written here.
     zip_symlinks : bool, optional
         Symbolic links aren't supported by the Zip standard, but are supported
         by *many* common Zip implementations. If True, store symbolic links in
@@ -311,7 +298,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
         env = CondaEnv.from_default()
 
     return env.pack(output=output, format=format, arcroot=arcroot,
-                    verbose=verbose, record=record, zip_symlinks=zip_symlinks)
+                    verbose=verbose, zip_symlinks=zip_symlinks)
 
 
 def find_site_packages(prefix):
@@ -590,8 +577,7 @@ def rewrite_shebang(data, target, prefix):
     -------
     data : bytes
     fixed : bool
-        Whether the script is runnable after the rewrite. `None` means there
-        was no shebang to begin with.
+        Whether the file was successfully fixed in the rewrite.
     """
     shebang_match = re.match(SHEBANG_REGEX, data, re.MULTILINE)
     prefix_b = prefix.encode('utf-8')
@@ -612,10 +598,10 @@ def rewrite_shebang(data, target, prefix):
 
         return data, True
 
-    return data, None
+    return data, False
 
 
-_fix_prefixes_template = """\
+_conda_unpack_template = """\
 {shebang}
 {prefixes_py}
 
@@ -638,7 +624,6 @@ class Packer(object):
         self.prefix = prefix
         self.archive = archive
         self.prefixes = []
-        self.bad_scripts = []
 
     def add(self, file):
         if file.file_mode is None:
@@ -658,12 +643,10 @@ class Packer(object):
                     data, fixed = rewrite_shebang(data, file.target,
                                                   prefix_placeholder)
                 else:
-                    fixed = None
+                    fixed = False
 
                 if not fixed:
                     self.prefixes.append((file.target, prefix_placeholder, 'text'))
-                    if fixed is False:
-                        self.bad_scripts.append(file.target)
             self.archive.add_bytes(file.source, data, file.target)
 
         elif file.file_mode == 'text':
@@ -675,8 +658,6 @@ class Packer(object):
                 self.archive.add_bytes(file.source, data, file.target)
                 if not fixed:
                     self.prefixes.append((file.target, file.prefix_placeholder, 'text'))
-                    if fixed is False:
-                        self.bad_scripts.append(file.target)
             else:
                 self.archive.add(file.source, file.target)
                 self.prefixes.append((file.target, file.prefix_placeholder,
@@ -693,14 +674,17 @@ class Packer(object):
         if not on_win:
             shebang = '#!/usr/bin/env python'
         else:
-            shebang = ''
+            shebang = ('@SETLOCAL ENABLEDELAYEDEXPANSION & CALL "%~f0" & (IF '
+                       'NOT ERRORLEVEL 1 (python -x "%~f0" %*) ELSE (ECHO No '
+                       'python environment found on path)) & PAUSE & EXIT /B '
+                       '!ERRORLEVEL!')
 
         prefix_records = ',\n'.join(repr(p) for p in self.prefixes)
 
         with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
             prefixes_py = fil.read()
 
-        script = _fix_prefixes_template.format(shebang=shebang,
+        script = _conda_unpack_template.format(shebang=shebang,
                                                prefix_records=prefix_records,
                                                prefixes_py=prefixes_py)
 
@@ -709,11 +693,4 @@ class Packer(object):
             fil.flush()
             st = os.stat(fil.name)
             os.chmod(fil.name, st.st_mode | 0o111)  # make executable
-            self.archive.add(fil.name, os.path.join(BIN_DIR, 'fix_prefixes'))
-
-    def warn(self):
-        if self.bad_scripts:
-            msg = ("The following executables require running `fix_prefixes`\n"
-                   "after unpacking to work properly:\n"
-                   "%s") % ("\n".join("- %s" % s for s in self.bad_scripts))
-            context.warn(msg)
+            self.archive.add(fil.name, os.path.join(BIN_DIR, 'conda-unpack'))
