@@ -3,21 +3,43 @@ from __future__ import absolute_import
 import glob
 import json
 import os
+import re
 import shlex
 import shutil
 import tempfile
 import warnings
 from contextlib import contextmanager
 from fnmatch import fnmatch
-from functools import partial
 from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
 from .formats import archive
+from .prefixes import SHEBANG_REGEX
 from ._progress import progressbar
 
 
 __all__ = ('CondaPackException', 'CondaEnv', 'pack')
+
+
+class CondaPackException(Exception):
+    """Internal exception to report to user"""
+    pass
+
+
+# String is split so as not to appear in the file bytes unintentionally
+PREFIX_PLACEHOLDER = ('/opt/anaconda1anaconda2'
+                      'anaconda3')
+
+BIN_DIR = 'Scripts' if on_win else 'bin'
+
+_current_dir = os.path.dirname(__file__)
+if on_win:
+    raise NotImplementedError("Windows support")
+else:
+    _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
+                 os.path.join(BIN_DIR, 'activate')),
+                (os.path.join(_current_dir, 'scripts', 'posix', 'deactivate'),
+                 os.path.join(BIN_DIR, 'deactivate'))]
 
 
 class _Context(object):
@@ -47,11 +69,6 @@ class _Context(object):
 
 
 context = _Context()
-
-
-class CondaPackException(Exception):
-    """Internal exception to report to user"""
-    pass
 
 
 class CondaEnv(object):
@@ -131,8 +148,8 @@ class CondaEnv(object):
 
         return output, format
 
-    def pack(self, output=None, format='infer', arcroot=None,
-             verbose=False, record=None, zip_symlinks=False):
+    def pack(self, output=None, format='infer', arcroot=None, verbose=False,
+             zip_symlinks=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -149,8 +166,6 @@ class CondaEnv(object):
             the environment name.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
-        record : str, optional
-            File path. If provided, a detailed log is written here.
         zip_symlinks : bool, optional
             Symbolic links aren't supported by the Zip standard, but are
             supported by *many* common Zip implementations. If True, store
@@ -177,24 +192,21 @@ class CondaEnv(object):
         if os.path.exists(output):
             raise CondaPackException("File %r already exists" % output)
 
-        if record is not None and os.path.exists(record):
-            raise CondaPackException("record file %r already exists" % record)
-
         if verbose:
             context.log("Packing environment at %r to %r" % (self.prefix, output))
-
-        records = []
 
         fd, temp_path = tempfile.mkstemp()
 
         try:
             with open(fd, 'wb') as temp_file:
-                with archive(temp_file, format, zip_symlinks=zip_symlinks) as arc:
+                with archive(temp_file, arcroot, format,
+                             zip_symlinks=zip_symlinks) as arc:
+                    packer = Packer(self.prefix, arc)
                     with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
-                            target = os.path.join(arcroot, f.target)
-                            arc.add(f.source, target)
-                            records.append((f.source, target))
+                            packer.add(f)
+                        packer.finish()
+
         except Exception:
             # Writing failed, remove tempfile
             os.remove(temp_path)
@@ -202,11 +214,6 @@ class CondaEnv(object):
         else:
             # Writing succeeded, move archive to desired location
             shutil.move(temp_path, output)
-
-        if record is not None:
-            with open(record, 'w') as f:
-                template = "%s -> %s" + os.linesep
-                f.writelines(template % r for r in records)
 
         return output
 
@@ -220,40 +227,30 @@ class File(object):
         Absolute path to the source.
     target : str
         Relative path from the target prefix (e.g. ``lib/foo/bar.py``).
-    prefix_info : PrefixInfo or None, optional
-        Information about any prefixes that may need replacement.
+    is_conda : bool, optional
+        Whether the file was installed by conda, or comes from somewhere else.
+    file_mode : {None, 'text', 'binary', 'unknown'}, optional
+        The type of record.
+    prefix_placeholder : None or str, optional
+        The prefix placeholder in the file (if any)
     """
-    __slots__ = ('source', 'target', 'prefix_info')
+    __slots__ = ('source', 'target', 'is_conda', 'file_mode',
+                 'prefix_placeholder')
 
-    def __init__(self, source, target, prefix_info=None):
+    def __init__(self, source, target, is_conda=True, file_mode=None,
+                 prefix_placeholder=None):
         self.source = source
         self.target = target
-        self.prefix_info = prefix_info
-
-    @property
-    def is_conda(self):
-        return (self.prefix_info is None or
-                self.prefix_info.mode == 'unknown')
+        self.is_conda = is_conda
+        self.file_mode = file_mode
+        self.prefix_placeholder = prefix_placeholder
 
     def __repr__(self):
         return 'File<%r, is_conda=%r>' % (self.target, self.is_conda)
 
 
-class PrefixInfo(object):
-    """Information on prefix replacement"""
-    __slots__ = ('placeholder', 'mode')
-
-    def __init__(self, placeholder, mode):
-        self.placeholder = placeholder
-        self.mode = mode
-
-    def __repr__(self):
-        return 'PrefixInfo<%s>' % self.mode
-
-
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot=None, verbose=False, record=None,
-         zip_symlinks=False):
+         arcroot=None, verbose=False, zip_symlinks=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -273,8 +270,6 @@ def pack(name=None, prefix=None, output=None, format='infer',
         environment name.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
-    record : str, optional
-        File path. If provided, a detailed log is written here.
     zip_symlinks : bool, optional
         Symbolic links aren't supported by the Zip standard, but are supported
         by *many* common Zip implementations. If True, store symbolic links in
@@ -303,7 +298,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
         env = CondaEnv.from_default()
 
     return env.pack(output=output, format=format, arcroot=arcroot,
-                    verbose=verbose, record=record, zip_symlinks=zip_symlinks)
+                    verbose=verbose, zip_symlinks=zip_symlinks)
 
 
 def find_site_packages(prefix):
@@ -384,11 +379,6 @@ def read_noarch_type(pkg):
     return None
 
 
-# String is split so as not to appear in the file bytes unintentionally
-PREFIX_PLACEHOLDER = ('/opt/anaconda1anaconda2'
-                      'anaconda3')
-
-
 def read_has_prefix(path):
     out = {}
     with open(path) as fil:
@@ -437,47 +427,30 @@ def collect_unmanaged(prefix, managed):
     res -= managed
     res -= remove
 
-    return [make_unmanaged(prefix, p) for p in res
-            if not (p.endswith('~') or
-                    p.endswith('.DS_Store') or
-                    (find_py_source(p) in managed))]
+    return [File(os.path.join(prefix, p), p, is_conda=False,
+                 prefix_placeholder=None, file_mode='unknown')
+            for p in res if not (p.endswith('~') or
+                                 p.endswith('.DS_Store') or
+                                 (find_py_source(p) in managed))]
 
 
-def make_managed(pkg, _path, prefix_placeholder=None, file_mode=None,
-                 **ignored):
-    prefix_info = (None if prefix_placeholder is None else
-                   PrefixInfo(prefix_placeholder, file_mode))
-    return File(os.path.join(pkg, _path), _path, prefix_info=prefix_info)
-
-
-def make_unmanaged(prefix, path):
-    source = os.path.join(prefix, path)
-    return File(source, path, prefix_info=PrefixInfo(prefix, 'unmanaged'))
-
-
-_bin_dir = 'Scripts' if on_win else 'bin'
-
-
-def make_noarch_python(site_packages, pkg, _path, prefix_placeholder=None,
-                       file_mode=None, **ignored):
-    if _path.startswith('site-packages/'):
-        target = site_packages + _path[13:]
-    elif _path.startswith('python-scripts/'):
-        target = _bin_dir + _path[14:]
+def managed_file(is_noarch, site_packages, pkg, _path, prefix_placeholder=None,
+                 file_mode=None, **ignored):
+    if is_noarch:
+        if _path.startswith('site-packages/'):
+            target = site_packages + _path[13:]
+        elif _path.startswith('python-scripts/'):
+            target = BIN_DIR + _path[14:]
+        else:
+            target = _path
     else:
         target = _path
 
-    prefix_info = (None if prefix_placeholder is None else
-                   PrefixInfo(prefix_placeholder, file_mode))
-
-    return File(os.path.join(pkg, _path), target, prefix_info=prefix_info)
-
-
-def make_noarch_python_extra(prefix, path):
-    source = os.path.join(prefix, path)
-    prefix_info = (None if path.endswith('.pyc')
-                   else PrefixInfo(prefix, 'text'))
-    return File(source, path, prefix_info=prefix_info)
+    return File(os.path.join(pkg, _path),
+                target,
+                is_conda=True,
+                prefix_placeholder=prefix_placeholder,
+                file_mode=file_mode)
 
 
 def load_managed_package(info, prefix, site_packages):
@@ -485,17 +458,15 @@ def load_managed_package(info, prefix, site_packages):
 
     noarch_type = read_noarch_type(pkg)
 
-    if noarch_type == 'python':
-        make_file = partial(make_noarch_python, site_packages)
-    else:
-        make_file = make_managed
+    is_noarch = noarch_type == 'python'
 
     paths_json = os.path.join(pkg, 'info', 'paths.json')
     if os.path.exists(paths_json):
         with open(paths_json) as fil:
             paths = json.load(fil)
 
-        files = [make_file(pkg, **r) for r in paths['paths']]
+        files = [managed_file(is_noarch, site_packages, pkg, **r)
+                 for r in paths['paths']]
     else:
         with open(os.path.join(pkg, 'info', 'files')) as fil:
             paths = [f.strip() for f in fil]
@@ -504,16 +475,20 @@ def load_managed_package(info, prefix, site_packages):
 
         if os.path.exists(has_prefix):
             prefixes = read_has_prefix(has_prefix)
-            files = [make_file(pkg, p, *prefixes.get(p, ()))
-                     for p in paths]
+            files = [managed_file(is_noarch, site_packages, pkg, p,
+                                  *prefixes.get(p, ())) for p in paths]
         else:
-            files = [make_file(pkg, p) for p in paths]
+            files = [managed_file(is_noarch, site_packages, pkg, p)
+                     for p in paths]
 
     if noarch_type == 'python':
         seen = {i.target for i in files}
-        files.extend(make_noarch_python_extra(prefix, fil)
-                     for fil in info['files'] if fil not in seen)
-
+        for fil in info['files']:
+            if fil not in seen:
+                file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
+                f = File(os.path.join(prefix, fil), fil, is_conda=True,
+                         prefix_placeholder=None, file_mode=file_mode)
+                files.append(f)
     return files
 
 
@@ -555,9 +530,11 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
             pkg = info['link']['source']
 
             if not os.path.exists(pkg):
-                # Package cache is cleared, return list of unmanaged files
-                # to properly handle prefix replacement ourselves.
-                new_files = [make_unmanaged(prefix, f) for f in info['files']]
+                # Package cache is cleared, set file_mode='unknown' to properly
+                # handle prefix replacement ourselves later.
+                new_files = [File(os.path.join(prefix, f), f, is_conda=True,
+                                  prefix_placeholder=None, file_mode='unknown')
+                             for f in info['files']]
                 uncached.append((info['name'], info['version'], info['url']))
             else:
                 new_files = load_managed_package(info, prefix, site_packages)
@@ -567,6 +544,9 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
     if unmanaged:
         files.extend(collect_unmanaged(prefix, files))
 
+    # Add activate/deactivate scripts
+    files.extend(File(*s) for s in _scripts)
+
     if uncached and on_missing_cache in ('warn', 'raise'):
         packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
         if on_missing_cache == 'warn':
@@ -575,3 +555,142 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
             raise CondaPackException(_uncached_error.format(packages))
 
     return files
+
+
+def strip_prefix(data, prefix, placeholder=PREFIX_PLACEHOLDER):
+    try:
+        s = data.decode('utf-8')
+        if prefix in s:
+            data = s.replace(prefix, placeholder).encode('utf-8')
+        else:
+            placeholder = None
+    except UnicodeDecodeError:  # data is binary
+        placeholder = None
+
+    return data, placeholder
+
+
+def rewrite_shebang(data, target, prefix):
+    """Rewrite a shebang header to ``#!usr/bin/env program...``.
+
+    Returns
+    -------
+    data : bytes
+    fixed : bool
+        Whether the file was successfully fixed in the rewrite.
+    """
+    shebang_match = re.match(SHEBANG_REGEX, data, re.MULTILINE)
+    prefix_b = prefix.encode('utf-8')
+
+    if shebang_match:
+        if data.count(prefix_b) > 1:
+            # More than one occurrence of prefix, can't fully cleanup.
+            return data, False
+
+        shebang, executable, options = shebang_match.groups()
+
+        if executable.startswith(prefix_b):
+            # shebang points inside environment, rewrite
+            executable_name = executable.decode('utf-8').split('/')[-1]
+            new_shebang = '#!/usr/bin/env %s%s' % (executable_name,
+                                                   options.decode('utf-8'))
+            data = data.replace(shebang, new_shebang.encode('utf-8'))
+
+        return data, True
+
+    return data, False
+
+
+_conda_unpack_template = """\
+{shebang}
+{prefixes_py}
+
+_prefix_records = [
+{prefix_records}
+]
+
+if __name__ == '__main__':
+    import os
+    script_dir = os.path.dirname(__file__)
+    new_prefix = os.path.dirname(script_dir)
+    for path, placeholder, mode in _prefix_records:
+        update_prefix(os.path.join(new_prefix, path), new_prefix,
+                      placeholder, mode=mode)
+"""
+
+
+class Packer(object):
+    def __init__(self, prefix, archive):
+        self.prefix = prefix
+        self.archive = archive
+        self.prefixes = []
+
+    def add(self, file):
+        if file.file_mode is None:
+            self.archive.add(file.source, file.target)
+
+        elif os.path.isdir(file.source) or os.path.islink(file.source):
+            self.archive.add(file.source, file.target)
+
+        elif file.file_mode == 'unknown':
+            with open(file.source, 'rb') as fil:
+                data = fil.read()
+
+            data, prefix_placeholder = strip_prefix(data, self.prefix)
+
+            if prefix_placeholder is not None:
+                if file.target.startswith(BIN_DIR):
+                    data, fixed = rewrite_shebang(data, file.target,
+                                                  prefix_placeholder)
+                else:
+                    fixed = False
+
+                if not fixed:
+                    self.prefixes.append((file.target, prefix_placeholder, 'text'))
+            self.archive.add_bytes(file.source, data, file.target)
+
+        elif file.file_mode == 'text':
+            if file.target.startswith(BIN_DIR):
+                with open(file.source, 'rb') as fil:
+                    data = fil.read()
+
+                data, fixed = rewrite_shebang(data, file.target, file.prefix_placeholder)
+                self.archive.add_bytes(file.source, data, file.target)
+                if not fixed:
+                    self.prefixes.append((file.target, file.prefix_placeholder, 'text'))
+            else:
+                self.archive.add(file.source, file.target)
+                self.prefixes.append((file.target, file.prefix_placeholder,
+                                      file.file_mode))
+
+        elif file.file_mode == 'binary':
+            self.archive.add(file.source, file.target)
+            self.prefixes.append((file.target, file.prefix_placeholder, file.file_mode))
+
+        else:
+            raise ValueError("unknown file_mode: %r" % file.file_mode)
+
+    def finish(self):
+        if not on_win:
+            shebang = '#!/usr/bin/env python'
+        else:
+            shebang = ('@SETLOCAL ENABLEDELAYEDEXPANSION & CALL "%~f0" & (IF '
+                       'NOT ERRORLEVEL 1 (python -x "%~f0" %*) ELSE (ECHO No '
+                       'python environment found on path)) & PAUSE & EXIT /B '
+                       '!ERRORLEVEL!')
+
+        prefix_records = ',\n'.join(repr(p) for p in self.prefixes)
+
+        with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
+            prefixes_py = fil.read()
+
+        script = _conda_unpack_template.format(shebang=shebang,
+                                               prefix_records=prefix_records,
+                                               prefixes_py=prefixes_py)
+
+        with tempfile.NamedTemporaryFile(mode='w') as fil:
+            fil.write(script)
+            fil.flush()
+            st = os.stat(fil.name)
+            os.chmod(fil.name, st.st_mode | 0o111)  # make executable
+            self.archive.add(fil.name, os.path.join(BIN_DIR, 'conda-unpack'))

@@ -56,17 +56,11 @@ from .core import pack, CondaPackException, context
               is_flag=True,
               default=False,
               help="Do not report progress")
-@click.option("--record",
-              required=False,
-              type=click.Path(),
-              help="If provided, a detailed log is written here")
 @click.version_option(prog_name="conda-pack", version=__version__)
-def cli(name, prefix, output, format, arcroot, zip_symlinks, quiet,
-        record):
+def cli(name, prefix, output, format, arcroot, zip_symlinks, quiet):
     """Package an existing conda environment into an archive file."""
     pack(name=name, prefix=prefix, output=output, format=format,
-         zip_symlinks=zip_symlinks, arcroot=arcroot, verbose=not quiet,
-         record=record)
+         zip_symlinks=zip_symlinks, arcroot=arcroot, verbose=not quiet)
 
 
 _py3_err_msg = """
