@@ -16,7 +16,6 @@ requirements:
     - python
   run:
     - python
-    - click
 
 test:
   imports:
