@@ -1,0 +1,11 @@
+name: py27
+
+channels:
+    - jcrist
+    - conda-forge
+
+dependencies:
+    - python=2.7
+    - conda_pack_test_lib1
+    - conda_pack_test_lib2
+    - toolz

@@ -1,0 +1,11 @@
+name: py36
+
+channels:
+    - jcrist
+    - conda-forge
+
+dependencies:
+    - python=3.6
+    - conda_pack_test_lib1
+    - conda_pack_test_lib2
+    - toolz
