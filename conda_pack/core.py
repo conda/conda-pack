@@ -86,6 +86,7 @@ class CondaEnv(object):
 
     @classmethod
     def from_prefix(cls, prefix, **kwargs):
+        prefix = os.path.abspath(prefix)
         files = load_environment(prefix, **kwargs)
         return cls(prefix, files)
 
