@@ -65,9 +65,10 @@ context = _Context()
 
 
 class CondaEnv(object):
-    def __init__(self, prefix, files):
+    def __init__(self, prefix, files, excluded_files=None):
         self.prefix = prefix
         self.files = files
+        self._excluded_files = excluded_files or []
 
     def __repr__(self):
         return 'CondaEnv<%r, %d files>' % (self.prefix, len(self))
@@ -96,29 +97,31 @@ class CondaEnv(object):
     def from_default(cls, **kwargs):
         return cls.from_prefix(name_to_prefix(), **kwargs)
 
-    def _filter(self, pred, inverse=False):
-        if isinstance(pred, str):
-            def func(f):
-                return fnmatch(f.target, pred)
-        elif callable(pred):
-            func = pred
-        else:
-            raise TypeError("pred must be callable or a filepattern")
+    def exclude(self, pattern):
+        """Remove all files that match ``pattern``"""
+        files = []
+        excluded = self._excluded_files.copy()
+        include = files.append
+        exclude = excluded.append
+        for f in self.files:
+            if fnmatch(f.target, pattern):
+                exclude(f)
+            else:
+                include(f)
+        return CondaEnv(self.prefix, files, excluded)
 
-        if inverse:
-            files = [f for f in self.files if not func(f)]
-        else:
-            files = [f for f in self.files if func(f)]
-
-        return CondaEnv(self.prefix, files)
-
-    def filter(self, pred):
-        """Keep all files that match ``pred``"""
-        return self._filter(pred)
-
-    def remove(self, pred):
-        """Remove all files that match ``pred``"""
-        return self._filter(pred, inverse=True)
+    def include(self, pattern):
+        """Re-add all excluded files that match ``pattern``"""
+        files = self.files.copy()
+        excluded = []
+        include = files.append
+        exclude = excluded.append
+        for f in self._excluded_files:
+            if fnmatch(f.target, pattern):
+                include(f)
+            else:
+                exclude(f)
+        return CondaEnv(self.prefix, files, excluded)
 
     def _output_and_format(self, output, format='infer'):
         if format == 'infer':
