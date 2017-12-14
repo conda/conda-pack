@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import glob
 import json
@@ -6,6 +6,7 @@ import os
 import re
 import shlex
 import shutil
+import sys
 import tempfile
 import warnings
 from contextlib import contextmanager
@@ -48,17 +49,9 @@ class _Context(object):
 
     def warn(self, msg):
         if self.is_cli:
-            import click
-            click.echo(msg + '\n', err=True)
+            print(msg + "\n", file=sys.stderr)
         else:
             warnings.warn(msg)
-
-    def log(self, msg):
-        if self.is_cli:
-            import click
-            click.echo(msg)
-        else:
-            print(msg)
 
     @contextmanager
     def set_cli(self):
@@ -193,7 +186,7 @@ class CondaEnv(object):
             raise CondaPackException("File %r already exists" % output)
 
         if verbose:
-            context.log("Packing environment at %r to %r" % (self.prefix, output))
+            print("Packing environment at %r to %r" % (self.prefix, output))
 
         fd, temp_path = tempfile.mkstemp()
 
@@ -288,7 +281,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
         raise CondaPackException("Cannot specify both ``name`` and ``prefix``")
 
     if verbose:
-        context.log("Collecting packages...")
+        print("Collecting packages...")
 
     if prefix:
         env = CondaEnv.from_prefix(prefix)

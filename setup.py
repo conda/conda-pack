@@ -7,7 +7,6 @@ setup(name='conda-pack',
       maintainer_email='jiminy.crist@gmail.com',
       license='BSD',
       description='Package conda environments for redistribution',
-      install_requires=['click'],
       packages=['conda_pack'],
       package_data={'conda_pack': ['scripts/posix/*']},
       entry_points='''
