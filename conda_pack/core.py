@@ -246,7 +246,7 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot=None, verbose=False, zip_symlinks=False):
+         arcroot=None, verbose=False, zip_symlinks=False, filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -274,6 +274,11 @@ def pack(name=None, prefix=None, output=None, format='infer',
         resulting archive may silently fail on decompression if the ``unzip``
         implementation doesn't support symlinks*. Default is False. Ignored if
         format isn't ``zip``.
+    filters : list, optional
+        A list of filters to apply to the files. Each filter is a tuple of
+        ``(kind, pattern)``, where ``kind`` is either ``'exclude'`` or
+        ``'include'`` and ``pattern`` is a file pattern. Filters are applied in
+        the order specified.
 
     Returns
     -------
@@ -292,6 +297,15 @@ def pack(name=None, prefix=None, output=None, format='infer',
         env = CondaEnv.from_name(name)
     else:
         env = CondaEnv.from_default()
+
+    if filters is not None:
+        for kind, pattern in filters:
+            if kind == 'exclude':
+                env = env.exclude(pattern)
+            elif kind == 'include':
+                env = env.include(pattern)
+            else:
+                raise CondaPackException("Unknown filter of kind %r" % kind)
 
     return env.pack(output=output, format=format, arcroot=arcroot,
                     verbose=verbose, zip_symlinks=zip_symlinks)

@@ -8,6 +8,18 @@ from . import __version__
 from .core import pack, CondaPackException, context
 
 
+class MultiAppendAction(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super(MultiAppendAction, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if getattr(namespace, self.dest) is None:
+            setattr(namespace, self.dest, [])
+        getattr(namespace, self.dest).append((option_string.strip('-'), values))
+
+
 def main():
     description = "Package an existing conda environment into an archive file."
     parser = argparse.ArgumentParser(prog="conda-pack",
@@ -47,6 +59,16 @@ def main():
                               "decompression if the ``unzip`` implementation "
                               "doesn't support symlinks*. Ignored if format "
                               "isn't ``zip``."))
+    parser.add_argument("--exclude",
+                        action=MultiAppendAction,
+                        metavar="PATTERN",
+                        dest="filters",
+                        help="Exclude files matching this pattern")
+    parser.add_argument("--include",
+                        action=MultiAppendAction,
+                        metavar="PATTERN",
+                        dest="filters",
+                        help="Re-add excluded files matching this pattern")
     parser.add_argument("--quiet", "-q",
                         action="store_true",
                         help="Do not report progress")
@@ -62,7 +84,8 @@ def main():
         with context.set_cli():
             pack(name=args.name, prefix=args.prefix, output=args.output,
                  format=args.format, zip_symlinks=args.zip_symlinks,
-                 arcroot=args.arcroot, verbose=not args.quiet)
+                 arcroot=args.arcroot, verbose=not args.quiet,
+                 filters=args.filters)
     except CondaPackException as e:
         print("CondaPackError: %s" % e, file=sys.stderr)
         sys.exit(1)
