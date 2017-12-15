@@ -1,0 +1,26 @@
+language: generic
+sudo: false
+dist: trusty
+os: linux
+
+jobs:
+  fast_finish: true
+  include:
+    - env:
+      - PYTHON=2.7
+
+    - env:
+      - PYTHON=3.6
+
+install:
+  - source testing/ci/install_conda.sh
+  - ./testing/setup_envs.sh
+  - conda install -y flake8 pytest
+  - pip install .
+
+script:
+  - py.test conda_pack
+  - flake8 conda_pack
+
+notifications:
+  email: false
