@@ -158,9 +158,3 @@ def test_roundtrip(tmpdir, py36_env):
     out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
                                   stderr=subprocess.STDOUT).decode()
     assert out == 'Done\n'
-
-    # Check binary prefixes are now fixed
-    binfile = os.path.join(extract_path, 'share', 'terminfo', '76', 'vt510')
-    with open(binfile, 'rb') as fil:
-        data = fil.read()
-        assert extract_path.encode() in data
