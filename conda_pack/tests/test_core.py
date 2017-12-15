@@ -1,4 +1,7 @@
 import os
+import subprocess
+import tarfile
+
 import pytest
 
 from conda_pack import CondaEnv, CondaPackException
@@ -124,3 +127,34 @@ def test_include_exclude(py36_env):
     env3 = env2.exclude("lib/python3.6/site-packages/conda_pack_test_lib1/*")
     env4 = env3.include("lib/python3.6/site-packages/conda_pack_test_lib1/cli.py")
     assert len(env3) + 1 == len(env4)
+
+
+def test_roundtrip(tmpdir, py36_env):
+    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    py36_env.pack(out_path)
+    assert os.path.exists(out_path)
+    assert tarfile.is_tarfile(out_path)
+
+    with tarfile.open(out_path) as fil:
+        # Check all files are relative paths
+        for member in fil.getnames():
+            assert not member.startswith(os.path.sep)
+
+        fil.extractall(str(tmpdir))
+        extract_path = os.path.join(str(tmpdir), 'py36')
+
+    # Shebang rewriting happens before prefixes are fixed
+    textfile = os.path.join(extract_path, 'bin', 'conda-pack-test-lib1')
+    with open(textfile, 'r') as fil:
+        shebang = fil.readline().strip()
+        assert shebang == '#!/usr/bin/env python'
+
+    # Check bash scripts all don't error
+    command = (". {path}/bin/activate && "
+               "conda-unpack && "
+               ". {path}/bin/deactivate && "
+               "echo 'Done'").format(path=extract_path)
+
+    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                  stderr=subprocess.STDOUT).decode()
+    assert out == 'Done\n'
