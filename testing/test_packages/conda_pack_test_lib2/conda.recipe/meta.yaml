@@ -1,0 +1,25 @@
+package:
+  name: conda_pack_test_lib2
+  version: 0.0.1
+
+source:
+  path: ../
+
+build:
+  number: 1
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - setuptools
+    - python
+  run:
+    - python
+
+test:
+  imports:
+    - conda_pack_test_lib2
+
+about:
+  home: https://github.com/jcrist/conda-pack
+  summary: Dummy package for testing conda-pack

@@ -1,0 +1,5 @@
+testing/environments/*
+build
+dist
+conda_pack.egg-info
+.cache

@@ -86,6 +86,7 @@ class CondaEnv(object):
 
     @classmethod
     def from_prefix(cls, prefix, **kwargs):
+        prefix = os.path.abspath(prefix)
         files = load_environment(prefix, **kwargs)
         return cls(prefix, files)
 
@@ -100,7 +101,7 @@ class CondaEnv(object):
     def exclude(self, pattern):
         """Remove all files that match ``pattern``"""
         files = []
-        excluded = self._excluded_files.copy()
+        excluded = list(self._excluded_files)  # copy
         include = files.append
         exclude = excluded.append
         for f in self.files:
@@ -112,7 +113,7 @@ class CondaEnv(object):
 
     def include(self, pattern):
         """Re-add all excluded files that match ``pattern``"""
-        files = self.files.copy()
+        files = list(self.files)  # copy
         excluded = []
         include = files.append
         exclude = excluded.append
