@@ -1,6 +1,8 @@
 Conda-Pack
 ==========
 
+|Build Status|
+
 ``conda-pack`` is a command line tool for creating relocatable conda
 environments. This is useful for deploying code in a consistent environment,
 potentially in a location where python/conda isn't already installed.
@@ -75,3 +77,6 @@ This tool is extremely new, and has a few caveats.
 - The os *type* where the environment was built must match the os *type* of the
   target. This means that environments built on windows can't be relocated to
   linux.
+
+.. |Build Status| image:: https://travis-ci.org/jcrist/conda-pack.svg?branch=master
+   :target: https://travis-ci.org/jcrist/conda-pack
