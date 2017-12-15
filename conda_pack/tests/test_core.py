@@ -143,14 +143,24 @@ def test_roundtrip(tmpdir, py36_env):
         fil.extractall(str(tmpdir))
         extract_path = os.path.join(str(tmpdir), 'py36')
 
+    # Shebang rewriting happens before prefixes are fixed
+    textfile = os.path.join(extract_path, 'bin', 'conda-pack-test-lib1')
+    with open(textfile, 'r') as fil:
+        shebang = fil.readline().strip()
+        assert shebang == '#!/usr/bin/env python'
+
+    # Check bash scripts all don't error
     command = (". {path}/bin/activate && "
                "conda-unpack && "
                ". {path}/bin/deactivate && "
-               "echo 'Done'").format(path=extract_path, stderr=subprocess.STDOUT)
+               "echo 'Done'").format(path=extract_path)
 
-    out = subprocess.check_output(command, shell=True).decode()
+    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                  stderr=subprocess.STDOUT).decode()
     assert out == 'Done\n'
 
-    with open(os.path.join(extract_path, 'bin', 'conda-pack-test-lib1')) as fil:
-        shebang = fil.readline().strip()
-    assert shebang == '#!/usr/bin/env python'
+    # Check binary prefixes are now fixed
+    binfile = os.path.join(extract_path, 'share', 'terminfo', '76', 'vt510')
+    with open(binfile, 'rb') as fil:
+        data = fil.read()
+        assert extract_path.encode() in data
