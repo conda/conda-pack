@@ -195,7 +195,7 @@ class CondaEnv(object):
         fd, temp_path = tempfile.mkstemp()
 
         try:
-            with open(fd, 'wb') as temp_file:
+            with os.fdopen(fd, 'wb') as temp_file:
                 with archive(temp_file, arcroot, format,
                              zip_symlinks=zip_symlinks) as arc:
                     packer = Packer(self.prefix, arc)
