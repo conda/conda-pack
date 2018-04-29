@@ -22,10 +22,12 @@ class MultiAppendAction(argparse.Action):
 
 def main():
     description = "Package an existing conda environment into an archive file."
-    parser = argparse.ArgumentParser(prog="conda-pack",
-                                     description=description,
-                                     allow_abbrev=False,
-                                     add_help=False)
+    kwargs = dict(prog="conda-pack",
+                  description=description,
+                  add_help=False)
+    if sys.version_info >= (3, 5):
+        kwargs['allow_abbrev'] = False
+    parser = argparse.ArgumentParser(**kwargs)
     parser.add_argument("--name", "-n",
                         metavar="ENV",
                         help=("Name of existing environment. Default is "

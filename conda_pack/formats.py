@@ -1,7 +1,9 @@
 import os
 import stat
-import zipfile
+import sys
 import tarfile
+import time
+import zipfile
 from io import BytesIO
 
 _tar_mode = {'tar.gz': 'w:gz',
@@ -94,5 +96,33 @@ class ZipArchive(ArchiveBase):
             self.archive.write(source, target)
 
     def _add_bytes(self, source, sourcebytes, target):
-        info = zipfile.ZipInfo.from_file(source, target)
+        info = zipinfo_from_file(source, target)
         self.archive.writestr(info, sourcebytes)
+
+
+if sys.version_info >= (3, 6):
+    zipinfo_from_file = zipfile.ZipInfo.from_file
+else:
+    # Backported from python 3.6
+    def zipinfo_from_file(filename, arcname=None):
+        st = os.stat(filename)
+        isdir = stat.S_ISDIR(st.st_mode)
+        mtime = time.localtime(st.st_mtime)
+        date_time = mtime[0:6]
+        # Create ZipInfo instance to store file information
+        if arcname is None:
+            arcname = filename
+        arcname = os.path.normpath(os.path.splitdrive(arcname)[1])
+        while arcname[0] in (os.sep, os.altsep):
+            arcname = arcname[1:]
+        if isdir:
+            arcname += '/'
+        zinfo = zipfile.ZipInfo(arcname, date_time)
+        zinfo.external_attr = (st.st_mode & 0xFFFF) << 16  # Unix attributes
+        if isdir:
+            zinfo.file_size = 0
+            zinfo.external_attr |= 0x10  # MS-DOS directory flag
+        else:
+            zinfo.file_size = st.st_size
+
+        return zinfo
