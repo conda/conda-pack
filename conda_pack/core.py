@@ -126,7 +126,9 @@ class CondaEnv(object):
 
     def _output_and_format(self, output, format='infer'):
         if format == 'infer':
-            if output is None or output.endswith('.zip'):
+            if output is None:
+                format = 'tar.gz'
+            elif output.endswith('.zip'):
                 format = 'zip'
             elif output.endswith('.tar.gz') or output.endswith('.tgz'):
                 format = 'tar.gz'
@@ -153,10 +155,10 @@ class CondaEnv(object):
         ----------
         output : str, optional
             The path of the output file. Defaults to the environment name with a
-            ``.zip`` suffix (e.g. ``my_env.zip``).
+            ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
         format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}
             The archival format to use. By default this is inferred by the
-            output file extension, falling back to ``zip`` if a non-standard
+            output file extension, falling back to ``tar.gz`` if a non-standard
             extension.
         arcroot : str, optional
             The relative path in the archive to the conda environment.
@@ -261,10 +263,10 @@ def pack(name=None, prefix=None, output=None, format='infer',
         A path to a conda environment to pack.
     output : str, optional
         The path of the output file. Defaults to the environment name with a
-        ``.zip`` suffix (e.g. ``my_env.zip``).
+        ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
     format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}, optional
         The archival format to use. By default this is inferred by the output
-        file extension, falling back to `zip` if a non-standard extension.
+        file extension, falling back to ``tar.gz`` if a non-standard extension.
     arcroot : str, optional
         The relative path in the archive to the conda environment.
         Defaults to ''.

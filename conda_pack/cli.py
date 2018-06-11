@@ -37,7 +37,9 @@ def main():
                         help="Full path to environment prefix.")
     parser.add_argument("--output", "-o",
                         metavar="PATH",
-                        help="Output zip file. Defaults to the environment name.")
+                        help=("The path of the output file. Defaults to the "
+                              "environment name with a ``.tar.gz`` suffix "
+                              "(e.g.  ``my_env.tar.gz``)."))
     parser.add_argument("--arcroot",
                         metavar="PATH", default='',
                         help=("The relative path in the archive to the conda "
@@ -48,7 +50,7 @@ def main():
                         default='infer',
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension, falling "
-                              "back to `zip` if a non-standard extension."))
+                              "back to `tar.gz` if a non-standard extension."))
     parser.add_argument("--compress-level",
                         type=int,
                         default=4,
