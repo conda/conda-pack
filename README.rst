@@ -16,7 +16,7 @@ from the git repo:
 
 .. code:: bash
 
-    pip install git+https://github.com/jcrist/conda-pack.git
+    pip install git+https://github.com/conda/conda-pack.git
 
 It's recommended to install in your root conda environment - the ``conda-pack``
 command will then be available in all sub-environments as well.
@@ -78,5 +78,5 @@ This tool is extremely new, and has a few caveats.
   target. This means that environments built on windows can't be relocated to
   linux.
 
-.. |Build Status| image:: https://travis-ci.org/jcrist/conda-pack.svg?branch=master
-   :target: https://travis-ci.org/jcrist/conda-pack
+.. |Build Status| image:: https://travis-ci.org/conda/conda-pack.svg?branch=master
+   :target: https://travis-ci.org/conda/conda-pack

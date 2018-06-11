@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(name='conda-pack',
       version='0.0.1',
-      url='https://github.com/jcrist/conda-pack',
+      url='https://github.com/conda/conda-pack',
       maintainer='Jim Crist',
       maintainer_email='jiminy.crist@gmail.com',
       license='BSD',
