@@ -42,30 +42,30 @@ On the target machine
 .. code:: bash
 
     # Unpack environment
-    $ unzip my_env.zip
+    $ unzip my_env.zip -d my_env
 
     # Use python without activating or fixing the prefixes. Most python
     # libraries will work fine, but things that require prefix cleanups
     # will fail.
-    $ ./myenv/bin/python
+    $ ./my_env/bin/python
 
-    # Activate the environment. This adds `myenv/bin` to your path
-    $ source myenv/bin/activate
+    # Activate the environment. This adds `my_env/bin` to your path
+    $ source my_env/bin/activate
 
     # Run python from in the environment
-    (myenv) $ python
+    (my_env) $ python
 
     # Cleanup prefixes from in the active environment.
     # Note that you can run this script without activating via
-    # `$ ./myenv/bin/python myenv/bin/conda-unpack`
-    (myenv) $ conda-unpack
+    # `$ ./my_env/bin/python my_env/bin/conda-unpack`
+    (my_env) $ conda-unpack
 
     # At this point the environment is exactly as if you installed it here
     # using conda directly. All scripts should work fine.
-    (myenv) $ ipython --version
+    (my_env) $ ipython --version
 
     # Deactivate the environment to remove it from your path
-    (myenv) $ source myenv/bin/deactivate
+    (my_env) $ source my_env/bin/deactivate
 
 Caveats
 -------
@@ -73,6 +73,9 @@ Caveats
 This tool is extremely new, and has a few caveats.
 
 - Conda must be installed and be on your path.
+
+- Windows is not currently supported (should be easy to fix, contributions
+  welcome!)
 
 - The os *type* where the environment was built must match the os *type* of the
   target. This means that environments built on windows can't be relocated to

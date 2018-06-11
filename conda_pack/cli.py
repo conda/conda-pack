@@ -39,9 +39,9 @@ def main():
                         metavar="PATH",
                         help="Output zip file. Defaults to the environment name.")
     parser.add_argument("--arcroot",
-                        metavar="PATH",
-                        help=("The relative in the archive to the conda "
-                              "environment. Defaults to the environment name."))
+                        metavar="PATH", default='',
+                        help=("The relative path in the archive to the conda "
+                              "environment. Defaults to ''."))
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
                                  'tbz2', 'tar'],

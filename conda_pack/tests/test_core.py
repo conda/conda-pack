@@ -160,8 +160,8 @@ def test_roundtrip(tmpdir, py36_env):
         for member in fil.getnames():
             assert not member.startswith(os.path.sep)
 
-        fil.extractall(str(tmpdir))
-        extract_path = os.path.join(str(tmpdir), 'py36')
+        extract_path = str(tmpdir)
+        fil.extractall(extract_path)
 
     # Shebang rewriting happens before prefixes are fixed
     textfile = os.path.join(extract_path, 'bin', 'conda-pack-test-lib1')

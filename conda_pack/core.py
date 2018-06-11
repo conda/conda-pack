@@ -145,7 +145,7 @@ class CondaEnv(object):
 
         return output, format
 
-    def pack(self, output=None, format='infer', arcroot=None, verbose=False,
+    def pack(self, output=None, format='infer', arcroot='', verbose=False,
              zip_symlinks=False):
         """Package the conda environment into an archive file.
 
@@ -159,8 +159,8 @@ class CondaEnv(object):
             output file extension, falling back to ``zip`` if a non-standard
             extension.
         arcroot : str, optional
-            The relative in the archive to the conda environment. Defaults to
-            the environment name.
+            The relative path in the archive to the conda environment.
+            Defaults to ''.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         zip_symlinks : bool, optional
@@ -177,11 +177,8 @@ class CondaEnv(object):
         out_path : str
             The path to the zipped environment.
         """
-        if not arcroot:
-            arcroot = self.name
-        else:
-            # Ensure the prefix is a relative path
-            arcroot = arcroot.strip(os.path.sep)
+        # Ensure the prefix is a relative path
+        arcroot = arcroot.strip(os.path.sep)
 
         # The output path and archive format
         output, format = self._output_and_format(output, format)
@@ -247,7 +244,7 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot=None, verbose=False, zip_symlinks=False, filters=None):
+         arcroot='', verbose=False, zip_symlinks=False, filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -263,8 +260,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         The archival format to use. By default this is inferred by the output
         file extension, falling back to `zip` if a non-standard extension.
     arcroot : str, optional
-        The relative in the archive to the conda environment. Defaults to the
-        environment name.
+        The relative path in the archive to the conda environment.
+        Defaults to ''.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     zip_symlinks : bool, optional
