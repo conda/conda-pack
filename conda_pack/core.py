@@ -146,7 +146,7 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', arcroot='', verbose=False,
-             zip_symlinks=False):
+             compress_level=4, zip_symlinks=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -163,6 +163,10 @@ class CondaEnv(object):
             Defaults to ''.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
+        compress_level : int, optional
+            The compression level to use, from 0 to 9. Higher numbers decrease
+            output file size at the expense of compression time. Ignored for
+            ``format='zip'``. Default is 4.
         zip_symlinks : bool, optional
             Symbolic links aren't supported by the Zip standard, but are
             supported by *many* common Zip implementations. If True, store
@@ -194,6 +198,7 @@ class CondaEnv(object):
         try:
             with os.fdopen(fd, 'wb') as temp_file:
                 with archive(temp_file, arcroot, format,
+                             compress_level=compress_level,
                              zip_symlinks=zip_symlinks) as arc:
                     packer = Packer(self.prefix, arc)
                     with progressbar(self.files, enabled=verbose) as files:
@@ -244,7 +249,8 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot='', verbose=False, zip_symlinks=False, filters=None):
+         arcroot='', verbose=False, compress_level=4,
+         zip_symlinks=False, filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -264,6 +270,10 @@ def pack(name=None, prefix=None, output=None, format='infer',
         Defaults to ''.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
+    compress_level : int, optional
+        The compression level to use, from 0 to 9. Higher numbers decrease
+        output file size at the expense of compression time. Ignored for
+        ``format='zip'``. Default is 4.
     zip_symlinks : bool, optional
         Symbolic links aren't supported by the Zip standard, but are supported
         by *many* common Zip implementations. If True, store symbolic links in
@@ -306,7 +316,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
     return env.pack(output=output, format=format, arcroot=arcroot,
-                    verbose=verbose, zip_symlinks=zip_symlinks)
+                    verbose=verbose, compress_level=compress_level,
+                    zip_symlinks=zip_symlinks)
 
 
 def find_site_packages(prefix):

@@ -49,6 +49,13 @@ def main():
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension, falling "
                               "back to `zip` if a non-standard extension."))
+    parser.add_argument("--compress-level",
+                        type=int,
+                        default=4,
+                        help=("The compression level to use, from 0 to 9. "
+                              "Higher numbers decrease output file size at "
+                              "the expense of compression time. Ignored for "
+                              "``format='zip'``. Default is 4."))
     parser.add_argument("--zip-symlinks",
                         action="store_true",
                         help=("Symbolic links aren't supported by the Zip "
@@ -85,9 +92,9 @@ def main():
     try:
         with context.set_cli():
             pack(name=args.name, prefix=args.prefix, output=args.output,
-                 format=args.format, zip_symlinks=args.zip_symlinks,
-                 arcroot=args.arcroot, verbose=not args.quiet,
-                 filters=args.filters)
+                 format=args.format, compress_level=args.compress_level,
+                 zip_symlinks=args.zip_symlinks, arcroot=args.arcroot,
+                 verbose=not args.quiet, filters=args.filters)
     except CondaPackException as e:
         print("CondaPackError: %s" % e, file=sys.stderr)
         sys.exit(1)

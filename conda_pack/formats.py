@@ -13,11 +13,12 @@ _tar_mode = {'tar.gz': 'w:gz',
              'tar': 'w'}
 
 
-def archive(fileobj, arcroot, format, zip_symlinks=False):
+def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False):
     if format == 'zip':
         return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks)
     else:
-        return TarArchive(fileobj, arcroot, _tar_mode[format])
+        return TarArchive(fileobj, arcroot, _tar_mode[format],
+                          compress_level=compress_level)
 
 
 class ArchiveBase(object):
@@ -34,14 +35,20 @@ class ArchiveBase(object):
 
 
 class TarArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, mode):
+    def __init__(self, fileobj, arcroot, mode, compress_level):
         self.fileobj = fileobj
         self.arcroot = arcroot
         self.mode = mode
+        self.compress_level = compress_level
 
     def __enter__(self):
+        if self.mode != 'w':
+            kwargs = {'compresslevel': self.compress_level}
+        else:
+            kwargs = {}
+
         self.archive = tarfile.open(fileobj=self.fileobj, mode=self.mode,
-                                    dereference=False)
+                                    dereference=False, **kwargs)
         return self
 
     def _add(self, source, target):
