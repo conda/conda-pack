@@ -126,9 +126,7 @@ class CondaEnv(object):
 
     def _output_and_format(self, output, format='infer'):
         if format == 'infer':
-            if output is None:
-                format = 'tar.gz'
-            elif output.endswith('.zip'):
+            if output.endswith('.zip'):
                 format = 'zip'
             elif output.endswith('.tar.gz') or output.endswith('.tgz'):
                 format = 'tar.gz'
@@ -137,8 +135,8 @@ class CondaEnv(object):
             elif output.endswith('.tar'):
                 format = 'tar'
             else:
-                # Default to zip
-                format = 'zip'
+                # Default to tar.gz
+                format = 'tar.gz'
         elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
             raise CondaPackException("Unknown format %r" % format)
 
