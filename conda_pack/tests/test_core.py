@@ -1,4 +1,7 @@
+import glob
+import json
 import os
+import shutil
 import subprocess
 import tarfile
 
@@ -15,6 +18,23 @@ env_dir = os.path.abspath(rel_env_dir)
 
 py27_path = os.path.join(env_dir, 'py27')
 py36_path = os.path.join(env_dir, 'py36')
+
+
+@pytest.fixture
+def broken_package_cache():
+    metas = glob.glob(os.path.join(py27_path, 'conda-meta',
+                                   'conda_pack_test_lib2*.json'))
+
+    if len(metas) != 1:
+        raise ValueError("%d metadata files found for conda_pack_test_lib2, "
+                         "expected only 1" % len(metas))
+
+    with open(os.path.join(metas[0])) as fil:
+        info = json.load(fil)
+    pkg = info['link']['source']
+
+    if os.path.exists(pkg):
+        shutil.rmtree(pkg)
 
 
 @pytest.fixture(scope="module")
@@ -45,7 +65,7 @@ def test_from_prefix():
         CondaEnv.from_prefix(os.path.join(env_dir))
 
 
-def test_missing_package_cache():
+def test_missing_package_cache(broken_package_cache):
     with pytest.warns(UserWarning) as record:
         env = CondaEnv.from_prefix(py27_path)
 
