@@ -9,7 +9,8 @@ import pytest
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.core import name_to_prefix, File
 
-from .conftest import py36_path, py27_path, rel_env_dir, env_dir
+from .conftest import (py36_path, py36_editable_path, py27_path, rel_env_dir,
+                       env_dir)
 
 
 @pytest.fixture(scope="module")
@@ -52,6 +53,13 @@ def test_missing_package_cache(broken_package_cache):
 
     with pytest.raises(CondaPackException):
         CondaEnv.from_prefix(py27_path, on_missing_cache='raise')
+
+
+def test_errors_editable_packages():
+    with pytest.raises(CondaPackException) as exc:
+        CondaEnv.from_prefix(py36_editable_path)
+
+    assert "Editable packages found" in str(exc.value)
 
 
 def test_env_properties(py36_env):

@@ -8,3 +8,10 @@ conda env create --force -f "${current_dir}/env_yamls/py27.yml" -p "${current_di
 
 echo "Creating py36 environment"
 conda env create --force -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36"
+
+echo "Creating py36_editable environment"
+py36_editable="${current_dir}/environments/py36_editable"
+conda env create --force -f "${current_dir}/env_yamls/py36.yml" -p $py36_editable
+source activate $py36_editable
+pushd "${current_dir}/.." && python setup.py develop && popd
+source deactivate

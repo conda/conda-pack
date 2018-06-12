@@ -14,6 +14,7 @@ env_dir = os.path.abspath(rel_env_dir)
 
 py27_path = os.path.join(env_dir, 'py27')
 py36_path = os.path.join(env_dir, 'py36')
+py36_editable_path = os.path.join(env_dir, 'py36_editable')
 
 
 @pytest.fixture
