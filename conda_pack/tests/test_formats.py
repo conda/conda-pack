@@ -11,7 +11,7 @@ from conda_pack.formats import archive
 
 @pytest.fixture(scope="module")
 def root_and_paths(tmpdir_factory):
-    root = tmpdir_factory.mktemp('example_dir')
+    root = str(tmpdir_factory.mktemp('example_dir'))
 
     def mkfil(*paths):
         with open(join(root, *paths), mode='w'):
