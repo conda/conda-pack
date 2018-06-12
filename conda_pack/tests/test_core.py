@@ -1,40 +1,15 @@
-import glob
-import json
+from __future__ import absolute_import, print_function, division
+
 import os
-import shutil
 import subprocess
 import tarfile
 
 import pytest
 
-from conda_pack import CondaEnv, CondaPackException
+from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.core import name_to_prefix, File
 
-
-test_dir = os.path.dirname(os.path.abspath(__file__))
-
-rel_env_dir = os.path.join(test_dir, '..', '..', 'testing', 'environments')
-env_dir = os.path.abspath(rel_env_dir)
-
-py27_path = os.path.join(env_dir, 'py27')
-py36_path = os.path.join(env_dir, 'py36')
-
-
-@pytest.fixture
-def broken_package_cache():
-    metas = glob.glob(os.path.join(py27_path, 'conda-meta',
-                                   'conda_pack_test_lib2*.json'))
-
-    if len(metas) != 1:
-        raise ValueError("%d metadata files found for conda_pack_test_lib2, "
-                         "expected only 1" % len(metas))
-
-    with open(os.path.join(metas[0])) as fil:
-        info = json.load(fil)
-    pkg = info['link']['source']
-
-    if os.path.exists(pkg):
-        shutil.rmtree(pkg)
+from .conftest import py36_path, py27_path, rel_env_dir, env_dir
 
 
 @pytest.fixture(scope="module")
@@ -211,3 +186,58 @@ def test_roundtrip(tmpdir, py36_env):
     out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
                                   stderr=subprocess.STDOUT).decode()
     assert out == 'Done\n'
+
+
+def test_pack_exceptions(tmpdir, py36_env):
+    already_exists = os.path.join(str(tmpdir), 'py36.tar')
+    with open(already_exists, 'wb'):
+        pass
+
+    # file already exists
+    with pytest.raises(CondaPackException):
+        py36_env.pack(output=already_exists)
+
+    # Can't pass both prefix and name
+    with pytest.raises(CondaPackException):
+        pack(prefix=py36_path, name='py36')
+
+    # Unknown filter type
+    with pytest.raises(CondaPackException):
+        pack(prefix=py36_path,
+             filters=[("exclude", "*.py"),
+                      ("foo", "*.pyc")])
+
+
+def test_pack(tmpdir, py36_env):
+    out_path = os.path.join(str(tmpdir), 'py36.tar')
+
+    exclude1 = "*.py"
+    exclude2 = "*.pyc"
+    include = "lib/python3.6/site-packages/conda_pack_test_lib1/*"
+
+    res = pack(prefix=py36_path,
+               output=out_path,
+               filters=[("exclude", exclude1),
+                        ("exclude", exclude2),
+                        ("include", include)])
+
+    assert res == out_path
+    assert os.path.exists(out_path)
+    assert tarfile.is_tarfile(out_path)
+
+    with tarfile.open(out_path) as fil:
+        paths = fil.getnames()
+
+    filtered = (py36_env
+                .exclude(exclude1)
+                .exclude(exclude2)
+                .include(include))
+
+    # Files line up with filtering, with extra conda-unpack command
+    sol = set(f.target for f in filtered.files)
+    res = set(paths)
+    diff = res.difference(sol)
+
+    assert len(diff) == 1
+    extra = list(diff)[0]
+    assert 'conda-unpack' in extra

@@ -20,7 +20,7 @@ class MultiAppendAction(argparse.Action):
         getattr(namespace, self.dest).append((option_string.strip('-'), values))
 
 
-def main():
+def main(args=None, pack=pack):
     description = "Package an existing conda environment into an archive file."
     kwargs = dict(prog="conda-pack",
                   description=description,
@@ -84,11 +84,16 @@ def main():
                         help="Do not report progress")
     parser.add_argument("--help", "-h", action='help',
                         help="Show this help message then exit")
-    parser.add_argument("--version", action='version',
-                        version='%(prog)s ' + __version__,
+    parser.add_argument("--version",
+                        action='store_true',
                         help="Show version then exit")
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=args)
+
+    # Manually handle version printing to output to stdout in python < 3.4
+    if args.version:
+        print('conda-pack %s' % __version__)
+        sys.exit(0)
 
     try:
         with context.set_cli():
@@ -102,6 +107,7 @@ def main():
     except Exception as e:
         print(traceback.format_exc(), file=sys.stderr)
         sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == '__main__':
