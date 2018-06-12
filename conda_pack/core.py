@@ -124,8 +124,10 @@ class CondaEnv(object):
                 exclude(f)
         return CondaEnv(self.prefix, files, excluded)
 
-    def _output_and_format(self, output, format='infer'):
-        if format == 'infer':
+    def _output_and_format(self, output=None, format='infer'):
+        if output is None and format == 'infer':
+            format = 'tar.gz'
+        elif format == 'infer':
             if output.endswith('.zip'):
                 format = 'zip'
             elif output.endswith('.tar.gz') or output.endswith('.tgz'):
@@ -135,8 +137,7 @@ class CondaEnv(object):
             elif output.endswith('.tar'):
                 format = 'tar'
             else:
-                # Default to tar.gz
-                format = 'tar.gz'
+                raise CondaPackException("Unknown file extension %r" % output)
         elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
             raise CondaPackException("Unknown format %r" % format)
 
@@ -156,8 +157,7 @@ class CondaEnv(object):
             ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
         format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}
             The archival format to use. By default this is inferred by the
-            output file extension, falling back to ``tar.gz`` if a non-standard
-            extension.
+            output file extension.
         arcroot : str, optional
             The relative path in the archive to the conda environment.
             Defaults to ''.
@@ -264,7 +264,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
         ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
     format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}, optional
         The archival format to use. By default this is inferred by the output
-        file extension, falling back to ``tar.gz`` if a non-standard extension.
+        file extension.
     arcroot : str, optional
         The relative path in the archive to the conda environment.
         Defaults to ''.
@@ -687,7 +687,7 @@ class Packer(object):
             self.prefixes.append((file.target, file.prefix_placeholder, file.file_mode))
 
         else:
-            raise ValueError("unknown file_mode: %r" % file.file_mode)
+            raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
 
     def finish(self):
         if not on_win:

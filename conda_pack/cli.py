@@ -49,8 +49,7 @@ def main():
                                  'tbz2', 'tar'],
                         default='infer',
                         help=("The archival format to use. By default this is "
-                              "inferred by the output file extension, falling "
-                              "back to `tar.gz` if a non-standard extension."))
+                              "inferred by the output file extension."))
     parser.add_argument("--compress-level",
                         type=int,
                         default=4,

@@ -75,7 +75,6 @@ class ZipArchive(ArchiveBase):
         try:
             st = os.lstat(source)
             is_link = stat.S_ISLNK(st.st_mode)
-            is_dir = stat.S_ISDIR(st.st_mode)
         except (OSError, AttributeError):
             is_link = False
 
@@ -84,11 +83,11 @@ class ZipArchive(ArchiveBase):
                 info = zipfile.ZipInfo(target)
                 info.create_system = 3
                 info.external_attr = (st.st_mode & 0xFFFF) << 16
-                if is_dir:
+                if os.path.isdir(source):
                     info.external_attr |= 0x10  # MS-DOS directory flag
                 self.archive.writestr(info, os.readlink(source))
             else:
-                if is_dir:
+                if os.path.isdir(source):
                     for root, dirs, files in os.walk(source, followlinks=True):
                         root2 = os.path.join(target, os.path.relpath(root, source))
                         for fil in files:
@@ -109,7 +108,7 @@ class ZipArchive(ArchiveBase):
 
 if sys.version_info >= (3, 6):
     zipinfo_from_file = zipfile.ZipInfo.from_file
-else:
+else:  # pragma: no cover
     # Backported from python 3.6
     def zipinfo_from_file(filename, arcname=None):
         st = os.stat(filename)
