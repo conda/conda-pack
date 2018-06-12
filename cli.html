@@ -1,0 +1,199 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>CLI Docs &#8212; conda-pack 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="API Docs" href="api.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="cli-docs">
+<h1>CLI Docs<a class="headerlink" href="#cli-docs" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="conda-pack">
+<h2>conda-pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h2>
+<p>Package an existing conda environment into an archive file.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">usage: conda-pack [--name ENV] [--prefix PATH] [--output PATH]</span>
+<span class="go">                  [--arcroot PATH]</span>
+<span class="go">                  [--format {infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar}]</span>
+<span class="go">                  [--compress-level COMPRESS_LEVEL] [--zip-symlinks]</span>
+<span class="go">                  [--exclude PATTERN] [--include PATTERN] [--quiet] [--help]</span>
+<span class="go">                  [--version]</span>
+</pre></div>
+</div>
+<dl class="option">
+<dt id="cmdoption-conda-pack-name">
+<code class="descname">--name</code><code class="descclassname"> &lt;env&gt;</code><code class="descclassname">, </code><code class="descname">-n</code><code class="descclassname"> &lt;env&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of existing environment. Default is current environment.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-prefix">
+<code class="descname">--prefix</code><code class="descclassname"> &lt;path&gt;</code><code class="descclassname">, </code><code class="descname">-p</code><code class="descclassname"> &lt;path&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Full path to environment prefix.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-output">
+<code class="descname">--output</code><code class="descclassname"> &lt;path&gt;</code><code class="descclassname">, </code><code class="descname">-o</code><code class="descclassname"> &lt;path&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-output" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path of the output file. Defaults to the environment name with a <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> suffix (e.g.  <code class="docutils literal notranslate"><span class="pre">my_env.tar.gz</span></code>).</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-arcroot">
+<code class="descname">--arcroot</code><code class="descclassname"> &lt;path&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-arcroot" title="Permalink to this definition">¶</a></dt>
+<dd><p>The relative path in the archive to the conda environment. Defaults to ‘’.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-format">
+<code class="descname">--format</code><code class="descclassname"> {infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar}</code><a class="headerlink" href="#cmdoption-conda-pack-format" title="Permalink to this definition">¶</a></dt>
+<dd><p>The archival format to use. By default this is inferred by the output file extension.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-compress-level">
+<code class="descname">--compress-level</code><code class="descclassname"> &lt;compress_level&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-compress-level" title="Permalink to this definition">¶</a></dt>
+<dd><p>The compression level to use, from 0 to 9. Higher numbers decrease output file size at the expense of compression time. Ignored for <code class="docutils literal notranslate"><span class="pre">format='zip'</span></code>. Default is 4.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-zip-symlinks">
+<code class="descname">--zip-symlinks</code><code class="descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-zip-symlinks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Symbolic links aren’t supported by the Zip standard, but are supported by <em>many</em> common Zip implementations. If set, store symbolic links in the archive, instead of the file referred to by the link. This can avoid storing multiple copies of the same files. <em>Note that the resulting archive may silently fail on decompression if the ``unzip`` implementation doesn’t support symlinks</em>. Ignored if format isn’t <code class="docutils literal notranslate"><span class="pre">zip</span></code>.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-exclude">
+<code class="descname">--exclude</code><code class="descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-exclude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exclude files matching this pattern</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-include">
+<code class="descname">--include</code><code class="descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-include" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-add excluded files matching this pattern</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-quiet">
+<code class="descname">--quiet</code><code class="descclassname"></code><code class="descclassname">, </code><code class="descname">-q</code><code class="descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-quiet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do not report progress</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-help">
+<code class="descname">--help</code><code class="descclassname"></code><code class="descclassname">, </code><code class="descname">-h</code><code class="descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-help" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show this help message then exit</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-version">
+<code class="descname">--version</code><code class="descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show version then exit</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">conda-pack</a></h1>
+
+
+
+<p class="blurb">A tool for packaging and distributing conda environments.</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=conda&repo=conda-pack&type=watch&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a href="https://travis-ci.org/conda/conda-pack">
+    <img
+        alt="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+        src="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CLI Docs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#conda-pack">conda-pack</a></li>
+</ul>
+</li>
+</ul>
+
+<h3>Need help?</h3>
+
+<p>
+  Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
+</p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jim Crist.
+      
+      |
+      <a href="_sources/cli.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,205 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Conda-Pack &#8212; conda-pack 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Docs" href="api.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="conda-pack">
+<h1>Conda-Pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is a command line tool for creating relocatable conda
+environments. This is useful for deploying code in a consistent environment,
+potentially in a location where python/conda isn’t already installed.</p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>It’s recommended to install in your root conda environment - the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
+command will then be available in all sub-environments as well.</p>
+<p><strong>Install from source:</strong></p>
+<p>Conda-Pack is <a class="reference external" href="https://github.com/conda/conda-pack">available on github</a> and
+can always be installed from source.</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">conda</span><span class="o">/</span><span class="n">conda</span><span class="o">-</span><span class="n">pack</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="commandline-usage">
+<h2>Commandline Usage<a class="headerlink" href="#commandline-usage" title="Permalink to this headline">¶</a></h2>
+<p>Conda-Pack is primarily a commandline tool. Full CLI docs can be found
+<a class="reference internal" href="cli.html"><span class="doc">here</span></a>.</p>
+<p>One common use case is packing an environment on one machine to distribute to
+other machines that may not have conda/python installed.</p>
+<p>On the source machine</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pack environment my_env into my_env.tar.gz</span>
+$ conda pack -n my_env
+
+<span class="c1"># Pack environment my_env into out_name.tar.gz</span>
+$ conda pack -n my_env -o new_name.tar.gz
+
+<span class="c1"># Pack environment located at an explicit path into my_env.tar.gz</span>
+$ conda pack -p /explicit/path/to/my_env
+</pre></div>
+</div>
+<p>On the target machine</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Unpack environment into directory `my_env`</span>
+$ mkdir -p my_env
+$ tar -xzf my_env.tar.gz -C my_env
+
+<span class="c1"># Use python without activating or fixing the prefixes. Most python</span>
+<span class="c1"># libraries will work fine, but things that require prefix cleanups</span>
+<span class="c1"># will fail.</span>
+$ ./my_env/bin/python
+
+<span class="c1"># Activate the environment. This adds `my_env/bin` to your path</span>
+$ <span class="nb">source</span> my_env/bin/activate
+
+<span class="c1"># Run python from in the environment</span>
+<span class="o">(</span>my_env<span class="o">)</span> $ python
+
+<span class="c1"># Cleanup prefixes from in the active environment.</span>
+<span class="c1"># Note that you can run this script without activating via</span>
+<span class="c1"># `$ ./my_env/bin/python my_env/bin/conda-unpack`</span>
+<span class="o">(</span>my_env<span class="o">)</span> $ conda-unpack
+
+<span class="c1"># At this point the environment is exactly as if you installed it here</span>
+<span class="c1"># using conda directly. All scripts should work fine.</span>
+<span class="o">(</span>my_env<span class="o">)</span> $ ipython --version
+
+<span class="c1"># Deactivate the environment to remove it from your path</span>
+<span class="o">(</span>my_env<span class="o">)</span> $ <span class="nb">source</span> my_env/bin/deactivate
+</pre></div>
+</div>
+</div>
+<div class="section" id="api-usage">
+<h2>API Usage<a class="headerlink" href="#api-usage" title="Permalink to this headline">¶</a></h2>
+<p>Conda-Pack is also provides a Python API, the full documentation of which can
+be found <a class="reference internal" href="api.html"><span class="doc">here</span></a>. The API mostly mirrors that of the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
+commandline. Repeating the examples from above:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">conda_pack</span>
+
+<span class="c1"># Pack environment my_env into my_env.tar.gz</span>
+<span class="n">conda_pack</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_env&quot;</span><span class="p">)</span>
+
+<span class="c1"># Pack environment my_env into out_name.tar.gz</span>
+<span class="n">conda_pack</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_env&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;out_name.tar.gz&quot;</span><span class="p">)</span>
+
+<span class="c1"># Pack environment located at an explicit path into my_env.tar.gz</span>
+<span class="n">conda_pack</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/explicit/path/to/my_env&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="caveats">
+<h2>Caveats<a class="headerlink" href="#caveats" title="Permalink to this headline">¶</a></h2>
+<p>This tool is extremely new, and has a few caveats.</p>
+<ul class="simple">
+<li>Conda must be installed and be on your path.</li>
+<li>Windows is not currently supported (should be easy to fix, contributions
+welcome!)</li>
+<li>The os <em>type</em> where the environment was built must match the os <em>type</em> of the
+target. This means that environments built on windows can’t be relocated to
+linux.</li>
+</ul>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">conda-pack</a></h1>
+
+
+
+<p class="blurb">A tool for packaging and distributing conda environments.</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=conda&repo=conda-pack&type=watch&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a href="https://travis-ci.org/conda/conda-pack">
+    <img
+        alt="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+        src="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
+</ul>
+
+<h3>Need help?</h3>
+
+<p>
+  Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
+</p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jim Crist.
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
