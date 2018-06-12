@@ -1,0 +1,7 @@
+[run]
+omit =
+    */test_*.py
+    conda_pack/compat.py
+    conda_pack/prefixes.py
+source = 
+    conda_pack

@@ -3,3 +3,6 @@ build
 dist
 conda_pack.egg-info
 .cache
+.coverage
+htmlcov/
+.pytest_cache/
