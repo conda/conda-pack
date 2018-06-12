@@ -20,7 +20,7 @@ class MultiAppendAction(argparse.Action):
         getattr(namespace, self.dest).append((option_string.strip('-'), values))
 
 
-def main(args=None, pack=pack):
+def build_parser():
     description = "Package an existing conda environment into an archive file."
     kwargs = dict(prog="conda-pack",
                   description=description,
@@ -87,8 +87,15 @@ def main(args=None, pack=pack):
     parser.add_argument("--version",
                         action='store_true',
                         help="Show version then exit")
+    return parser
 
-    args = parser.parse_args(args=args)
+
+# Parser at top level to allow sphinxcontrib.autoprogram to work
+PARSER = build_parser()
+
+
+def main(args=None, pack=pack):
+    args = PARSER.parse_args(args=args)
 
     # Manually handle version printing to output to stdout in python < 3.4
     if args.version:

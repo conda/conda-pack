@@ -19,7 +19,7 @@ from .prefixes import SHEBANG_REGEX
 from ._progress import progressbar
 
 
-__all__ = ('CondaPackException', 'CondaEnv', 'pack')
+__all__ = ('CondaPackException', 'CondaEnv', 'File', 'pack')
 
 
 class CondaPackException(Exception):
@@ -67,6 +67,39 @@ context = _Context()
 
 
 class CondaEnv(object):
+    """A Conda Environment for packaging.
+
+    Use :func:`CondaEnv.from_prefix`, :func:`CondaEnv.from_name`, or
+    :func:`CondaEnv.from_default` instead of the default constructor.
+
+    Examples
+    --------
+
+    Package the current environment, excluding all ``*.pyc`` and ``*.pyx``
+    files, into a ``tar.gz`` archive:
+
+    >>> (CondaEnv.from_default()
+    ...          .exclude("*.pyc")
+    ...          .exclude("*.pyx")
+    ...          .pack(output="output.tar.gz"))
+    "/full/path/to/output.tar.gz"
+
+    Package the environment ``foo`` into a zip archive:
+
+    >>> (CondaEnv.from_name("foo")
+    ...          .pack(output="foo.zip"))
+    "/full/path/to/foo.zip"
+
+    Attributes
+    ----------
+    prefix : str
+        The path to the conda environment.
+    files : list of File
+        A list of :class:`File` objects representing all files in conda
+        environment.
+    name : str
+        The name of the conda environment.
+    """
     def __init__(self, prefix, files, excluded_files=None):
         self.prefix = prefix
         self.files = files
@@ -88,20 +121,76 @@ class CondaEnv(object):
 
     @classmethod
     def from_prefix(cls, prefix, **kwargs):
+        """Create a ``CondaEnv`` from a given prefix.
+
+        Parameters
+        ----------
+        prefix : str
+            The path to the conda environment.
+
+        Returns
+        -------
+        env : CondaEnv
+        """
         prefix = os.path.abspath(prefix)
         files = load_environment(prefix, **kwargs)
         return cls(prefix, files)
 
     @classmethod
     def from_name(cls, name, **kwargs):
+        """Create a ``CondaEnv`` from a named environment.
+
+        Parameters
+        ----------
+        name : str
+            The name of the conda environment.
+
+        Returns
+        -------
+        env : CondaEnv
+        """
         return cls.from_prefix(name_to_prefix(name), **kwargs)
 
     @classmethod
     def from_default(cls, **kwargs):
+        """Create a ``CondaEnv`` from the current environment.
+
+        Returns
+        -------
+        env : CondaEnv
+        """
         return cls.from_prefix(name_to_prefix(), **kwargs)
 
     def exclude(self, pattern):
-        """Remove all files that match ``pattern``"""
+        """Exclude all files that match ``pattern`` from being packaged.
+
+        This can be useful to remove functionality that isn't needed in the
+        archive but is part of the original conda package.
+
+        Parameters
+        ----------
+        pattern : str
+            A file pattern. May include shell-style wildcards a-la ``glob``.
+
+        Returns
+        -------
+        env : CondaEnv
+            A new env with any matching files excluded.
+
+        Examples
+        --------
+
+        Exclude all ``*.pyx`` files, except those from ``cytoolz``.
+
+        >>> env = (CondaEnv.from_default()
+        ...                .exclude("*.pyx")
+        ...                .include("lib/python3.6/site-packages/cytoolz/*.pyx"))
+        CondaEnv<'~/miniconda/envs/example', 1234 files>
+
+        See Also
+        --------
+        include
+        """
         files = []
         excluded = list(self._excluded_files)  # copy
         include = files.append
@@ -114,7 +203,23 @@ class CondaEnv(object):
         return CondaEnv(self.prefix, files, excluded)
 
     def include(self, pattern):
-        """Re-add all excluded files that match ``pattern``"""
+        """Re-add all excluded files that match ``pattern``
+
+        Parameters
+        ----------
+        pattern : str
+            A file pattern. May include shell-style wildcards a-la ``glob``.
+
+        Returns
+        -------
+        env : CondaEnv
+            A new env with any matching files that were previously excluded
+            re-included.
+
+        See Also
+        --------
+        exclude
+        """
         files = list(self.files)  # copy
         excluded = []
         include = files.append
