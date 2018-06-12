@@ -48,13 +48,13 @@ class progressbar(object):
     ...         do_stuff(i)
     [########################################] | 100% Completed | 5.2 s
     """
-    def __init__(self, iterable, width=40, enabled=True, file=sys.stdout):
+    def __init__(self, iterable, width=40, enabled=True, file=None):
         self._iterable = iterable
         self._ndone = 0
         self._ntotal = len(iterable)
         self._width = width
         self._enabled = enabled
-        self._file = file
+        self._file = sys.stdout if file is None else file
 
     def __enter__(self):
         if self._enabled:

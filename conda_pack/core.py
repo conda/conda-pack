@@ -56,9 +56,11 @@ class _Context(object):
     @contextmanager
     def set_cli(self):
         old = self.is_cli
-        self.is_cli = True
-        yield
-        self.is_cli = old
+        try:
+            self.is_cli = True
+            yield
+        finally:
+            self.is_cli = old
 
 
 context = _Context()
