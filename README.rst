@@ -7,6 +7,9 @@ Conda-Pack
 environments. This is useful for deploying code in a consistent environment,
 potentially in a location where python/conda isn't already installed.
 
+See the `documentation <https://conda.github.io/conda-pack/>`_ for more
+information.
+
 LICENSE
 -------
 

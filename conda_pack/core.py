@@ -286,7 +286,7 @@ class CondaEnv(object):
         Returns
         -------
         out_path : str
-            The path to the zipped environment.
+            The path to the archived environment.
         """
         # Ensure the prefix is a relative path
         arcroot = arcroot.strip(os.path.sep)
@@ -398,7 +398,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
     Returns
     -------
     out_path : str
-        The path to the zipped environment.
+        The path to the archived environment.
     """
     if name and prefix:
         raise CondaPackException("Cannot specify both ``name`` and ``prefix``")
