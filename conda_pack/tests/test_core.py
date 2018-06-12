@@ -8,7 +8,7 @@ import tarfile
 import pytest
 
 from conda_pack import CondaEnv, CondaPackException
-from conda_pack.core import name_to_prefix
+from conda_pack.core import name_to_prefix, File
 
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -104,6 +104,12 @@ def test_load_environment_ignores(py36_env):
     assert not lk['bin/deactivate'].source.startswith(py36_path)
 
 
+def test_file():
+    f = File('/root/path/to/foo/bar', 'foo/bar')
+    # smoketest repr
+    repr(f)
+
+
 def test_loaded_file_properties(py36_env):
     lk = {f.target: f for f in py36_env}
 
@@ -147,6 +153,33 @@ def test_include_exclude(py36_env):
     env3 = env2.exclude("lib/python3.6/site-packages/conda_pack_test_lib1/*")
     env4 = env3.include("lib/python3.6/site-packages/conda_pack_test_lib1/cli.py")
     assert len(env3) + 1 == len(env4)
+
+
+def test_output_and_format(py36_env):
+    output, format = py36_env._output_and_format()
+    assert output == 'py36.tar.gz'
+    assert format == 'tar.gz'
+
+    for format in ['tar.gz', 'tar.bz2', 'tar', 'zip']:
+        output = os.extsep.join([py36_env.name, format])
+
+        o, f = py36_env._output_and_format(format=format)
+        assert f == format
+        assert o == output
+
+        o, f = py36_env._output_and_format(output=output)
+        assert o == output
+        assert f == format
+
+        o, f = py36_env._output_and_format(output='foo.zip', format=format)
+        assert f == format
+        assert o == 'foo.zip'
+
+    with pytest.raises(CondaPackException):
+        py36_env._output_and_format(format='foo')
+
+    with pytest.raises(CondaPackException):
+        py36_env._output_and_format(output='foo.bar')
 
 
 def test_roundtrip(tmpdir, py36_env):
