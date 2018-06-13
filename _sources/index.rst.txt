@@ -5,6 +5,12 @@ Conda-Pack
 environments. This is useful for deploying code in a consistent environment,
 potentially in a location where python/conda isn't already installed.
 
+.. raw:: html
+
+    <div align="center">
+      <script src="https://asciinema.org/a/186862.js" id="asciicast-186862" async data-speed="2"></script>
+    </div>
+
 Installation
 ------------
 
