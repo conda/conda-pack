@@ -1,6 +1,7 @@
 ./_sources/api.rst.txt
 ./_sources/cli.rst.txt
 ./_sources/index.rst.txt
+./_sources/spark.rst.txt
 ./_static/ajax-loader.gif
 ./_static/alabaster.css
 ./_static/basic.css
@@ -31,3 +32,4 @@
 ./objects.inv
 ./search.html
 ./searchindex.js
+./spark.html

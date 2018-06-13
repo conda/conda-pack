@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Conda-Pack &#8212; conda-pack 0.0.1+5.g741bb98 documentation</title>
+    <title>Conda-Pack &#8212; conda-pack 0.0.1+6.gcc92cea documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,7 +38,19 @@ consistent environment, potentially in a location where python/conda isn’t
 already installed.</p>
 <div align="center">
   <script src="https://asciinema.org/a/186862.js" id="asciicast-186862" async data-speed="2"></script>
-</div><div class="section" id="installation">
+</div><div class="section" id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Bundling an application with its environment for deployment</li>
+<li>Packaging a conda environment for usage with Apache Spark (<a class="reference internal" href="spark.html"><span class="doc">see here</span></a> for more information).</li>
+<li>Packaging a conda environment for deployment on Apache YARN. One way to do
+this is to use <a class="reference external" href="https://jcrist.github.io/skein/">Skein</a>.</li>
+<li>Archiving an environment in a functioning state. Note that a more sustainable
+way to do this is to specify your environment as a <a class="reference external" href="https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment">environment.yml</a>,
+and recreate the environment when needed.</li>
+</ul>
+</div>
+<div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>It’s recommended to install in your root conda environment - the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
 command will then be available in all sub-environments as well.</p>
@@ -181,6 +193,7 @@ linux.</li>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spark.html">Usage with Apache Spark</a></li>
 </ul>
 
 <h3>Need help?</h3>

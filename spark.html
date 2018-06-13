@@ -1,0 +1,188 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Usage with Apache Spark &#8212; conda-pack 0.0.1+6.gcc92cea documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="CLI Docs" href="cli.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="usage-with-apache-spark">
+<h1>Usage with Apache Spark<a class="headerlink" href="#usage-with-apache-spark" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> can be used to distribute conda environments to be used with
+<a class="reference external" href="http://spark.apache.org/">Apache Spark</a> jobs. By bundling your environment
+for use with PySpark, you can make use of all the libraries provided by
+<code class="docutils literal notranslate"><span class="pre">conda</span></code>, and ensure that their consistently provided on every node. This
+makes use of <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html">Apache YARN’s</a>
+resource localization by distributing environments as archives, which are then
+automatically unarchived on every node. In this case either the <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> or
+<code class="docutils literal notranslate"><span class="pre">zip</span></code> formats must be used.</p>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Create an environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda create -y -n example <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.5 numpy pandas scikit-learn
+</pre></div>
+</div>
+<p>Activate the environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda activate example   <span class="c1"># Older conda versions use `source activate` instead</span>
+</pre></div>
+</div>
+<p>Package the environment into a <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> archive:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda pack -o environment.tar.gz
+Collecting packages...
+Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example&#39;</span> to <span class="s1">&#39;environment.tar.gz&#39;</span>
+<span class="o">[</span><span class="c1">########################################] | 100% Completed | 23.2s</span>
+</pre></div>
+</div>
+<p>Write a PySpark script, for example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># script.py</span>
+<span class="kn">from</span> <span class="nn">pyspark</span> <span class="kn">import</span> <span class="n">SparkConf</span>
+<span class="kn">from</span> <span class="nn">pyspark</span> <span class="kn">import</span> <span class="n">SparkContext</span>
+
+<span class="n">conf</span> <span class="o">=</span> <span class="n">SparkConf</span><span class="p">()</span>
+<span class="n">conf</span><span class="o">.</span><span class="n">setAppName</span><span class="p">(</span><span class="s1">&#39;spark-yarn&#39;</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">SparkContext</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="n">conf</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">some_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># Packages are imported and available from your bundled environment.</span>
+    <span class="kn">import</span> <span class="nn">sklearn</span>
+    <span class="kn">import</span> <span class="nn">pandas</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+    <span class="c1"># Use the libraries to do work</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span>
+
+<span class="n">rdd</span> <span class="o">=</span> <span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">))</span>
+         <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">some_function</span><span class="p">)</span>
+         <span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">rdd</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Submit the job to Spark using <code class="docutils literal notranslate"><span class="pre">spark-submit</span></code>. In YARN cluster mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">PYSPARK_PYTHON</span><span class="o">=</span>./environment/bin/python <span class="se">\</span>
+spark-submit <span class="se">\</span>
+--conf spark.yarn.appMasterEnv.PYSPARK_PYTHON<span class="o">=</span>./environment/bin/python <span class="se">\</span>
+--master yarn <span class="se">\</span>
+--deploy-mode cluster <span class="se">\</span>
+--archives environment.zip#environment <span class="se">\</span>
+script.py
+</pre></div>
+</div>
+<p>Or in YARN client mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">PYSPARK_DRIVER_PYTHON</span><span class="o">=</span><span class="sb">`</span>which python<span class="sb">`</span> <span class="se">\</span>
+<span class="nv">PYSPARK_PYTHON</span><span class="o">=</span>./environment/bin/python <span class="se">\</span>
+spark-submit <span class="se">\</span>
+--conf spark.yarn.appMasterEnv.PYSPARK_PYTHON<span class="o">=</span>./environment/bin/python <span class="se">\</span>
+--master yarn <span class="se">\</span>
+--deploy-mode client <span class="se">\</span>
+--archives environment.zip#environment <span class="se">\</span>
+script.py
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">conda-pack</a></h1>
+
+
+
+<p class="blurb">A tool for packaging and distributing conda environments.</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=conda&repo=conda-pack&type=watch&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a href="https://travis-ci.org/conda/conda-pack">
+    <img
+        alt="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+        src="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage with Apache Spark</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+
+<h3>Need help?</h3>
+
+<p>
+  Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
+</p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jim Crist.
+      
+      |
+      <a href="_sources/spark.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
