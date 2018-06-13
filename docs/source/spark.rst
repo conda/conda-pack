@@ -30,13 +30,13 @@ Activate the environment:
     $ conda activate example   # Older conda versions use `source activate` instead
 
 
-Package the environment into a ``tar.gz`` archive:
+Package the environment into a ``zip`` archive:
 
 .. code-block:: bash
 
-    $ conda pack -o environment.tar.gz
+    $ conda pack -o environment.zip
     Collecting packages...
-    Packing environment at '/Users/jcrist/anaconda/envs/example' to 'environment.tar.gz'
+    Packing environment at '/Users/jcrist/anaconda/envs/example' to 'environment.zip'
     [########################################] | 100% Completed | 23.2s
 
 
