@@ -77,7 +77,7 @@ Submit the job to Spark using ``spark-submit``. In YARN cluster mode:
     --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./environment/bin/python \
     --master yarn \
     --deploy-mode cluster \
-    --archives environment.zip#environment \
+    --archives environment.tar.gz#environment \
     script.py
 
 
@@ -91,5 +91,5 @@ Or in YARN client mode:
     --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./environment/bin/python \
     --master yarn \
     --deploy-mode client \
-    --archives environment.zip#environment \
+    --archives environment.tar.gz#environment \
     script.py
