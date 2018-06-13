@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Conda-Pack &#8212; conda-pack 0+untagged.78.g7541da8 documentation</title>
+    <title>Conda-Pack &#8212; conda-pack 0.0.1+1.g6f4ae9e documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -32,25 +32,32 @@
             
   <div class="section" id="conda-pack">
 <h1>Conda-Pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is a command line tool for creating relocatable conda
-environments. This is useful for deploying code in a consistent environment,
-potentially in a location where python/conda isn’t already installed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is a command line tool for creating relocatable <a class="reference external" href="https://conda.io/docs/">conda
+environments</a>. This is useful for deploying code in a
+consistent environment, potentially in a location where python/conda isn’t
+already installed.</p>
 <div align="center">
   <script src="https://asciinema.org/a/186862.js" id="asciicast-186862" async data-speed="2"></script>
 </div><div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>It’s recommended to install in your root conda environment - the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
 command will then be available in all sub-environments as well.</p>
+<p><strong>Install from PyPI:</strong></p>
+<p>While <code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> requires an existing <code class="docutils literal notranslate"><span class="pre">conda</span></code> install, it can also be
+installed from PyPI:</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
+</pre></div>
+</div>
 <p><strong>Install from source:</strong></p>
-<p>Conda-Pack is <a class="reference external" href="https://github.com/conda/conda-pack">available on github</a> and
-can always be installed from source.</p>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is <a class="reference external" href="https://github.com/conda/conda-pack">available on github</a>
+and can always be installed from source.</p>
 <div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">conda</span><span class="o">/</span><span class="n">conda</span><span class="o">-</span><span class="n">pack</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="commandline-usage">
 <h2>Commandline Usage<a class="headerlink" href="#commandline-usage" title="Permalink to this headline">¶</a></h2>
-<p>Conda-Pack is primarily a commandline tool. Full CLI docs can be found
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is primarily a commandline tool. Full CLI docs can be found
 <a class="reference internal" href="cli.html"><span class="doc">here</span></a>.</p>
 <p>One common use case is packing an environment on one machine to distribute to
 other machines that may not have conda/python installed.</p>
@@ -97,7 +104,7 @@ $ <span class="nb">source</span> my_env/bin/activate
 </div>
 <div class="section" id="api-usage">
 <h2>API Usage<a class="headerlink" href="#api-usage" title="Permalink to this headline">¶</a></h2>
-<p>Conda-Pack is also provides a Python API, the full documentation of which can
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> also provides a Python API, the full documentation of which can
 be found <a class="reference internal" href="api.html"><span class="doc">here</span></a>. The API mostly mirrors that of the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
 commandline. Repeating the examples from above:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">conda_pack</span>
@@ -115,7 +122,7 @@ commandline. Repeating the examples from above:</p>
 </div>
 <div class="section" id="caveats">
 <h2>Caveats<a class="headerlink" href="#caveats" title="Permalink to this headline">¶</a></h2>
-<p>This tool is extremely new, and has a few caveats.</p>
+<p>This tool is new, and has a few caveats.</p>
 <ul class="simple">
 <li>Conda must be installed and be on your path.</li>
 <li>Windows is not currently supported (should be easy to fix, contributions
