@@ -630,7 +630,7 @@ _uncached_warning = """\
 
 Continuing with packing, treating these packages as if they were unmanaged
 files (e.g. from `pip`). This is usually fine, but may cause issues as
-prefixes aren't be handled as robustly.""".format(_uncached_error)
+prefixes aren't being handled as robustly.""".format(_uncached_error)
 
 
 def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
