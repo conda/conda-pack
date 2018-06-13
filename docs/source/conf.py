@@ -34,7 +34,7 @@ html_theme_options = {
     'travis_button': True,
     'show_powered_by': False,
     'page_width': '960px',
-    'sidebar_width': '200px',
+    'sidebar_width': '220px',
     'code_font_size': '0.8em'
 }
 html_sidebars = {

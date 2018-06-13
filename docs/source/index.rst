@@ -12,6 +12,24 @@ already installed.
       <script src="https://asciinema.org/a/186862.js" id="asciicast-186862" async data-speed="2"></script>
     </div>
 
+
+Use Cases
+---------
+
+- Bundling an application with its environment for deployment
+
+- Packaging a conda environment for usage with Apache Spark (:doc:`see here
+  <spark>` for more information).
+
+- Packaging a conda environment for deployment on Apache YARN. One way to do
+  this is to use `Skein <https://jcrist.github.io/skein/>`_.
+
+- Archiving an environment in a functioning state. Note that a more sustainable
+  way to do this is to specify your environment as a `environment.yml
+  <https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment>`_,
+  and recreate the environment when needed.
+
+
 Installation
 ------------
 
@@ -143,3 +161,4 @@ This tool is new, and has a few caveats.
 
     api.rst
     cli.rst
+    spark.rst
