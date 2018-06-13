@@ -18,8 +18,8 @@ Use Cases
 
 - Bundling an application with its environment for deployment
 
-- Packaging a conda environment for usage with Apache Spark (:doc:`see here
-  <spark>` for more information).
+- Packaging a conda environment for usage with Apache Spark when deploying on
+  YARN (:doc:`see here <spark>` for more information).
 
 - Packaging a conda environment for deployment on Apache YARN. One way to do
   this is to use `Skein <https://jcrist.github.io/skein/>`_.
