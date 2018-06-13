@@ -1,9 +1,10 @@
 Conda-Pack
 ==========
 
-``conda-pack`` is a command line tool for creating relocatable conda
-environments. This is useful for deploying code in a consistent environment,
-potentially in a location where python/conda isn't already installed.
+``conda-pack`` is a command line tool for creating relocatable `conda
+environments <https://conda.io/docs/>`_. This is useful for deploying code in a
+consistent environment, potentially in a location where python/conda isn't
+already installed.
 
 .. raw:: html
 
@@ -17,10 +18,20 @@ Installation
 It's recommended to install in your root conda environment - the ``conda pack``
 command will then be available in all sub-environments as well.
 
+**Install from PyPI:**
+
+While ``conda-pack`` requires an existing ``conda`` install, it can also be
+installed from PyPI:
+
+.. code::
+
+    pip install conda-pack
+
+
 **Install from source:**
 
-Conda-Pack is `available on github <https://github.com/conda/conda-pack>`_ and
-can always be installed from source.
+``conda-pack`` is `available on github <https://github.com/conda/conda-pack>`_
+and can always be installed from source.
 
 
 .. code::
@@ -31,7 +42,7 @@ can always be installed from source.
 Commandline Usage
 -----------------
 
-Conda-Pack is primarily a commandline tool. Full CLI docs can be found
+``conda-pack`` is primarily a commandline tool. Full CLI docs can be found
 :doc:`here <cli>`.
 
 One common use case is packing an environment on one machine to distribute to
@@ -85,7 +96,7 @@ On the target machine
 API Usage
 ---------
 
-Conda-Pack is also provides a Python API, the full documentation of which can
+``conda-pack`` also provides a Python API, the full documentation of which can
 be found :doc:`here <api>`. The API mostly mirrors that of the ``conda pack``
 commandline. Repeating the examples from above:
 
@@ -106,7 +117,7 @@ commandline. Repeating the examples from above:
 Caveats
 -------
 
-This tool is extremely new, and has a few caveats.
+This tool is new, and has a few caveats.
 
 - Conda must be installed and be on your path.
 
