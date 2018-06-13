@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Usage with Apache Spark &#8212; conda-pack 0.0.1+6.gcc92cea documentation</title>
+    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0.0.1+7.g4b42f66 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -30,13 +30,13 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="usage-with-apache-spark">
-<h1>Usage with Apache Spark<a class="headerlink" href="#usage-with-apache-spark" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="usage-with-apache-spark-on-yarn">
+<h1>Usage with Apache Spark on YARN<a class="headerlink" href="#usage-with-apache-spark-on-yarn" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> can be used to distribute conda environments to be used with
-<a class="reference external" href="http://spark.apache.org/">Apache Spark</a> jobs. By bundling your environment
-for use with PySpark, you can make use of all the libraries provided by
-<code class="docutils literal notranslate"><span class="pre">conda</span></code>, and ensure that their consistently provided on every node. This
-makes use of <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html">Apache YARN’s</a>
+<a class="reference external" href="http://spark.apache.org/">Apache Spark</a> jobs when <a class="reference external" href="http://spark.apache.org/docs/latest/running-on-yarn.html">deploying on Apache YARN</a>. By bundling your
+environment for use with PySpark, you can make use of all the libraries
+provided by <code class="docutils literal notranslate"><span class="pre">conda</span></code>, and ensure that their consistently provided on every
+node. This makes use of <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html">YARN’s</a>
 resource localization by distributing environments as archives, which are then
 automatically unarchived on every node. In this case either the <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> or
 <code class="docutils literal notranslate"><span class="pre">zip</span></code> formats must be used.</p>
@@ -146,7 +146,7 @@ script.py
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage with Apache Spark</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage with Apache Spark on YARN</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>

@@ -1,11 +1,12 @@
-Usage with Apache Spark
-=======================
+Usage with Apache Spark on YARN
+===============================
 
 ``conda-pack`` can be used to distribute conda environments to be used with
-`Apache Spark <http://spark.apache.org/>`_ jobs. By bundling your environment
-for use with PySpark, you can make use of all the libraries provided by
-``conda``, and ensure that their consistently provided on every node. This
-makes use of `Apache YARN's
+`Apache Spark <http://spark.apache.org/>`_ jobs when `deploying on Apache YARN
+<http://spark.apache.org/docs/latest/running-on-yarn.html>`_. By bundling your
+environment for use with PySpark, you can make use of all the libraries
+provided by ``conda``, and ensure that their consistently provided on every
+node. This makes use of `YARN's
 <https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html>`_
 resource localization by distributing environments as archives, which are then
 automatically unarchived on every node. In this case either the ``tar.gz`` or
