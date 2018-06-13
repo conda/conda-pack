@@ -30,13 +30,13 @@ Activate the environment:
     $ conda activate example   # Older conda versions use `source activate` instead
 
 
-Package the environment into a ``zip`` archive:
+Package the environment into a ``tar.gz`` archive:
 
 .. code-block:: bash
 
-    $ conda pack -o environment.zip
+    $ conda pack -o environment.tar.gz
     Collecting packages...
-    Packing environment at '/Users/jcrist/anaconda/envs/example' to 'environment.zip'
+    Packing environment at '/Users/jcrist/anaconda/envs/example' to 'environment.tar.gz'
     [########################################] | 100% Completed | 23.2s
 
 
@@ -77,7 +77,7 @@ Submit the job to Spark using ``spark-submit``. In YARN cluster mode:
     --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./environment/bin/python \
     --master yarn \
     --deploy-mode cluster \
-    --archives environment.zip#environment \
+    --archives environment.tar.gz#environment \
     script.py
 
 
@@ -91,5 +91,5 @@ Or in YARN client mode:
     --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./environment/bin/python \
     --master yarn \
     --deploy-mode client \
-    --archives environment.zip#environment \
+    --archives environment.tar.gz#environment \
     script.py
