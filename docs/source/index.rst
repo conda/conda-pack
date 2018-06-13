@@ -18,6 +18,15 @@ Installation
 It's recommended to install in your root conda environment - the ``conda pack``
 command will then be available in all sub-environments as well.
 
+**Install from Conda-Forge:**
+
+``conda-pack`` is available on `conda-forge <https://conda-forge.org/>`_:
+
+.. code::
+
+    conda install -c conda-forge conda-pack
+
+
 **Install from PyPI:**
 
 While ``conda-pack`` requires an existing ``conda`` install, it can also be
