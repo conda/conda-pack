@@ -111,6 +111,9 @@ def main(args=None, pack=pack):
     except CondaPackException as e:
         print("CondaPackError: %s" % e, file=sys.stderr)
         sys.exit(1)
+    except KeyboardInterrupt as e:
+        print("Interrupted", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         print(traceback.format_exc(), file=sys.stderr)
         sys.exit(1)

@@ -1,7 +1,10 @@
 from __future__ import absolute_import, print_function, division
 
 import os
+import signal
 import tarfile
+import time
+from subprocess import Popen, PIPE
 
 import pytest
 
@@ -123,3 +126,19 @@ def test_cli_warnings(capsys, broken_package_cache, tmpdir):
     out, err = capsys.readouterr()
     assert "Conda-managed packages were found" in err
     assert "UserWarning" not in err  # printed, not from python warning
+
+
+def test_keyboard_interrupt(tmpdir):
+    out_path = os.path.join(str(tmpdir), 'py36.tar')
+
+    proc = Popen('conda-pack -p %s -o %s' % (py36_path, out_path),
+                 stdout=PIPE, stderr=PIPE, shell=True)
+
+    time.sleep(0.5)
+    proc.send_signal(signal.SIGINT)
+
+    assert proc.wait() == 1
+
+    err = proc.stderr.read()
+    assert err.decode() == 'Interrupted\n'
+    assert not os.path.exists(out_path)
