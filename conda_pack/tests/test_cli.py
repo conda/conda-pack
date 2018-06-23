@@ -137,8 +137,13 @@ def test_keyboard_interrupt(tmpdir):
     time.sleep(0.5)
     proc.send_signal(signal.SIGINT)
 
-    assert proc.wait() == 1
+    outcode = proc.wait()
 
-    err = proc.stderr.read()
-    assert err.decode() == 'Interrupted\n'
+    out = proc.stdout.read().decode()
+    err = proc.stderr.read().decode()
+
+    print(out)
+    print(err)
+    assert outcode == 1
+    assert err == 'Interrupted\n'
     assert not os.path.exists(out_path)
