@@ -1,10 +1,10 @@
 from __future__ import absolute_import, print_function, division
 
 import os
-import signal
 import tarfile
+import sys
 import time
-from subprocess import Popen, PIPE
+from threading import Thread
 
 import pytest
 
@@ -128,22 +128,27 @@ def test_cli_warnings(capsys, broken_package_cache, tmpdir):
     assert "UserWarning" not in err  # printed, not from python warning
 
 
-def test_keyboard_interrupt(tmpdir):
+def test_keyboard_interrupt(capsys, tmpdir):
+    if sys.version_info.major == 2:
+        from thread import interrupt_main
+    else:
+        from _thread import interrupt_main
+
+    def interrupt():
+        time.sleep(0.5)
+        interrupt_main()
+
+    interrupter = Thread(target=interrupt)
+
     out_path = os.path.join(str(tmpdir), 'py36.tar')
+    try:
+        with pytest.raises(SystemExit) as exc:
+            interrupter.start()
+            main(["-p", py36_path, "-o", out_path])
+    except KeyboardInterrupt:
+        assert False, "Should have been caught by the CLI"
 
-    proc = Popen('conda-pack -p %s -o %s' % (py36_path, out_path),
-                 stdout=PIPE, stderr=PIPE, shell=True)
-
-    time.sleep(0.5)
-    proc.send_signal(signal.SIGINT)
-
-    outcode = proc.wait()
-
-    out = proc.stdout.read().decode()
-    err = proc.stderr.read().decode()
-
-    print(out)
-    print(err)
-    assert outcode == 1
+    assert exc.value.code == 1
+    out, err = capsys.readouterr()
     assert err == 'Interrupted\n'
     assert not os.path.exists(out_path)
