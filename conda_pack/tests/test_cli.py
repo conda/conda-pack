@@ -2,6 +2,9 @@ from __future__ import absolute_import, print_function, division
 
 import os
 import tarfile
+import sys
+import time
+from threading import Thread
 
 import pytest
 
@@ -123,3 +126,29 @@ def test_cli_warnings(capsys, broken_package_cache, tmpdir):
     out, err = capsys.readouterr()
     assert "Conda-managed packages were found" in err
     assert "UserWarning" not in err  # printed, not from python warning
+
+
+def test_keyboard_interrupt(capsys, tmpdir):
+    if sys.version_info.major == 2:
+        from thread import interrupt_main
+    else:
+        from _thread import interrupt_main
+
+    def interrupt():
+        time.sleep(0.5)
+        interrupt_main()
+
+    interrupter = Thread(target=interrupt)
+
+    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    try:
+        with pytest.raises(SystemExit) as exc:
+            interrupter.start()
+            main(["-p", py36_path, "-o", out_path])
+    except KeyboardInterrupt:
+        assert False, "Should have been caught by the CLI"
+
+    assert exc.value.code == 1
+    out, err = capsys.readouterr()
+    assert err == 'Interrupted\n'
+    assert not os.path.exists(out_path)
