@@ -659,6 +659,10 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
     if not os.path.exists(conda_meta):
         raise CondaPackException("Path %r is not a conda environment" % prefix)
 
+    # Check that it's not the root environment
+    if any(os.path.exists(os.path.join(prefix, d)) for d in ['pkgs', 'envs']):
+        raise CondaPackException("Cannot package root environment")
+
     # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
