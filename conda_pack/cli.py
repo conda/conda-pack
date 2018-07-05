@@ -69,6 +69,9 @@ def build_parser():
                               "decompression if the ``unzip`` implementation "
                               "doesn't support symlinks*. Ignored if format "
                               "isn't ``zip``."))
+    parser.add_argument("--no-zip-64",
+                        action="store_true",
+                        help="Disable ZIP64 extensions.")
     parser.add_argument("--exclude",
                         action=MultiAppendAction,
                         metavar="PATTERN",
@@ -97,6 +100,11 @@ def build_parser():
 PARSER = build_parser()
 
 
+def fail(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+
 def main(args=None, pack=pack):
     args = PARSER.parse_args(args=args)
 
@@ -114,18 +122,16 @@ def main(args=None, pack=pack):
                  force=args.force,
                  compress_level=args.compress_level,
                  zip_symlinks=args.zip_symlinks,
+                 zip_64=not args.no_zip_64,
                  arcroot=args.arcroot,
                  verbose=not args.quiet,
                  filters=args.filters)
     except CondaPackException as e:
-        print("CondaPackError: %s" % e, file=sys.stderr)
-        sys.exit(1)
+        fail("CondaPackError: %s" % e)
     except KeyboardInterrupt as e:
-        print("Interrupted", file=sys.stderr)
-        sys.exit(1)
+        fail("Interrupted")
     except Exception as e:
-        print(traceback.format_exc(), file=sys.stderr)
-        sys.exit(1)
+        fail(traceback.format_exc())
     sys.exit(0)
 
 

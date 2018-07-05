@@ -13,9 +13,11 @@ _tar_mode = {'tar.gz': 'w:gz',
              'tar': 'w'}
 
 
-def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False):
+def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
+            zip_64=True):
     if format == 'zip':
-        return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks)
+        return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks,
+                          zip_64=zip_64)
     else:
         return TarArchive(fileobj, arcroot, _tar_mode[format],
                           compress_level=compress_level)
@@ -61,13 +63,15 @@ class TarArchive(ArchiveBase):
 
 
 class ZipArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, zip_symlinks=False):
+    def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
         self.fileobj = fileobj
         self.arcroot = arcroot
         self.zip_symlinks = zip_symlinks
+        self.zip_64 = zip_64
 
     def __enter__(self):
-        self.archive = zipfile.ZipFile(self.fileobj, "w", allowZip64=True,
+        self.archive = zipfile.ZipFile(self.fileobj, "w",
+                                       allowZip64=self.zip_64,
                                        compression=zipfile.ZIP_DEFLATED)
         return self
 

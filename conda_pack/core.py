@@ -9,6 +9,7 @@ import shutil
 import sys
 import tempfile
 import warnings
+import zipfile
 from contextlib import contextmanager
 from fnmatch import fnmatch
 from subprocess import check_output
@@ -254,7 +255,7 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', arcroot='', verbose=False,
-             force=False, compress_level=4, zip_symlinks=False):
+             force=False, compress_level=4, zip_symlinks=False, zip_64=True):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -285,6 +286,8 @@ class CondaEnv(object):
             files. *Note that the resulting archive may silently fail on
             decompression if the ``unzip`` implementation doesn't support
             symlinks*. Default is False. Ignored if format isn't ``zip``.
+        zip_64 : bool, optional
+            Whether to enable ZIP64 extensions. Default is True.
 
         Returns
         -------
@@ -309,12 +312,18 @@ class CondaEnv(object):
             with os.fdopen(fd, 'wb') as temp_file:
                 with archive(temp_file, arcroot, format,
                              compress_level=compress_level,
-                             zip_symlinks=zip_symlinks) as arc:
+                             zip_symlinks=zip_symlinks,
+                             zip_64=zip_64) as arc:
                     packer = Packer(self.prefix, arc)
                     with progressbar(self.files, enabled=verbose) as files:
-                        for f in files:
-                            packer.add(f)
-                        packer.finish()
+                        try:
+                            for f in files:
+                                packer.add(f)
+                            packer.finish()
+                        except zipfile.LargeZipFile:
+                            raise CondaPackException(
+                                    "Large Zip File: ZIP64 extensions required "
+                                    "but were disabled")
 
         except Exception:
             # Writing failed, remove tempfile
@@ -360,7 +369,7 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', verbose=False, force=False, compress_level=4,
-         zip_symlinks=False, filters=None):
+         zip_symlinks=False, zip_64=True, filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -395,6 +404,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         resulting archive may silently fail on decompression if the ``unzip``
         implementation doesn't support symlinks*. Default is False. Ignored if
         format isn't ``zip``.
+    zip_64 : bool, optional
+        Whether to enable ZIP64 extensions. Default is True.
     filters : list, optional
         A list of filters to apply to the files. Each filter is a tuple of
         ``(kind, pattern)``, where ``kind`` is either ``'exclude'`` or
@@ -429,8 +440,9 @@ def pack(name=None, prefix=None, output=None, format='infer',
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
     return env.pack(output=output, format=format, arcroot=arcroot,
-                    verbose=verbose, compress_level=compress_level,
-                    zip_symlinks=zip_symlinks, force=force)
+                    verbose=verbose, force=force,
+                    compress_level=compress_level,
+                    zip_symlinks=zip_symlinks, zip_64=zip_64)
 
 
 def find_site_packages(prefix):
