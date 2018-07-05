@@ -185,6 +185,16 @@ def test_roundtrip(tmpdir, py36_env):
         shebang = fil.readline().strip()
         assert shebang == '#!/usr/bin/env python'
 
+    # Check conda-unpack --help and --version
+    conda_unpack = '%s/bin/conda-unpack' % extract_path
+    out = subprocess.check_output([conda_unpack, '--help'],
+                                  stderr=subprocess.STDOUT).decode()
+    assert out.startswith('usage: conda-unpack')
+
+    out = subprocess.check_output([conda_unpack, '--version'],
+                                  stderr=subprocess.STDOUT).decode()
+    assert out.startswith('conda-unpack')
+
     # Check bash scripts all don't error
     command = (". {path}/bin/activate && "
                "conda-unpack && "

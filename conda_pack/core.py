@@ -755,11 +755,24 @@ _prefix_records = [
 
 if __name__ == '__main__':
     import os
-    script_dir = os.path.dirname(__file__)
-    new_prefix = os.path.dirname(script_dir)
-    for path, placeholder, mode in _prefix_records:
-        update_prefix(os.path.join(new_prefix, path), new_prefix,
-                      placeholder, mode=mode)
+    import argparse
+    parser = argparse.ArgumentParser(
+            prog='conda-unpack',
+            description=('Finish unpacking the environment after unarchiving.'
+                         'Cleans up absolute prefixes in any remaining files'))
+    parser.add_argument('--version',
+                        action='store_true',
+                        help='Show version then exit')
+    args = parser.parse_args()
+    # Manually handle version printing to output to stdout in python < 3.4
+    if args.version:
+        print('conda-unpack {version}')
+    else:
+        script_dir = os.path.dirname(__file__)
+        new_prefix = os.path.dirname(script_dir)
+        for path, placeholder, mode in _prefix_records:
+            update_prefix(os.path.join(new_prefix, path), new_prefix,
+                          placeholder, mode=mode)
 """
 
 
@@ -815,6 +828,8 @@ class Packer(object):
             raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
 
     def finish(self):
+        from . import __version__  # local import to avoid circular imports
+
         if not on_win:
             shebang = '#!/usr/bin/env python'
         else:
@@ -830,7 +845,8 @@ class Packer(object):
 
         script = _conda_unpack_template.format(shebang=shebang,
                                                prefix_records=prefix_records,
-                                               prefixes_py=prefixes_py)
+                                               prefixes_py=prefixes_py,
+                                               version=__version__)
 
         with tempfile.NamedTemporaryFile(mode='w') as fil:
             fil.write(script)
