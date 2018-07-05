@@ -197,14 +197,6 @@ def test_roundtrip(tmpdir, py36_env):
 
 
 def test_pack_exceptions(tmpdir, py36_env):
-    already_exists = os.path.join(str(tmpdir), 'py36.tar')
-    with open(already_exists, 'wb'):
-        pass
-
-    # file already exists
-    with pytest.raises(CondaPackException):
-        py36_env.pack(output=already_exists)
-
     # Can't pass both prefix and name
     with pytest.raises(CondaPackException):
         pack(prefix=py36_path, name='py36')
@@ -214,6 +206,19 @@ def test_pack_exceptions(tmpdir, py36_env):
         pack(prefix=py36_path,
              filters=[("exclude", "*.py"),
                       ("foo", "*.pyc")])
+
+
+def test_force(tmpdir, py36_env):
+    already_exists = os.path.join(str(tmpdir), 'py36.tar')
+    with open(already_exists, 'wb'):
+        pass
+
+    # file already exists
+    with pytest.raises(CondaPackException):
+        py36_env.pack(output=already_exists)
+
+    py36_env.pack(output=already_exists, force=True)
+    assert tarfile.is_tarfile(already_exists)
 
 
 def test_pack(tmpdir, py36_env):

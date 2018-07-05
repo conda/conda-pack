@@ -254,7 +254,7 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', arcroot='', verbose=False,
-             compress_level=4, zip_symlinks=False):
+             force=False, compress_level=4, zip_symlinks=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -270,6 +270,9 @@ class CondaEnv(object):
             Defaults to ''.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
+        force : bool, optional
+            Whether to overwrite any existing archive at the output path.
+            Default is False.
         compress_level : int, optional
             The compression level to use, from 0 to 9. Higher numbers decrease
             output file size at the expense of compression time. Ignored for
@@ -294,7 +297,7 @@ class CondaEnv(object):
         # The output path and archive format
         output, format = self._output_and_format(output, format)
 
-        if os.path.exists(output):
+        if os.path.exists(output) and not force:
             raise CondaPackException("File %r already exists" % output)
 
         if verbose:
@@ -356,7 +359,7 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot='', verbose=False, compress_level=4,
+         arcroot='', verbose=False, force=False, compress_level=4,
          zip_symlinks=False, filters=None):
     """Package an existing conda environment into an archive file.
 
@@ -377,6 +380,9 @@ def pack(name=None, prefix=None, output=None, format='infer',
         Defaults to ''.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
+    force : bool, optional
+        Whether to overwrite any existing archive at the output path. Default
+        is False.
     compress_level : int, optional
         The compression level to use, from 0 to 9. Higher numbers decrease
         output file size at the expense of compression time. Ignored for
@@ -424,7 +430,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
 
     return env.pack(output=output, format=format, arcroot=arcroot,
                     verbose=verbose, compress_level=compress_level,
-                    zip_symlinks=zip_symlinks)
+                    zip_symlinks=zip_symlinks, force=force)
 
 
 def find_site_packages(prefix):
