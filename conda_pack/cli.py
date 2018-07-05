@@ -79,6 +79,9 @@ def build_parser():
                         metavar="PATTERN",
                         dest="filters",
                         help="Re-add excluded files matching this pattern")
+    parser.add_argument("--force", "-f",
+                        action="store_true",
+                        help="Overwrite any existing archive at the output path.")
     parser.add_argument("--quiet", "-q",
                         action="store_true",
                         help="Do not report progress")
@@ -104,10 +107,16 @@ def main(args=None, pack=pack):
 
     try:
         with context.set_cli():
-            pack(name=args.name, prefix=args.prefix, output=args.output,
-                 format=args.format, compress_level=args.compress_level,
-                 zip_symlinks=args.zip_symlinks, arcroot=args.arcroot,
-                 verbose=not args.quiet, filters=args.filters)
+            pack(name=args.name,
+                 prefix=args.prefix,
+                 output=args.output,
+                 format=args.format,
+                 force=args.force,
+                 compress_level=args.compress_level,
+                 zip_symlinks=args.zip_symlinks,
+                 arcroot=args.arcroot,
+                 verbose=not args.quiet,
+                 filters=args.filters)
     except CondaPackException as e:
         print("CondaPackError: %s" % e, file=sys.stderr)
         sys.exit(1)
