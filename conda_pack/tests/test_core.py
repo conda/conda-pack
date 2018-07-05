@@ -196,7 +196,7 @@ def test_roundtrip(tmpdir, py36_env):
     assert out == 'Done\n'
 
 
-def test_pack_exceptions(tmpdir, py36_env):
+def test_pack_exceptions(py36_env):
     # Can't pass both prefix and name
     with pytest.raises(CondaPackException):
         pack(prefix=py36_path, name='py36')
@@ -206,6 +206,30 @@ def test_pack_exceptions(tmpdir, py36_env):
         pack(prefix=py36_path,
              filters=[("exclude", "*.py"),
                       ("foo", "*.pyc")])
+
+
+@pytest.mark.slow
+def test_zip64(tmpdir):
+    # Create an environment that requires ZIP64 extensions, but doesn't use a
+    # lot of disk/RAM
+    source = os.path.join(str(tmpdir), 'source.txt')
+    with open(source, 'wb') as f:
+        f.write(b'0')
+
+    files = [File(source, target='foo%d' % i) for i in range(1 << 16)]
+    large_env = CondaEnv('large', files=files)
+
+    out_path = os.path.join(str(tmpdir), 'large.zip')
+
+    # Errors if ZIP64 disabled
+    with pytest.raises(CondaPackException) as exc:
+        large_env.pack(output=out_path, zip_64=False)
+    assert 'ZIP64' in str(exc.value)
+    assert not os.path.exists(out_path)
+
+    # Works fine if ZIP64 not disabled
+    large_env.pack(output=out_path)
+    assert os.path.exists(out_path)
 
 
 def test_force(tmpdir, py36_env):
