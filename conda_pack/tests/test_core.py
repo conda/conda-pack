@@ -19,6 +19,22 @@ def py36_env():
     return CondaEnv.from_prefix(py36_path)
 
 
+@pytest.fixture
+def bad_conda_exe(tmpdir_factory):
+    tmpdir = str(tmpdir_factory.mktemp('bin'))
+    fake_conda = os.path.join(tmpdir, 'conda')
+    with open(fake_conda, 'w') as f:
+        f.write('echo "Failed"\nexit 1')
+    os.chmod(fake_conda, os.stat(fake_conda).st_mode | 0o111)
+
+    old_path = os.environ['PATH']
+    try:
+        os.environ['PATH'] = '%s:%s' % (tmpdir, old_path)
+        yield
+    except Exception:
+        os.environ['PATH'] = old_path
+
+
 def test_name_to_prefix():
     # Smoketest on default name
     name_to_prefix()
@@ -71,6 +87,13 @@ def test_errors_root_environment():
         CondaEnv.from_prefix(root_prefix)
 
     assert "Cannot package root environment" in str(exc.value)
+
+
+def test_errors_conda_missing(bad_conda_exe):
+    with pytest.raises(CondaPackException) as exc:
+        CondaEnv.from_name('probably_fake_env')
+
+    assert 'Failed to determine path to environment' in str(exc.value)
 
 
 def test_env_properties(py36_env):

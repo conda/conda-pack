@@ -1,8 +1,8 @@
 from __future__ import absolute_import, print_function, division
 
 import os
+import signal
 import tarfile
-import sys
 import time
 from threading import Thread
 
@@ -129,14 +129,9 @@ def test_cli_warnings(capsys, broken_package_cache, tmpdir):
 
 
 def test_keyboard_interrupt(capsys, tmpdir):
-    if sys.version_info.major == 2:
-        from thread import interrupt_main
-    else:
-        from _thread import interrupt_main
-
     def interrupt():
         time.sleep(0.5)
-        interrupt_main()
+        os.kill(os.getpid(), signal.SIGINT)
 
     interrupter = Thread(target=interrupt)
 

@@ -6,13 +6,13 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 import tempfile
 import warnings
 import zipfile
 from contextlib import contextmanager
 from fnmatch import fnmatch
-from subprocess import check_output
 
 from .compat import on_win, default_encoding, find_py_source
 from .formats import archive
@@ -495,7 +495,17 @@ def check_no_editable_packages(prefix, site_packages):
 
 
 def name_to_prefix(name=None):
-    info = check_output("conda info --json", shell=True).decode(default_encoding)
+    try:
+        info = (subprocess.check_output("conda info --json", shell=True,
+                                        stderr=subprocess.PIPE)
+                          .decode(default_encoding))
+    except subprocess.CalledProcessError as exc:
+        kind = ('current environment' if name is None
+                else 'environment: %r' % name)
+        raise CondaPackException("Failed to determine path to %s. This may "
+                                 "be due to conda not being on your PATH. The "
+                                 "full error is below:\n\n"
+                                 "%s" % (kind, exc.output))
     info2 = json.loads(info)
 
     if name:
