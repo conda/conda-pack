@@ -496,8 +496,9 @@ def check_no_editable_packages(prefix, site_packages):
 
 def name_to_prefix(name=None):
     try:
-        info = (subprocess.check_output("conda info --json", shell=True,
-                                        stderr=subprocess.PIPE)
+        conda_exe = os.environ.get('CONDA_EXE', 'conda')
+        info = (subprocess.check_output("{} info --json".format(conda_exe),
+                                        shell=True, stderr=subprocess.PIPE)
                           .decode(default_encoding))
     except subprocess.CalledProcessError as exc:
         kind = ('current environment' if name is None
