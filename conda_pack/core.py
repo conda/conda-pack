@@ -784,7 +784,7 @@ if __name__ == '__main__':
         print('conda-unpack {version}')
     else:
         script_dir = os.path.dirname(__file__)
-        new_prefix = os.path.dirname(script_dir)
+        new_prefix = os.path.abspath(os.path.dirname(script_dir))
         for path, placeholder, mode in _prefix_records:
             update_prefix(os.path.join(new_prefix, path), new_prefix,
                           placeholder, mode=mode)
