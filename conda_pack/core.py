@@ -446,7 +446,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
 
 
 def find_site_packages(prefix):
-    # Ensure there is exactly one version of python installed
+    # Ensure there is at most one version of python installed
     pythons = []
     for fn in glob.glob(os.path.join(prefix, 'conda-meta', 'python-*.json')):
         with open(fn) as fil:
@@ -454,13 +454,13 @@ def find_site_packages(prefix):
         if meta['name'] == 'python':
             pythons.append(meta)
 
-    if len(pythons) > 1:
+    if len(pythons) > 1:  # pragma: nocover
         raise CondaPackException("Unexpected failure, multiple versions of "
                                  "python found in prefix %r" % prefix)
 
     elif not pythons:
-        raise CondaPackException("Unexpected failure, no version of python "
-                                 "found in prefix %r" % prefix)
+        # No python installed
+        return None
 
     # Only a single version of python installed in this environment
     if on_win:
@@ -609,6 +609,11 @@ def load_managed_package(info, prefix, site_packages):
 
     is_noarch = noarch_type == 'python'
 
+    if is_noarch and site_packages is None:  # pragma: nocover
+        raise CondaPackException("noarch: python package installed (%r), but "
+                                 "Python not found in environment (%r)" %
+                                 (info['name'], prefix))
+
     paths_json = os.path.join(pkg, 'info', 'paths.json')
     if os.path.exists(paths_json):
         with open(paths_json) as fil:
@@ -683,8 +688,9 @@ def load_environment(prefix, on_missing_cache='warn'):
     # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
-    # Check that no editable packages are installed
-    check_no_editable_packages(prefix, site_packages)
+    if site_packages is not None:
+        # Check that no editable packages are installed
+        check_no_editable_packages(prefix, site_packages)
 
     all_files = load_files(prefix)
 
