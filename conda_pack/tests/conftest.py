@@ -16,6 +16,7 @@ py27_path = os.path.join(env_dir, 'py27')
 py36_path = os.path.join(env_dir, 'py36')
 py36_editable_path = os.path.join(env_dir, 'py36_editable')
 py36_broken_path = os.path.join(env_dir, 'py36_broken')
+nopython_path = os.path.join(env_dir, 'nopython')
 
 
 def pytest_addoption(parser):

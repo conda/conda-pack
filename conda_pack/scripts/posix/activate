@@ -51,6 +51,16 @@ _conda_pack_activate() {
         posh) ;;
         *) hash -r;;
     esac
+
+    # Run the activate scripts
+    local _path
+    # Temporarily set CONDA_PREFIX for activate scripts
+    local CONDA_PREFIX=$CONDA_PACK_PREFIX
+    for _path in ${full_path_env}/etc/conda/activate.d/*; do
+        if [ -f "$_path" ]; then
+            . "$_path"
+        fi
+    done
 }
 
 _conda_pack_activate

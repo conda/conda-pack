@@ -11,7 +11,7 @@ from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.core import name_to_prefix, File
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
-                       py27_path, rel_env_dir, env_dir)
+                       py27_path, nopython_path, rel_env_dir, env_dir)
 
 
 @pytest.fixture(scope="module")
@@ -163,6 +163,13 @@ def test_loaded_file_properties(py36_env):
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
+
+
+def test_works_with_no_python():
+    # Collection doesn't require python
+    env = CondaEnv.from_prefix(nopython_path)
+    # non-empty
+    assert len(env)
 
 
 def test_include_exclude(py36_env):

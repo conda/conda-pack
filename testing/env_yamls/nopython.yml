@@ -1,0 +1,7 @@
+name: nopython
+
+channels:
+    - conda-forge
+
+dependencies:
+    - snappy
