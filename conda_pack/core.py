@@ -548,7 +548,7 @@ def read_has_prefix(path):
     return out
 
 
-def collect_unmanaged(prefix, managed):
+def load_files(prefix):
     from os.path import relpath, join, isfile, islink
 
     remove = {join('bin', f) for f in ['conda', 'activate', 'deactivate']}
@@ -560,7 +560,7 @@ def collect_unmanaged(prefix, managed):
     res = set()
 
     for fn in os.listdir(prefix):
-        if fn in ignore:
+        if fn in ignore or fn.endswith('~') or fn.endswith('.DS_STORE'):
             continue
         elif isfile(join(prefix, fn)):
             res.add(fn)
@@ -578,15 +578,9 @@ def collect_unmanaged(prefix, managed):
                     # root2 is an empty directory, add it
                     res.add(root2)
 
-    managed = {i.target for i in managed}
-    res -= managed
     res -= remove
 
-    return [File(os.path.join(prefix, p), p, is_conda=False,
-                 prefix_placeholder=None, file_mode='unknown')
-            for p in res if not (p.endswith('~') or
-                                 p.endswith('.DS_Store') or
-                                 (find_py_source(p) in managed))]
+    return res
 
 
 def managed_file(is_noarch, site_packages, pkg, _path, prefix_placeholder=None,
@@ -662,7 +656,19 @@ files (e.g. from `pip`). This is usually fine, but may cause issues as
 prefixes aren't being handled as robustly.""".format(_uncached_error)
 
 
-def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
+_missing_files_error = """
+Files managed by conda were found to have been deleted/overwritten in the
+following packages:
+
+{0}
+
+This is usually due to `pip` uninstalling or clobbering conda managed files,
+resulting in an inconsistent environment. Please check your environment for
+conda/pip conflicts using `conda list`, and fix the environment by ensuring
+only one version of each package is installed (conda preferred)."""
+
+
+def load_environment(prefix, on_missing_cache='warn'):
     # Check if it's a conda environment
     if not os.path.exists(prefix):
         raise CondaPackException("Environment path %r doesn't exist" % prefix)
@@ -680,8 +686,12 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
     # Check that no editable packages are installed
     check_no_editable_packages(prefix, site_packages)
 
+    all_files = load_files(prefix)
+
     files = []
+    managed = set()
     uncached = []
+    missing_files = []
     for path in os.listdir(conda_meta):
         if path.endswith('.json'):
             with open(os.path.join(conda_meta, path)) as fil:
@@ -698,10 +708,29 @@ def load_environment(prefix, unmanaged=True, on_missing_cache='warn'):
             else:
                 new_files = load_managed_package(info, prefix, site_packages)
 
+            targets = {f.target for f in new_files}
+
+            if targets.difference(all_files):
+                # Collect packages missing files as we progress to provide a
+                # complete error message on failure.
+                missing_files.append((info['name'], info['version']))
+
+            managed.update(targets)
             files.extend(new_files)
 
-    if unmanaged:
-        files.extend(collect_unmanaged(prefix, files))
+    if missing_files:
+        packages = '\n'.join('- %s=%r' % i for i in missing_files)
+        raise CondaPackException(_missing_files_error.format(packages))
+
+    # Add unmanaged files
+    unmanaged = all_files - managed
+
+    files.extend(File(os.path.join(prefix, p),
+                      p,
+                      is_conda=False,
+                      prefix_placeholder=None,
+                      file_mode='unknown')
+                 for p in unmanaged if not find_py_source(p) in managed)
 
     # Add activate/deactivate scripts
     files.extend(File(*s) for s in _scripts)

@@ -10,8 +10,8 @@ import pytest
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.core import name_to_prefix, File
 
-from .conftest import (py36_path, py36_editable_path, py27_path, rel_env_dir,
-                       env_dir)
+from .conftest import (py36_path, py36_editable_path, py36_broken_path,
+                       py27_path, rel_env_dir, env_dir)
 
 
 @pytest.fixture(scope="module")
@@ -77,6 +77,16 @@ def test_errors_editable_packages():
         CondaEnv.from_prefix(py36_editable_path)
 
     assert "Editable packages found" in str(exc.value)
+
+
+def test_errors_pip_overwrites():
+    with pytest.raises(CondaPackException) as exc:
+        CondaEnv.from_prefix(py36_broken_path)
+
+    msg = str(exc.value)
+    assert "pip" in msg
+    assert "toolz" in msg
+    assert "cytoolz" in msg
 
 
 def test_errors_root_environment():

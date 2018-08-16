@@ -15,3 +15,7 @@ conda env create --force -f "${current_dir}/env_yamls/py36.yml" -p $py36_editabl
 source activate $py36_editable
 pushd "${current_dir}/.." && python setup.py develop && popd
 source deactivate
+
+echo "Creating py36_broken environment"
+py36_broken="${current_dir}/environments/py36_broken"
+conda env create --force -f "${current_dir}/env_yamls/py36_broken.yml" -p $py36_broken
