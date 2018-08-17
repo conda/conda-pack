@@ -560,11 +560,9 @@ def read_has_prefix(path):
 def load_files(prefix):
     from os.path import relpath, join, isfile, islink
 
-    remove = {join('bin', f) for f in ['conda', 'activate', 'deactivate']}
-
-    ignore = {'pkgs', 'envs', 'conda-bld', 'conda-meta', '.conda_lock',
-              'users', 'LICENSE.txt', 'info', 'conda-recipes', '.index',
-              '.unionfs', '.nonadmin', 'python.app', 'Launcher.app'}
+    ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
+              'LICENSE.txt', 'info', 'conda-recipes', '.index', '.unionfs',
+              '.nonadmin', 'python.app', 'Launcher.app'}
 
     res = set()
 
@@ -586,8 +584,6 @@ def load_files(prefix):
                 if not dirs and not files:
                     # root2 is an empty directory, add it
                     res.add(root2)
-
-    res -= remove
 
     return res
 
@@ -690,10 +686,6 @@ def load_environment(prefix, on_missing_cache='warn'):
     if not os.path.exists(conda_meta):
         raise CondaPackException("Path %r is not a conda environment" % prefix)
 
-    # Check that it's not the root environment
-    if any(os.path.exists(os.path.join(prefix, d)) for d in ['pkgs', 'envs']):
-        raise CondaPackException("Cannot package root environment")
-
     # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
@@ -732,6 +724,11 @@ def load_environment(prefix, on_missing_cache='warn'):
 
             managed.update(targets)
             files.extend(new_files)
+            files.append(File(os.path.join(conda_meta, path),
+                              os.path.join('conda-meta', path),
+                              is_conda=True,
+                              prefix_placeholder=None,
+                              file_mode=None))
 
     if missing_files:
         packages = '\n'.join('- %s=%r' % i for i in missing_files)
@@ -739,6 +736,10 @@ def load_environment(prefix, on_missing_cache='warn'):
 
     # Add unmanaged files
     unmanaged = all_files - managed
+    # Remove conda related files if they aren't already claimed by conda
+    # Remove conda-meta history, as it shouldn't be distributed
+    unmanaged -= {'bin/activate', 'bin/deactivate', 'bin/conda',
+                  'conda-meta/history'}
 
     files.extend(File(os.path.join(prefix, p),
                       p,
@@ -747,7 +748,7 @@ def load_environment(prefix, on_missing_cache='warn'):
                       file_mode='unknown')
                  for p in unmanaged if not find_py_source(p) in managed)
 
-    # Add activate/deactivate scripts
+    # Override activate/deactivate scripts
     files.extend(File(*s) for s in _scripts)
 
     if uncached and on_missing_cache in ('warn', 'raise'):
@@ -804,6 +805,25 @@ def rewrite_shebang(data, target, prefix):
     return data, False
 
 
+def rewrite_conda_meta(source):
+    """Remove absolute paths in conda-meta that reference local install.
+
+    These are unnecessary for install/uninstall on the destination machine."""
+    with open(source, 'r') as f:
+        original = f.read()
+
+    data = json.loads(original)
+    for field in ["extracted_package_dir", "package_tarball_full_path"]:
+        if field in data:
+            data[field] = ""
+
+    if "link" in data and "source" in data["link"]:
+        data["link"]["source"] = ""
+
+    out = json.dumps(data, indent=True, sort_keys=True)
+    return out.encode()
+
+
 _conda_unpack_template = """\
 {shebang}
 {prefixes_py}
@@ -845,7 +865,12 @@ class Packer(object):
 
     def add(self, file):
         if file.file_mode is None:
-            self.archive.add(file.source, file.target)
+            if file.target.startswith('conda-meta'):
+                self.archive.add_bytes(file.source,
+                                       rewrite_conda_meta(file.source),
+                                       file.target)
+            else:
+                self.archive.add(file.source, file.target)
 
         elif os.path.isdir(file.source) or os.path.islink(file.source):
             self.archive.add(file.source, file.target)

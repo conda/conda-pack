@@ -1,6 +1,5 @@
 from __future__ import absolute_import, print_function, division
 
-import json
 import os
 import subprocess
 import tarfile
@@ -87,16 +86,6 @@ def test_errors_pip_overwrites():
     assert "pip" in msg
     assert "toolz" in msg
     assert "cytoolz" in msg
-
-
-def test_errors_root_environment():
-    info = subprocess.check_output("conda info --json", shell=True).decode()
-    root_prefix = json.loads(info)['root_prefix']
-
-    with pytest.raises(CondaPackException) as exc:
-        CondaEnv.from_prefix(root_prefix)
-
-    assert "Cannot package root environment" in str(exc.value)
 
 
 def test_errors_conda_missing(bad_conda_exe):
