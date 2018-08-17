@@ -3,7 +3,7 @@ _conda_pack_deactivate () {
     if [ -n "$CONDA_PREFIX" ]; then
         # First run the deactivate scripts
         local _path
-        for _path in $CONDA_PREFIX/etc/conda/deactivate.d/*; do
+        for _path in "$CONDA_PREFIX/etc/conda/deactivate.d/*"; do
             if [ -f "$_path" ]; then
                 . "$_path"
             fi

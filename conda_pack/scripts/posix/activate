@@ -54,7 +54,7 @@ _conda_pack_activate() {
 
     # Run the activate scripts
     local _path
-    for _path in ${full_path_env}/etc/conda/activate.d/*; do
+    for _path in "${full_path_env}/etc/conda/activate.d/*"; do
         if [ -f "$_path" ]; then
             . "$_path"
         fi
