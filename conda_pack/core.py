@@ -737,9 +737,7 @@ def load_environment(prefix, on_missing_cache='warn'):
     # Add unmanaged files
     unmanaged = all_files - managed
     # Remove conda related files if they aren't already claimed by conda
-    # Remove conda-meta history, as it shouldn't be distributed
-    unmanaged -= {'bin/activate', 'bin/deactivate', 'bin/conda',
-                  'conda-meta/history'}
+    unmanaged -= {'bin/activate', 'bin/deactivate', 'bin/conda'}
 
     files.extend(File(os.path.join(prefix, p),
                       p,
