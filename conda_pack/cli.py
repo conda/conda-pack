@@ -44,6 +44,11 @@ def build_parser():
                         metavar="PATH", default='',
                         help=("The relative path in the archive to the conda "
                               "environment. Defaults to ''."))
+    parser.add_argument("--dest-prefix", "-d",
+                        metavar="PATH",
+                        help=("If present, prefixes will be rewritten to this "
+                              "path before packaging. In this case the "
+                              "`conda-unpack` script will not be generated."))
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
                                  'tbz2', 'tar'],
@@ -124,6 +129,7 @@ def main(args=None, pack=pack):
                  zip_symlinks=args.zip_symlinks,
                  zip_64=not args.no_zip_64,
                  arcroot=args.arcroot,
+                 dest_prefix=args.dest_prefix,
                  verbose=not args.quiet,
                  filters=args.filters)
     except CondaPackException as e:
