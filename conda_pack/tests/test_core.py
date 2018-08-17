@@ -339,3 +339,44 @@ def test_pack(tmpdir, py36_env):
     assert len(diff) == 1
     extra = list(diff)[0]
     assert 'conda-unpack' in extra
+
+
+def test_dest_prefix(tmpdir, py36_env):
+    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    dest = '/foo/bar/baz/biz'
+    res = pack(prefix=py36_path,
+               dest_prefix=dest,
+               output=out_path)
+
+    assert res == out_path
+    assert os.path.exists(out_path)
+    assert tarfile.is_tarfile(out_path)
+
+    with tarfile.open(out_path) as fil:
+        paths = fil.getnames()
+
+    # No conda-unpack generated
+    assert 'conda-unpack' not in paths
+
+    dest_bytes = dest.encode()
+
+    # shebangs are rewritten using env
+    with tarfile.open(out_path) as fil:
+        text_from_conda = fil.extractfile('bin/conda-pack-test-lib1').read()
+        text_from_pip = fil.extractfile('bin/pytest').read()
+        binary_from_conda = fil.extractfile('bin/clear').read()
+
+    assert dest_bytes not in text_from_conda
+    assert dest_bytes not in text_from_pip
+    assert b'env python' in text_from_conda
+    assert b'env python' in text_from_pip
+
+    # Other files are rewritten to use specified prefix This is only checked if
+    # the original file did include the prefix, which is true at least on osx.
+    orig_path = os.path.join(py36_env.prefix, 'bin/clear')
+    with open(orig_path, 'rb') as fil:
+        orig_bytes = fil.read()
+
+    if py36_env.prefix.encode() in orig_bytes:
+        assert py36_env.prefix.encode() not in binary_from_conda
+        assert dest_bytes in binary_from_conda

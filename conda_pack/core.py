@@ -16,7 +16,7 @@ from fnmatch import fnmatch
 
 from .compat import on_win, default_encoding, find_py_source
 from .formats import archive
-from .prefixes import SHEBANG_REGEX
+from .prefixes import SHEBANG_REGEX, replace_prefix
 from ._progress import progressbar
 
 
@@ -254,8 +254,9 @@ class CondaEnv(object):
 
         return output, format
 
-    def pack(self, output=None, format='infer', arcroot='', verbose=False,
-             force=False, compress_level=4, zip_symlinks=False, zip_64=True):
+    def pack(self, output=None, format='infer', arcroot='', dest_prefix=None,
+             verbose=False, force=False, compress_level=4, zip_symlinks=False,
+             zip_64=True):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -269,6 +270,10 @@ class CondaEnv(object):
         arcroot : str, optional
             The relative path in the archive to the conda environment.
             Defaults to ''.
+        dest_prefix : str, optional
+            If present, prefixes will be rewritten to this path before
+            packaging. In this case the ``conda-unpack`` script will not be
+            generated.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         force : bool, optional
@@ -314,7 +319,7 @@ class CondaEnv(object):
                              compress_level=compress_level,
                              zip_symlinks=zip_symlinks,
                              zip_64=zip_64) as arc:
-                    packer = Packer(self.prefix, arc)
+                    packer = Packer(self.prefix, arc, dest_prefix=dest_prefix)
                     with progressbar(self.files, enabled=verbose) as files:
                         try:
                             for f in files:
@@ -368,8 +373,8 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot='', verbose=False, force=False, compress_level=4,
-         zip_symlinks=False, zip_64=True, filters=None):
+         arcroot='', dest_prefix=None, verbose=False, force=False,
+         compress_level=4, zip_symlinks=False, zip_64=True, filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -387,6 +392,9 @@ def pack(name=None, prefix=None, output=None, format='infer',
     arcroot : str, optional
         The relative path in the archive to the conda environment.
         Defaults to ''.
+    dest_prefix : str, optional
+        If present, prefixes will be rewritten to this path before packaging.
+        In this case the ``conda-unpack`` script will not be generated.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     force : bool, optional
@@ -440,6 +448,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
     return env.pack(output=output, format=format, arcroot=arcroot,
+                    dest_prefix=dest_prefix,
                     verbose=verbose, force=force,
                     compress_level=compress_level,
                     zip_symlinks=zip_symlinks, zip_64=zip_64)
@@ -827,9 +836,11 @@ if __name__ == '__main__':
 
 
 class Packer(object):
-    def __init__(self, prefix, archive):
+    def __init__(self, prefix, archive, dest_prefix=None):
         self.prefix = prefix
         self.archive = archive
+        self.dest = dest_prefix
+        self.has_dest = dest_prefix is not None
         self.prefixes = []
 
     def add(self, file):
@@ -843,42 +854,70 @@ class Packer(object):
             with open(file.source, 'rb') as fil:
                 data = fil.read()
 
-            data, prefix_placeholder = strip_prefix(data, self.prefix)
+            data, placeholder = strip_prefix(data, self.prefix)
 
-            if prefix_placeholder is not None:
+            if placeholder is not None:
+                fixed = False
                 if file.target.startswith(BIN_DIR):
-                    data, fixed = rewrite_shebang(data, file.target,
-                                                  prefix_placeholder)
-                else:
-                    fixed = False
+                    data, fixed = rewrite_shebang(data, file.target, placeholder)
 
                 if not fixed:
-                    self.prefixes.append((file.target, prefix_placeholder, 'text'))
+                    if self.has_dest:
+                        data = replace_prefix(data, 'text', placeholder, self.dest)
+                    else:
+                        self.prefixes.append((file.target, placeholder, 'text'))
+
             self.archive.add_bytes(file.source, data, file.target)
 
         elif file.file_mode == 'text':
-            if file.target.startswith(BIN_DIR):
+            placeholder = file.prefix_placeholder
+
+            if self.has_dest:
                 with open(file.source, 'rb') as fil:
                     data = fil.read()
 
-                data, fixed = rewrite_shebang(data, file.target, file.prefix_placeholder)
-                self.archive.add_bytes(file.source, data, file.target)
+                fixed = False
+                if file.target.startswith(BIN_DIR):
+                    data, fixed = rewrite_shebang(data, file.target, placeholder)
                 if not fixed:
-                    self.prefixes.append((file.target, file.prefix_placeholder, 'text'))
+                    data = replace_prefix(data, 'text', placeholder, self.dest)
+
+                self.archive.add_bytes(file.source, data, file.target)
+
+            elif file.target.startswith(BIN_DIR):
+                with open(file.source, 'rb') as fil:
+                    data = fil.read()
+
+                data, fixed = rewrite_shebang(data, file.target, placeholder)
+                if not fixed:
+                    self.prefixes.append((file.target, placeholder, 'text'))
+
+                self.archive.add_bytes(file.source, data, file.target)
+
             else:
                 self.archive.add(file.source, file.target)
-                self.prefixes.append((file.target, file.prefix_placeholder,
-                                      file.file_mode))
+                self.prefixes.append((file.target, placeholder, 'text'))
 
         elif file.file_mode == 'binary':
-            self.archive.add(file.source, file.target)
-            self.prefixes.append((file.target, file.prefix_placeholder, file.file_mode))
+            if self.has_dest:
+                with open(file.source, 'rb') as fil:
+                    data = fil.read()
+                data = replace_prefix(data, 'binary', file.prefix_placeholder,
+                                      self.dest)
+                self.archive.add_bytes(file.source, data, file.target)
+            else:
+                self.archive.add(file.source, file.target)
+                self.prefixes.append((file.target, file.prefix_placeholder, 'binary'))
 
         else:
             raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
+
+        # No `conda-unpack` command if dest-prefix specified
+        if self.has_dest:
+            return
 
         if not on_win:
             shebang = '#!/usr/bin/env python'
