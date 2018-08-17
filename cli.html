@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>CLI Docs &#8212; conda-pack 0.0.2+2.g2de40b6 documentation</title>
+    <title>CLI Docs &#8212; conda-pack 0.1.0+1.g516d5be documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -39,7 +39,7 @@
 <h2>conda-pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h2>
 <p>Package an existing conda environment into an archive file.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">usage: conda-pack [--name ENV] [--prefix PATH] [--output PATH]</span>
-<span class="go">                  [--arcroot PATH]</span>
+<span class="go">                  [--arcroot PATH] [--dest-prefix PATH]</span>
 <span class="go">                  [--format {infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar}]</span>
 <span class="go">                  [--compress-level COMPRESS_LEVEL] [--zip-symlinks]</span>
 <span class="go">                  [--no-zip-64] [--exclude PATTERN] [--include PATTERN]</span>
@@ -68,6 +68,12 @@
 <dt id="cmdoption-conda-pack-arcroot">
 <code class="descname">--arcroot</code><code class="descclassname"> &lt;path&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-arcroot" title="Permalink to this definition">¶</a></dt>
 <dd><p>The relative path in the archive to the conda environment. Defaults to ‘’.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-dest-prefix">
+<code class="descname">--dest-prefix</code><code class="descclassname"> &lt;path&gt;</code><code class="descclassname">, </code><code class="descname">-d</code><code class="descclassname"> &lt;path&gt;</code><a class="headerlink" href="#cmdoption-conda-pack-dest-prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>If present, prefixes will be rewritten to this path before packaging. In this case the <cite>conda-unpack</cite> script will not be generated.</p>
 </dd></dl>
 
 <dl class="option">

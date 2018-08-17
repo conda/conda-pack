@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>API Docs &#8212; conda-pack 0.0.2+2.g2de40b6 documentation</title>
+    <title>API Docs &#8212; conda-pack 0.1.0+1.g516d5be documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -226,7 +226,7 @@ re-included.</p>
 
 <dl class="method">
 <dt id="conda_pack.CondaEnv.pack">
-<code class="descname">pack</code><span class="sig-paren">(</span><em>output=None</em>, <em>format='infer'</em>, <em>arcroot=''</em>, <em>verbose=False</em>, <em>force=False</em>, <em>compress_level=4</em>, <em>zip_symlinks=False</em>, <em>zip_64=True</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.pack" title="Permalink to this definition">¶</a></dt>
+<code class="descname">pack</code><span class="sig-paren">(</span><em>output=None</em>, <em>format='infer'</em>, <em>arcroot=''</em>, <em>dest_prefix=None</em>, <em>verbose=False</em>, <em>force=False</em>, <em>compress_level=4</em>, <em>zip_symlinks=False</em>, <em>zip_64=True</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.pack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package the conda environment into an archive file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -244,6 +244,11 @@ output file extension.</p>
 <dt><strong>arcroot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
 <dd><p class="first last">The relative path in the archive to the conda environment.
 Defaults to ‘’.</p>
+</dd>
+<dt><strong>dest_prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">If present, prefixes will be rewritten to this path before
+packaging. In this case the <code class="docutils literal notranslate"><span class="pre">conda-unpack</span></code> script will not be
+generated.</p>
 </dd>
 <dt><strong>verbose</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
 <dd><p class="first last">If True, progress is reported to stdout. Default is False.</p>
@@ -324,7 +329,7 @@ symlinks</em>. Default is False. Ignored if format isn’t <code class="docutils
 <h2>pack<a class="headerlink" href="#pack" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="conda_pack.pack">
-<code class="descclassname">conda_pack.</code><code class="descname">pack</code><span class="sig-paren">(</span><em>name=None</em>, <em>prefix=None</em>, <em>output=None</em>, <em>format='infer'</em>, <em>arcroot=''</em>, <em>verbose=False</em>, <em>force=False</em>, <em>compress_level=4</em>, <em>zip_symlinks=False</em>, <em>zip_64=True</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.pack" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">conda_pack.</code><code class="descname">pack</code><span class="sig-paren">(</span><em>name=None</em>, <em>prefix=None</em>, <em>output=None</em>, <em>format='infer'</em>, <em>arcroot=''</em>, <em>dest_prefix=None</em>, <em>verbose=False</em>, <em>force=False</em>, <em>compress_level=4</em>, <em>zip_symlinks=False</em>, <em>zip_64=True</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.pack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package an existing conda environment into an archive file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -348,6 +353,10 @@ file extension.</p>
 <dt><strong>arcroot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
 <dd><p class="first last">The relative path in the archive to the conda environment.
 Defaults to ‘’.</p>
+</dd>
+<dt><strong>dest_prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">If present, prefixes will be rewritten to this path before packaging.
+In this case the <code class="docutils literal notranslate"><span class="pre">conda-unpack</span></code> script will not be generated.</p>
 </dd>
 <dt><strong>verbose</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
 <dd><p class="first last">If True, progress is reported to stdout. Default is False.</p>
