@@ -724,11 +724,21 @@ def load_environment(prefix, on_missing_cache='warn'):
 
             managed.update(targets)
             files.extend(new_files)
+            # Add conda-meta entry
+            managed.add(os.path.join('conda-meta', path))
             files.append(File(os.path.join(conda_meta, path),
                               os.path.join('conda-meta', path),
                               is_conda=True,
                               prefix_placeholder=None,
                               file_mode=None))
+
+    # Add remaining conda metadata files
+    managed.add(os.path.join('conda-meta', 'history'))
+    files.append(File(os.path.join(conda_meta, 'history'),
+                      os.path.join('conda-meta', 'history'),
+                      is_conda=True,
+                      prefix_placeholder=None,
+                      file_mode=None))
 
     if missing_files:
         packages = '\n'.join('- %s=%r' % i for i in missing_files)
@@ -863,7 +873,7 @@ class Packer(object):
 
     def add(self, file):
         if file.file_mode is None:
-            if file.target.startswith('conda-meta'):
+            if fnmatch(file.target, 'conda-meta/*.json'):
                 self.archive.add_bytes(file.source,
                                        rewrite_conda_meta(file.source),
                                        file.target)
