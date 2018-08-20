@@ -271,16 +271,6 @@ def test_pack_with_conda(tmpdir):
         # Extract tarfile
         fil.extractall(extract_path)
 
-    # Check bash scripts all don't error
-    command = (". {path}/bin/activate && "
-               "conda-unpack && "
-               ". {path}/bin/deactivate && "
-               "echo 'Done'").format(path=extract_path)
-
-    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
-                                  stderr=subprocess.STDOUT).decode()
-    assert out == 'Done\n'
-
     # Check the packaged conda works, and the output is a conda environment
     command = (". {path}/bin/activate && "
                "conda list --json -p {path} &&"
