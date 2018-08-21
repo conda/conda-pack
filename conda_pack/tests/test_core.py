@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import tarfile
+from glob import glob
 
 import pytest
 
@@ -11,7 +12,8 @@ from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.core import name_to_prefix, File
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
-                       py27_path, nopython_path, rel_env_dir, env_dir)
+                       py27_path, nopython_path, has_conda_path, rel_env_dir,
+                       env_dir)
 
 
 @pytest.fixture(scope="module")
@@ -87,16 +89,6 @@ def test_errors_pip_overwrites():
     assert "pip" in msg
     assert "toolz" in msg
     assert "cytoolz" in msg
-
-
-def test_errors_root_environment():
-    info = subprocess.check_output("conda info --json", shell=True).decode()
-    root_prefix = json.loads(info)['root_prefix']
-
-    with pytest.raises(CondaPackException) as exc:
-        CondaEnv.from_prefix(root_prefix)
-
-    assert "Cannot package root environment" in str(exc.value)
 
 
 def test_errors_conda_missing(bad_conda_exe):
@@ -255,6 +247,50 @@ def test_roundtrip(tmpdir, py36_env):
     out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
                                   stderr=subprocess.STDOUT).decode()
     assert out == 'Done\n'
+
+
+def test_pack_with_conda(tmpdir):
+    env = CondaEnv.from_prefix(has_conda_path)
+    out_path = os.path.join(str(tmpdir), 'has_conda.tar')
+    env.pack(out_path)
+
+    extract_path = os.path.join(str(tmpdir), 'output')
+    os.mkdir(extract_path)
+
+    assert os.path.exists(out_path)
+    assert tarfile.is_tarfile(out_path)
+
+    with tarfile.open(out_path) as fil:
+        names = fil.getnames()
+
+        # Check conda/activate/deactivate all present
+        assert 'bin/conda' in names
+        assert 'bin/activate' in names
+        assert 'bin/deactivate' in names
+
+        # Extract tarfile
+        fil.extractall(extract_path)
+
+    # Check the packaged conda works, and the output is a conda environment
+    command = (". {path}/bin/activate && "
+               "conda list --json -p {path} &&"
+               ". {path}/bin/deactivate").format(path=extract_path)
+    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                  stderr=subprocess.STDOUT).decode()
+    data = json.loads(out)
+    assert 'conda' in {i['name'] for i in data}
+
+    # Check the conda-meta directory has been anonymized
+    for path in glob(os.path.join(extract_path, 'conda-meta', '*.json')):
+        with open(path) as fil:
+            data = json.load(fil)
+
+        for field in ["extracted_package_dir", "package_tarball_full_path"]:
+            if field in data:
+                assert data[field] == ""
+
+        if "link" in data and "source" in data["link"]:
+            assert data["link"]["source"] == ""
 
 
 def test_pack_exceptions(py36_env):

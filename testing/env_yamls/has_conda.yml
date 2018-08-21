@@ -1,0 +1,5 @@
+name: has_conda
+
+dependencies:
+    - conda
+    - toolz
