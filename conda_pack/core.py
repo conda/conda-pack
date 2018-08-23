@@ -571,6 +571,8 @@ def load_files(prefix):
             continue
         elif isfile(join(prefix, fn)):
             res.add(fn)
+        elif islink(join(prefix, fn)):
+            res.add(fn)
         else:
             for root, dirs, files in os.walk(join(prefix, fn)):
                 root2 = relpath(root, prefix)
