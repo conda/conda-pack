@@ -108,8 +108,8 @@ On the target machine
     (my_env) $ python
 
     # Cleanup prefixes from in the active environment.
-    # Note that you can run this script without activating via
-    # `$ ./my_env/bin/python my_env/bin/conda-unpack`
+    # Note that this command can also be run without activating the environment
+    # as long as some version of python is already installed on the machine.
     (my_env) $ conda-unpack
 
     # At this point the environment is exactly as if you installed it here
