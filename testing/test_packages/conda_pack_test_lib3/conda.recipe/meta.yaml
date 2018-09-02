@@ -1,0 +1,22 @@
+package:
+  name: conda_pack_test_lib3
+  version: 0.0.1
+
+source:
+  path: ../
+
+build:
+  number: 1
+  script: 
+    - for f in {de,}activate; do
+        dir=$PREFIX/etc/conda/$f.d;
+        mkdir -p $dir;
+        cp -avf $f.sh $dir/conda_pack_test_lib3.sh;
+      done
+test:
+  commands:
+    - test $CONDAPACK_ACTIVATED -eq 1
+
+about:
+  home: https://github.com/jcrist/conda-pack
+  summary: Dummy package for testing conda-pack (de)activate.d
