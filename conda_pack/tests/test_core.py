@@ -22,11 +22,6 @@ def py36_env():
     return CondaEnv.from_prefix(py36_path)
 
 
-@pytest.fixture(scope="module")
-def activate_env():
-    return CondaEnv.from_prefix(activate_env_path)
-
-
 @pytest.fixture
 def bad_conda_exe(tmpdir_factory):
     tmpdir = str(tmpdir_factory.mktemp('bin'))
@@ -424,8 +419,10 @@ def test_dest_prefix(tmpdir, py36_env):
         assert dest_bytes in binary_from_conda
 
 
-def test_activate(tmpdir, activate_env):
+def test_activate(tmpdir):
     tar_path = os.path.join(str(tmpdir), 'activate-env.tar')
+
+    activate_env = CondaEnv.from_prefix(activate_env_path)
     activate_env.pack(tar_path)
 
     extract_path = str(tmpdir)
