@@ -24,3 +24,7 @@ conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/e
 
 echo "Creating conda environment"
 conda env create -f "${current_dir}/env_yamls/has_conda.yml" -p "${current_dir}/environments/has_conda" $@
+
+echo "Creating activate-env environment"
+conda env create -f "${current_dir}/env_yamls/activate-env.yml" -p "${current_dir}/environments/activate-env" $@
+
