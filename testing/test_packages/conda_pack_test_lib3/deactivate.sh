@@ -1,1 +1,2 @@
 unset CONDAPACK_ACTIVATED
+rm $CONDA_PREFIX/activated

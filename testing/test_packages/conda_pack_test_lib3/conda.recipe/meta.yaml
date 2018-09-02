@@ -1,6 +1,6 @@
 package:
   name: conda_pack_test_lib3
-  version: 0.0.1
+  version: 0.0.2
 
 source:
   path: ../
@@ -15,6 +15,7 @@ build:
       done
 test:
   commands:
+    - test -f $PREFIX/activated
     - test $CONDAPACK_ACTIVATED -eq 1
 
 about:
