@@ -7,6 +7,7 @@ source:
 
 build:
   number: 1
+  noarch: generic
   script: 
     - for f in {de,}activate; do
         dir=$PREFIX/etc/conda/$f.d;
