@@ -18,6 +18,7 @@ py36_editable_path = os.path.join(env_dir, 'py36_editable')
 py36_broken_path = os.path.join(env_dir, 'py36_broken')
 nopython_path = os.path.join(env_dir, 'nopython')
 has_conda_path = os.path.join(env_dir, 'has_conda')
+activate_env_path = os.path.join(env_dir, 'activate-env')
 
 
 def pytest_addoption(parser):

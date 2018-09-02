@@ -13,6 +13,7 @@ from conda_pack.core import name_to_prefix, File
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
+                       activate_env_path,
                        env_dir)
 
 
