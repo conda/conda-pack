@@ -13,8 +13,7 @@ from conda_pack.core import name_to_prefix, File
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
-                       activate_env_path,
-                       env_dir)
+                       activate_scripts_path, env_dir)
 
 
 @pytest.fixture(scope="module")
@@ -420,22 +419,20 @@ def test_dest_prefix(tmpdir, py36_env):
 
 
 def test_activate(tmpdir):
-    tar_path = os.path.join(str(tmpdir), 'activate-env.tar')
-
-    activate_env = CondaEnv.from_prefix(activate_env_path)
-    activate_env.pack(tar_path)
-
+    out_path = os.path.join(str(tmpdir), 'activate_scripts.tar')
     extract_path = str(tmpdir)
-    with tarfile.open(tar_path) as fil:
+
+    env = CondaEnv.from_prefix(activate_scripts_path)
+    env.pack(out_path)
+
+    with tarfile.open(out_path) as fil:
         fil.extractall(extract_path)
 
     # Check that activate environment variable is set
     command = (". {path}/bin/activate && "
-               "conda-unpack && "
-               "test -f {path}/activated && "           # Created by conda_pack_test_lib3
-               "test $CONDAPACK_ACTIVATED -eq 1 && "    # Exported by conda_path_test_lib3
+               "test $CONDAPACK_ACTIVATED -eq 1 && "
                ". {path}/bin/deactivate && "
-               "test ! -f {path}/activated && "         # Removed by conda_path_test_lib3
+               "test ! $CONDAPACK_ACTIVATED && "
                "echo 'Done'").format(path=extract_path)
 
     out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],

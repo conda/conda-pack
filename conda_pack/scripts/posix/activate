@@ -36,7 +36,7 @@ _conda_pack_activate() {
     if [ -n "$CONDA_PREFIX" ]; then
         # If the source env differs from this env
         if [ "$CONDA_PREFIX" != "$full_path_env" ]; then
-            . "${full_path_script_dir}/deactivate"
+            . deactivate
         else
             return 0  # nothing to do
         fi
@@ -53,12 +53,13 @@ _conda_pack_activate() {
     esac
 
     # Run the activate scripts
-    local _path
-    for _path in "${full_path_env}"/etc/conda/activate.d/*; do
-        if [ -f "$_path" ]; then
+    local _script_dir="${full_path_env}/etc/conda/activate.d"
+    if [ -d "$_script_dir" ] && [ -n "$(ls -A "$_script_dir")" ]; then
+        local _path
+        for _path in "$_script_dir"/*; do
             . "$_path"
-        fi
-    done
+        done
+    fi
 }
 
 _conda_pack_activate

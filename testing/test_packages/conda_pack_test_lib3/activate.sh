@@ -1,2 +1,0 @@
-export CONDAPACK_ACTIVATED=1
-touch $CONDA_PREFIX/activated

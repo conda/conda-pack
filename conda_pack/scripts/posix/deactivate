@@ -2,12 +2,13 @@ _conda_pack_deactivate () {
     # If there's an active environment
     if [ -n "$CONDA_PREFIX" ]; then
         # First run the deactivate scripts
-        local _path
-        for _path in "$CONDA_PREFIX"/etc/conda/deactivate.d/*; do
-            if [ -f "$_path" ]; then
+        local _script_dir="${CONDA_PREFIX}/etc/conda/deactivate.d"
+        if [ -d "$_script_dir" ] && [ -n "$(ls -A "$_script_dir")" ]; then
+            local _path
+            for _path in "$_script_dir"/*; do
                 . "$_path"
-            fi
-        done
+            done
+        fi
 
         # Remove env/bin from path
         local IFS=':'

@@ -25,6 +25,11 @@ conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/e
 echo "Creating conda environment"
 conda env create -f "${current_dir}/env_yamls/has_conda.yml" -p "${current_dir}/environments/has_conda" $@
 
-echo "Creating activate-env environment"
-conda env create -f "${current_dir}/env_yamls/activate-env.yml" -p "${current_dir}/environments/activate-env" $@
+echo "Creating activate_scripts environment"
+activate_scripts="${current_dir}/environments/activate_scripts"
+conda env create -f "${current_dir}/env_yamls/activate_scripts.yml" -p $activate_scripts $@
+mkdir -p "${activate_scripts}/etc/conda/activate.d"
+cp "${current_dir}/extra_scripts/conda_pack_test_activate.sh" "${activate_scripts}/etc/conda/activate.d/"
+mkdir -p "${activate_scripts}/etc/conda/deactivate.d"
+cp "${current_dir}/extra_scripts/conda_pack_test_deactivate.sh" "${activate_scripts}/etc/conda/deactivate.d/"
 

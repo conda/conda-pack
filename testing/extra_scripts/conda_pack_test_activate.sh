@@ -1,0 +1,1 @@
+export CONDAPACK_ACTIVATED=1

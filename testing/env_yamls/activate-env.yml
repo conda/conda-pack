@@ -1,7 +1,0 @@
-name: activate-env
-
-channels:
-    - sodre
-
-dependencies:
-    - conda_pack_test_lib3
