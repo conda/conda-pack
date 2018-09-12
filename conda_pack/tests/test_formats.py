@@ -7,6 +7,10 @@ from subprocess import check_output, STDOUT
 import pytest
 
 from conda_pack.formats import archive
+from conda_pack.compat import on_win
+
+
+pytestmark = pytest.mark.skipif(on_win, reason='symlink not supported on Windows')
 
 
 @pytest.fixture(scope="module")

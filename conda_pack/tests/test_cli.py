@@ -10,6 +10,7 @@ import pytest
 
 import conda_pack
 from conda_pack.cli import main
+from conda_pack.compat import on_win
 
 from .conftest import py36_path, py27_path
 
@@ -128,6 +129,7 @@ def test_cli_warnings(capsys, broken_package_cache, tmpdir):
     assert "UserWarning" not in err  # printed, not from python warning
 
 
+@pytest.mark.skipif(on_win, reason='SIGINT terminates the tests on Windows')
 def test_keyboard_interrupt(capsys, tmpdir):
     def interrupt():
         time.sleep(0.5)

@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function
 import glob
 import json
 import os
+import pkg_resources
 import re
 import shlex
 import shutil
@@ -36,7 +37,7 @@ BIN_DIR = 'Scripts' if on_win else 'bin'
 
 _current_dir = os.path.dirname(__file__)
 if on_win:
-    raise NotImplementedError("Windows support")
+    _scripts = []# raise NotImplementedError("Windows support")
 else:
     _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
                  os.path.join(BIN_DIR, 'activate')),
@@ -363,7 +364,7 @@ class File(object):
     def __init__(self, source, target, is_conda=True, file_mode=None,
                  prefix_placeholder=None):
         self.source = source
-        self.target = target
+        self.target = os.path.normpath(target)
         self.is_conda = is_conda
         self.file_mode = file_mode
         self.prefix_placeholder = prefix_placeholder
@@ -374,7 +375,7 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
-         compress_level=4, zip_symlinks=False, zip_64=True, filters=None):
+         compress_level=4, zip_symlinks=False, zip_64=True, filters=None, recursive=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -419,6 +420,9 @@ def pack(name=None, prefix=None, output=None, format='infer',
         ``(kind, pattern)``, where ``kind`` is either ``'exclude'`` or
         ``'include'`` and ``pattern`` is a file pattern. Filters are applied in
         the order specified.
+    recursive : bool, optional
+        Whether to also archive nested environments, if archiving a root
+        environment.  Default is False.
 
     Returns
     -------
@@ -447,11 +451,60 @@ def pack(name=None, prefix=None, output=None, format='infer',
             else:
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
-    return env.pack(output=output, format=format, arcroot=arcroot,
-                    dest_prefix=dest_prefix,
-                    verbose=verbose, force=force,
-                    compress_level=compress_level,
-                    zip_symlinks=zip_symlinks, zip_64=zip_64)
+    subenvirons = []
+    if recursive:
+        env_dir = os.path.join(env.prefix, 'envs')
+        if os.path.exists(env_dir):
+            for env_name in os.listdir(env_dir):
+                try:
+                    subenvirons.append(CondaEnv.from_prefix(os.path.join(env_dir, env_name)))
+                except CondaPackException as exc:
+                    print('Could not pack environment: %s: %s' % (env_name, exc))
+
+    # Ensure the prefix is a relative path
+    arcroot = arcroot.strip(os.path.sep)
+
+    # The output path and archive format
+    output, format = env._output_and_format(output, format)
+
+    if os.path.exists(output) and not force:
+        raise CondaPackException("File %r already exists" % output)
+
+    if verbose:
+        print("Packing environment at %r to %r" % (env.prefix, output))
+
+    fd, temp_path = tempfile.mkstemp()
+
+    try:
+        with os.fdopen(fd, 'wb') as temp_file:
+            with archive(temp_file, arcroot, format,
+                         compress_level=compress_level,
+                         zip_symlinks=zip_symlinks,
+                         zip_64=zip_64) as arc:
+                packer = Packer(env.prefix, arc, dest_prefix=dest_prefix)
+                data = [(packer, f) for f in env.files]
+                for subenv in subenvirons:
+                    p = NestedPacker(packer, os.path.relpath(subenv.prefix, env.prefix))
+                    data.extend(((p, f) for f in subenv.files))
+                with progressbar(data, enabled=verbose) as files:
+                    try:
+                        for p, f in files:
+                            p.add(f)
+                        packer.finish()
+                    except zipfile.LargeZipFile:
+                        raise CondaPackException(
+                                "Large Zip File: ZIP64 extensions required "
+                                "but were disabled")
+
+    except Exception:
+        # Writing failed, remove tempfile
+        os.remove(temp_path)
+        raise
+    else:
+        # Writing succeeded, move archive to desired location
+        shutil.move(temp_path, output)
+
+    return output
 
 
 def find_site_packages(prefix):
@@ -645,7 +698,7 @@ def load_managed_package(info, prefix, site_packages):
     if noarch_type == 'python':
         seen = {i.target for i in files}
         for fil in info['files']:
-            if fil not in seen:
+            if os.path.normpath(fil) not in seen:
                 file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
@@ -954,13 +1007,10 @@ class Packer(object):
         if self.has_dest:
             return
 
-        if not on_win:
-            shebang = '#!/usr/bin/env python'
+        if on_win:
+            shebang = '#!python.exe'
         else:
-            shebang = ('@SETLOCAL ENABLEDELAYEDEXPANSION & CALL "%~f0" & (IF '
-                       'NOT ERRORLEVEL 1 (python -x "%~f0" %*) ELSE (ECHO No '
-                       'python environment found on path)) & PAUSE & EXIT /B '
-                       '!ERRORLEVEL!')
+            shebang = '#!/usr/bin/env python'
 
         prefix_records = ',\n'.join(repr(p) for p in self.prefixes)
 
@@ -972,9 +1022,36 @@ class Packer(object):
                                                prefixes_py=prefixes_py,
                                                version=__version__)
 
-        with tempfile.NamedTemporaryFile(mode='w') as fil:
+        fil = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        try:
             fil.write(script)
-            fil.flush()
+            fil.close()
             st = os.stat(fil.name)
             os.chmod(fil.name, st.st_mode | 0o111)  # make executable
-            self.archive.add(fil.name, os.path.join(BIN_DIR, 'conda-unpack'))
+            self.archive.add(fil.name, os.path.join(BIN_DIR, 'conda-unpack-script.py' if on_win else 'conda-unpack'))
+        finally:
+            os.unlink(fil.name)
+
+        if on_win:
+            cli_exe = pkg_resources.resource_filename('setuptools', 'cli-64.exe')
+            self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
+
+
+class NestedArchive(object):
+    def __init__(self, archive, extra_prefix):
+        self.archive = archive
+        self.extra_prefix = extra_prefix
+
+    def add(self, source, target):
+        self.archive.add(source, os.path.join(self.extra_prefix, target))
+
+    def add_bytes(self, source, data, target):
+        self.archive.add_bytes(source, data, os.path.join(self.extra_prefix, target))
+
+
+class NestedPacker(Packer):
+    def __init__(self, packer, extra_prefix):
+        if not packer.has_dest:
+            raise CondaPackError('Recursive pack is only supported with a fixed destination')
+        super(NestedPacker, self).__init__(os.path.join(packer.prefix, extra_prefix), packer.archive, os.path.join(packer.dest, extra_prefix))
+        self.archive = NestedArchive(packer.archive, extra_prefix)

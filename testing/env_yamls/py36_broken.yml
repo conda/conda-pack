@@ -8,4 +8,3 @@ dependencies:
     - toolz
     - pip:
         - toolz==0.7.0
-        - cytoolz==0.7.0

@@ -3,13 +3,15 @@ from __future__ import absolute_import, print_function, division
 import json
 import os
 import subprocess
+import sys
 import tarfile
 from glob import glob
 
 import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
-from conda_pack.core import name_to_prefix, File
+from conda_pack.compat import on_win
+from conda_pack.core import name_to_prefix, File, BIN_DIR
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
@@ -22,19 +24,15 @@ def py36_env():
 
 
 @pytest.fixture
-def bad_conda_exe(tmpdir_factory):
+def bad_conda_exe(tmpdir_factory, monkeypatch):
     tmpdir = str(tmpdir_factory.mktemp('bin'))
-    fake_conda = os.path.join(tmpdir, 'conda')
+    fake_conda = os.path.join(tmpdir, 'conda.bat' if on_win else 'conda')
     with open(fake_conda, 'w') as f:
-        f.write('echo "Failed"\nexit 1')
+        f.write('ECHO Failed\r\nEXIT /B 1' if on_win else 'echo "Failed"\nexit 1')
     os.chmod(fake_conda, os.stat(fake_conda).st_mode | 0o111)
 
-    old_path = os.environ['PATH']
-    try:
-        os.environ['PATH'] = '%s:%s' % (tmpdir, old_path)
-        yield
-    except Exception:
-        os.environ['PATH'] = old_path
+    monkeypatch.setenv('PATH', tmpdir, prepend=os.pathsep)
+    monkeypatch.delenv('CONDA_EXE', raising=False)
 
 
 def test_name_to_prefix():
@@ -88,7 +86,6 @@ def test_errors_pip_overwrites():
     msg = str(exc.value)
     assert "pip" in msg
     assert "toolz" in msg
-    assert "cytoolz" in msg
 
 
 def test_errors_conda_missing(bad_conda_exe):
@@ -112,6 +109,7 @@ def test_env_properties(py36_env):
     assert 'CondaEnv<' in repr(py36_env)
 
 
+@pytest.mark.skipif(on_win, reason='Activate/deactivate are different on Win')
 def test_load_environment_ignores(py36_env):
     lk = {f.target: f for f in py36_env}
 
@@ -129,6 +127,7 @@ def test_file():
     repr(f)
 
 
+@pytest.mark.skipif(on_win, reason='Different filenames and paths on Windows')
 def test_loaded_file_properties(py36_env):
     lk = {f.target: f for f in py36_env}
 
@@ -156,6 +155,36 @@ def test_loaded_file_properties(py36_env):
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
 
+@pytest.mark.skipif(not on_win, reason='Different filenames and paths on Windows')
+def test_loaded_file_properties_win(py36_env):
+    lk = {f.target: f for f in py36_env}
+
+    # Pip installed entrypoint
+    fil = lk[r'Scripts\pytest.exe']
+    assert not fil.is_conda
+    assert fil.file_mode == 'unknown'
+    assert fil.prefix_placeholder is None
+
+    # Conda installed noarch entrypoint
+    fil = lk[r'Scripts\conda-pack-test-lib1']
+    assert fil.is_conda
+    assert fil.file_mode == 'text'
+    assert fil.prefix_placeholder != py36_env.prefix
+
+    # Conda installed entrypoint
+    fil = lk[r'Scripts\conda-pack-test-lib2.exe']
+    assert fil.is_conda
+    assert fil.file_mode == None
+    assert fil.prefix_placeholder != py36_env.prefix
+
+    # Conda installed file
+    fil = lk[r'Lib\site-packages\conda_pack_test_lib1\cli.py']
+    assert fil.is_conda
+    assert fil.file_mode is None
+    assert fil.prefix_placeholder is None
+
+
+
 
 def test_works_with_no_python():
     # Collection doesn't require python
@@ -176,8 +205,9 @@ def test_include_exclude(py36_env):
     # Re-add the removed files, envs are equivalent
     assert len(env2.include("*.pyc")) == len(py36_env)
 
-    env3 = env2.exclude("lib/python3.6/site-packages/conda_pack_test_lib1/*")
-    env4 = env3.include("lib/python3.6/site-packages/conda_pack_test_lib1/cli.py")
+    site_packages = r"Lib\site-packages" if on_win else "lib/python3.6/site-packages"
+    env3 = env2.exclude(os.path.join(site_packages, "conda_pack_test_lib1", "*"))
+    env4 = env3.include(os.path.join(site_packages, "conda_pack_test_lib1", "cli.py"))
     assert len(env3) + 1 == len(env4)
 
 
@@ -223,18 +253,18 @@ def test_roundtrip(tmpdir, py36_env):
         fil.extractall(extract_path)
 
     # Shebang rewriting happens before prefixes are fixed
-    textfile = os.path.join(extract_path, 'bin', 'conda-pack-test-lib1')
+    textfile = os.path.join(extract_path, BIN_DIR, 'conda-pack-test-lib1')
     with open(textfile, 'r') as fil:
         shebang = fil.readline().strip()
         assert shebang == '#!/usr/bin/env python'
 
     # Check conda-unpack --help and --version
-    conda_unpack = '%s/bin/conda-unpack' % extract_path
-    out = subprocess.check_output([conda_unpack, '--help'],
+    conda_unpack = os.path.join(extract_path, BIN_DIR, 'conda-unpack.exe' if on_win else 'conda-pack')
+    out = subprocess.check_output([conda_unpack, '--help'], shell=True,
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('usage: conda-unpack')
 
-    out = subprocess.check_output([conda_unpack, '--version'],
+    out = subprocess.check_output([conda_unpack, '--version'], shell=True,
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('conda-unpack')
 
@@ -244,9 +274,10 @@ def test_roundtrip(tmpdir, py36_env):
                ". {path}/bin/deactivate && "
                "echo 'Done'").format(path=extract_path)
 
-    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
-                                  stderr=subprocess.STDOUT).decode()
-    assert out == 'Done\n'
+    if not on_win:
+        out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                      stderr=subprocess.STDOUT).decode()
+        assert out == 'Done\n'
 
 
 def test_pack_with_conda(tmpdir):
@@ -264,21 +295,25 @@ def test_pack_with_conda(tmpdir):
         names = fil.getnames()
 
         # Check conda/activate/deactivate all present
-        assert 'bin/conda' in names
-        assert 'bin/activate' in names
-        assert 'bin/deactivate' in names
+        if on_win:
+            assert 'Scripts/conda.exe' in names
+        else:
+            assert 'bin/conda' in names
+            assert 'bin/activate' in names
+            assert 'bin/deactivate' in names
 
         # Extract tarfile
         fil.extractall(extract_path)
 
     # Check the packaged conda works, and the output is a conda environment
-    command = (". {path}/bin/activate && "
-               "conda list --json -p {path} &&"
-               ". {path}/bin/deactivate").format(path=extract_path)
-    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
-                                  stderr=subprocess.STDOUT).decode()
-    data = json.loads(out)
-    assert 'conda' in {i['name'] for i in data}
+    if not on_win:
+        command = (". {path}/bin/activate && "
+                   "conda list --json -p {path} &&"
+                   ". {path}/bin/deactivate").format(path=extract_path)
+        out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                      stderr=subprocess.STDOUT).decode()
+        data = json.loads(out)
+        assert 'conda' in {i['name'] for i in data}
 
     # Check the conda-meta directory has been anonymized
     for path in glob(os.path.join(extract_path, 'conda-meta', '*.json')):
@@ -369,10 +404,14 @@ def test_pack(tmpdir, py36_env):
 
     # Files line up with filtering, with extra conda-unpack command
     sol = set(f.target for f in filtered.files)
-    res = set(paths)
+    res = set(os.path.normpath(p) for p in paths)
     diff = res.difference(sol)
 
-    assert len(diff) == 1
+    if on_win:
+        # conda-unpack.exe and conda-unpack-script.py
+        assert len(diff) == 2
+    else:
+        assert len(diff) == 1
     extra = list(diff)[0]
     assert 'conda-unpack' in extra
 
@@ -398,21 +437,26 @@ def test_dest_prefix(tmpdir, py36_env):
 
     # shebangs are rewritten using env
     with tarfile.open(out_path) as fil:
-        text_from_conda = fil.extractfile('bin/conda-pack-test-lib1').read()
-        text_from_pip = fil.extractfile('bin/pytest').read()
-        binary_from_conda = fil.extractfile('bin/clear').read()
+        text_from_conda = fil.extractfile('/'.join([BIN_DIR, 'conda-pack-test-lib1'])).read()
+        text_from_pip = fil.extractfile('Scripts/pytest.exe' if on_win else 'bin/pytest').read()
 
     assert dest_bytes not in text_from_conda
     assert dest_bytes not in text_from_pip
     assert b'env python' in text_from_conda
-    assert b'env python' in text_from_pip
 
-    # Other files are rewritten to use specified prefix This is only checked if
-    # the original file did include the prefix, which is true at least on osx.
-    orig_path = os.path.join(py36_env.prefix, 'bin/clear')
-    with open(orig_path, 'rb') as fil:
-        orig_bytes = fil.read()
+    if not on_win:
+        # pip entrypoint on Windows is complicated...
+        assert b'env python' in text_from_pip
 
-    if py36_env.prefix.encode() in orig_bytes:
-        assert py36_env.prefix.encode() not in binary_from_conda
-        assert dest_bytes in binary_from_conda
+        with tarfile.open(out_path) as fil:
+            binary_from_conda = fil.extractfile('bin/clear').read()
+
+        # Other files are rewritten to use specified prefix This is only checked if
+        # the original file did include the prefix, which is true at least on osx.
+        orig_path = os.path.join(py36_env.prefix, 'bin/clear')
+        with open(orig_path, 'rb') as fil:
+            orig_bytes = fil.read()
+
+        if py36_env.prefix.encode() in orig_bytes:
+            assert py36_env.prefix.encode() not in binary_from_conda
+            assert dest_bytes in binary_from_conda
