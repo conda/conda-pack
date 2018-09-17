@@ -364,7 +364,7 @@ class File(object):
     def __init__(self, source, target, is_conda=True, file_mode=None,
                  prefix_placeholder=None):
         self.source = source
-        self.target = os.path.normpath(target)
+        self.target = target
         self.is_conda = is_conda
         self.file_mode = file_mode
         self.prefix_placeholder = prefix_placeholder
@@ -696,9 +696,9 @@ def load_managed_package(info, prefix, site_packages):
                      for p in paths]
 
     if noarch_type == 'python':
-        seen = {i.target for i in files}
+        seen = {os.path.normcase(i.target) for i in files}
         for fil in info['files']:
-            if os.path.normpath(fil) not in seen:
+            if os.path.normcase(fil) not in seen:
                 file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
@@ -748,7 +748,7 @@ def load_environment(prefix, on_missing_cache='warn'):
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 
-    all_files = load_files(prefix)
+    all_files = {os.path.normcase(p) for p in load_files(prefix)}
 
     files = []
     managed = set()
@@ -770,7 +770,7 @@ def load_environment(prefix, on_missing_cache='warn'):
             else:
                 new_files = load_managed_package(info, prefix, site_packages)
 
-            targets = {f.target for f in new_files}
+            targets = {os.path.normcase(f.target) for f in new_files}
 
             if targets.difference(all_files):
                 # Collect packages missing files as we progress to provide a
