@@ -12,27 +12,22 @@ platform:
     - x64
 
 install:
-    # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
-    - cmd: rmdir C:\cygwin /s /q
-
     # Add path, activate `conda` and update conda.
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - cmd: conda.exe config --set safety_checks disabled
     - cmd: conda.exe update --yes --quiet conda
 
     - cmd: set PYTHONUNBUFFERED=1
 
-    # Add our channels.
-    - cmd: conda.exe config --set show_channel_urls true
-    - cmd: conda.exe config --remove channels defaults
-    - cmd: conda.exe config --add channels defaults
-    - cmd: conda.exe config --add channels conda-forge
+    # Create the test environments
+    - cmd: bash.exe testing/setup_envs.sh
 
-    # Configure the VM.
-    - cmd: conda.exe install -n root --quiet --yes conda-forge-build-setup
-    - cmd: run_conda_forge_build_setup
+    # Install the required packages
+    - cmd: conda.exe install --yes flake8 pytest
+    - cmd: pip.exe install .
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    - conda.exe build conda.recipe --quiet
+    - py.test.exe conda_pack --runslow -s -vv
