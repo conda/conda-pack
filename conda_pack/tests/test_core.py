@@ -157,28 +157,28 @@ def test_loaded_file_properties(py36_env):
 
 @pytest.mark.skipif(not on_win, reason='Different filenames and paths on Windows')
 def test_loaded_file_properties_win(py36_env):
-    lk = {f.target: f for f in py36_env}
+    lk = {os.path.normcase(f.target): f for f in py36_env}
 
     # Pip installed entrypoint
-    fil = lk[r'Scripts\pytest.exe']
+    fil = lk[r'scripts\pytest.exe']
     assert not fil.is_conda
     assert fil.file_mode == 'unknown'
     assert fil.prefix_placeholder is None
 
     # Conda installed noarch entrypoint
-    fil = lk[r'Scripts\conda-pack-test-lib1']
+    fil = lk[r'scripts\conda-pack-test-lib1']
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed entrypoint
-    fil = lk[r'Scripts\conda-pack-test-lib2.exe']
+    fil = lk[r'scripts\conda-pack-test-lib2.exe']
     assert fil.is_conda
     assert fil.file_mode == None
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed file
-    fil = lk[r'Lib\site-packages\conda_pack_test_lib1\cli.py']
+    fil = lk[r'lib\site-packages\conda_pack_test_lib1\cli.py']
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
@@ -403,8 +403,8 @@ def test_pack(tmpdir, py36_env):
                 .include(include))
 
     # Files line up with filtering, with extra conda-unpack command
-    sol = set(f.target for f in filtered.files)
-    res = set(os.path.normpath(p) for p in paths)
+    sol = set(os.path.normcase(f.target) for f in filtered.files)
+    res = set(os.path.normcase(p) for p in paths)
     diff = res.difference(sol)
 
     if on_win:
@@ -438,7 +438,7 @@ def test_dest_prefix(tmpdir, py36_env):
     # shebangs are rewritten using env
     with tarfile.open(out_path) as fil:
         text_from_conda = fil.extractfile('/'.join([BIN_DIR, 'conda-pack-test-lib1'])).read()
-        text_from_pip = fil.extractfile('Scripts/pytest.exe' if on_win else 'bin/pytest').read()
+        text_from_pip = fil.extractfile('scripts/pytest.exe' if on_win else 'bin/pytest').read()
 
     assert dest_bytes not in text_from_conda
     assert dest_bytes not in text_from_pip
