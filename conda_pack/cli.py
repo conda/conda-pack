@@ -87,9 +87,6 @@ def build_parser():
                         metavar="PATTERN",
                         dest="filters",
                         help="Re-add excluded files matching this pattern")
-    parser.add_argument("--recursive",
-                        action="store_true",
-                        help="Additional environments if the prefix is a root environment")
     parser.add_argument("--force", "-f",
                         action="store_true",
                         help="Overwrite any existing archive at the output path.")
@@ -134,8 +131,7 @@ def main(args=None, pack=pack):
                  arcroot=args.arcroot,
                  dest_prefix=args.dest_prefix,
                  verbose=not args.quiet,
-                 filters=args.filters,
-                 recursive=args.recursive)
+                 filters=args.filters)
     except CondaPackException as e:
         fail("CondaPackError: %s" % e)
     except KeyboardInterrupt as e:

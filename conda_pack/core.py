@@ -375,7 +375,7 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
-         compress_level=4, zip_symlinks=False, zip_64=True, filters=None, recursive=False):
+         compress_level=4, zip_symlinks=False, zip_64=True, filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -420,9 +420,6 @@ def pack(name=None, prefix=None, output=None, format='infer',
         ``(kind, pattern)``, where ``kind`` is either ``'exclude'`` or
         ``'include'`` and ``pattern`` is a file pattern. Filters are applied in
         the order specified.
-    recursive : bool, optional
-        Whether to also archive nested environments, if archiving a root
-        environment.  Default is False.
 
     Returns
     -------
@@ -451,60 +448,11 @@ def pack(name=None, prefix=None, output=None, format='infer',
             else:
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
-    subenvirons = []
-    if recursive:
-        env_dir = os.path.join(env.prefix, 'envs')
-        if os.path.exists(env_dir):
-            for env_name in os.listdir(env_dir):
-                try:
-                    subenvirons.append(CondaEnv.from_prefix(os.path.join(env_dir, env_name)))
-                except CondaPackException as exc:
-                    print('Could not pack environment: %s: %s' % (env_name, exc))
-
-    # Ensure the prefix is a relative path
-    arcroot = arcroot.strip(os.path.sep)
-
-    # The output path and archive format
-    output, format = env._output_and_format(output, format)
-
-    if os.path.exists(output) and not force:
-        raise CondaPackException("File %r already exists" % output)
-
-    if verbose:
-        print("Packing environment at %r to %r" % (env.prefix, output))
-
-    fd, temp_path = tempfile.mkstemp()
-
-    try:
-        with os.fdopen(fd, 'wb') as temp_file:
-            with archive(temp_file, arcroot, format,
-                         compress_level=compress_level,
-                         zip_symlinks=zip_symlinks,
-                         zip_64=zip_64) as arc:
-                packer = Packer(env.prefix, arc, dest_prefix=dest_prefix)
-                data = [(packer, f) for f in env.files]
-                for subenv in subenvirons:
-                    p = NestedPacker(packer, os.path.relpath(subenv.prefix, env.prefix))
-                    data.extend(((p, f) for f in subenv.files))
-                with progressbar(data, enabled=verbose) as files:
-                    try:
-                        for p, f in files:
-                            p.add(f)
-                        packer.finish()
-                    except zipfile.LargeZipFile:
-                        raise CondaPackException(
-                                "Large Zip File: ZIP64 extensions required "
-                                "but were disabled")
-
-    except Exception:
-        # Writing failed, remove tempfile
-        os.remove(temp_path)
-        raise
-    else:
-        # Writing succeeded, move archive to desired location
-        shutil.move(temp_path, output)
-
-    return output
+    return env.pack(output=output, format=format, arcroot=arcroot,
+                    dest_prefix=dest_prefix,
+                    verbose=verbose, force=force,
+                    compress_level=compress_level,
+                    zip_symlinks=zip_symlinks, zip_64=zip_64)
 
 
 def find_site_packages(prefix):
@@ -1049,23 +997,3 @@ class Packer(object):
         if on_win:
             cli_exe = pkg_resources.resource_filename('setuptools', 'cli-64.exe')
             self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
-
-
-class NestedArchive(object):
-    def __init__(self, archive, extra_prefix):
-        self.archive = archive
-        self.extra_prefix = extra_prefix
-
-    def add(self, source, target):
-        self.archive.add(source, os.path.join(self.extra_prefix, target))
-
-    def add_bytes(self, source, data, target):
-        self.archive.add_bytes(source, data, os.path.join(self.extra_prefix, target))
-
-
-class NestedPacker(Packer):
-    def __init__(self, packer, extra_prefix):
-        if not packer.has_dest:
-            raise CondaPackError('Recursive pack is only supported with a fixed destination')
-        super(NestedPacker, self).__init__(os.path.join(packer.prefix, extra_prefix), packer.archive, os.path.join(packer.dest, extra_prefix))
-        self.archive = NestedArchive(packer.archive, extra_prefix)
