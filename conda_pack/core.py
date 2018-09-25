@@ -260,7 +260,7 @@ class CondaEnv(object):
 
     def pack(self, output=None, format='infer', arcroot='', dest_prefix=None,
              verbose=False, force=False, compress_level=4, zip_symlinks=False,
-             zip_64=True):
+             zip_64=True, subenvirons=None):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -297,6 +297,8 @@ class CondaEnv(object):
             symlinks*. Default is False. Ignored if format isn't ``zip``.
         zip_64 : bool, optional
             Whether to enable ZIP64 extensions. Default is True.
+        subenvirons : List[CondaEnv], optional
+            Nested environments to include in the archive. Default is [].
 
         Returns
         -------
@@ -308,6 +310,9 @@ class CondaEnv(object):
 
         # The output path and archive format
         output, format = self._output_and_format(output, format)
+
+        if subenvirons is None:
+            subenvirons = []
 
         if os.path.exists(output) and not force:
             raise CondaPackException("File %r already exists" % output)
@@ -324,10 +329,14 @@ class CondaEnv(object):
                              zip_symlinks=zip_symlinks,
                              zip_64=zip_64) as arc:
                     packer = Packer(self.prefix, arc, dest_prefix=dest_prefix)
-                    with progressbar(self.files, enabled=verbose) as files:
+                    data = [(packer, f) for f in self.files]
+                    for subenv in subenvirons:
+                        p = NestedPacker(packer, os.path.relpath(subenv.prefix, self.prefix))
+                        data.extend(((p, f) for f in subenv.files))
+                    with progressbar(data, enabled=verbose) as files:
                         try:
-                            for f in files:
-                                packer.add(f)
+                            for p, f in files:
+                                p.add(f)
                             packer.finish()
                         except zipfile.LargeZipFile:
                             raise CondaPackException(
@@ -464,50 +473,12 @@ def pack(name=None, prefix=None, output=None, format='infer',
                 except CondaPackException as exc:
                     print('Could not pack environment: %s: %s' % (env_name, exc))
 
-    # Ensure the prefix is a relative path
-    arcroot = arcroot.strip(os.path.sep)
-
-    # The output path and archive format
-    output, format = env._output_and_format(output, format)
-
-    if os.path.exists(output) and not force:
-        raise CondaPackException("File %r already exists" % output)
-
-    if verbose:
-        print("Packing environment at %r to %r" % (env.prefix, output))
-
-    fd, temp_path = tempfile.mkstemp()
-
-    try:
-        with os.fdopen(fd, 'wb') as temp_file:
-            with archive(temp_file, arcroot, format,
-                         compress_level=compress_level,
-                         zip_symlinks=zip_symlinks,
-                         zip_64=zip_64) as arc:
-                packer = Packer(env.prefix, arc, dest_prefix=dest_prefix)
-                data = [(packer, f) for f in env.files]
-                for subenv in subenvirons:
-                    p = NestedPacker(packer, os.path.relpath(subenv.prefix, env.prefix))
-                    data.extend(((p, f) for f in subenv.files))
-                with progressbar(data, enabled=verbose) as files:
-                    try:
-                        for p, f in files:
-                            p.add(f)
-                        packer.finish()
-                    except zipfile.LargeZipFile:
-                        raise CondaPackException(
-                                "Large Zip File: ZIP64 extensions required "
-                                "but were disabled")
-
-    except Exception:
-        # Writing failed, remove tempfile
-        os.remove(temp_path)
-        raise
-    else:
-        # Writing succeeded, move archive to desired location
-        shutil.move(temp_path, output)
-
-    return output
+    return env.pack(output=output, format=format, arcroot=arcroot,
+                    dest_prefix=dest_prefix,
+                    verbose=verbose, force=force,
+                    compress_level=compress_level,
+                    zip_symlinks=zip_symlinks, zip_64=zip_64,
+                    subenvirons=subenvirons)
 
 
 def find_site_packages(prefix):
