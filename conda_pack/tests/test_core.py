@@ -499,3 +499,41 @@ def test_activate(tmpdir):
                                       stderr=subprocess.STDOUT).decode()
 
         assert out == 'Done\n'
+
+
+def test_recursive(tmpdir, py36_env):
+    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    dest = '/foo/bar/baz/biz'
+    res = pack(prefix=py36_path,
+               dest_prefix=dest,
+               recursive=True,
+               output=out_path)
+
+    assert res == out_path
+    assert os.path.exists(out_path)
+    assert tarfile.is_tarfile(out_path)
+
+    with tarfile.open(out_path) as fil:
+        paths = fil.getnames()
+
+    # No conda-unpack generated
+    assert 'conda-unpack' not in paths
+
+    dest_bytes = os.path.join(dest).encode()
+    orig_path = os.path.join(py36_env.prefix, 'envs/nested/lib/libsnappy.dylib')
+
+    if not os.path.exists(orig_path):
+        return
+
+    # shebangs are rewritten using env
+    with tarfile.open(out_path) as fil:
+        binary_from_conda = fil.extractfile('envs/nested/lib/libsnappy.dylib').read()
+
+    # Other files are rewritten to use specified prefix This is only checked if
+    # the original file did include the prefix, which is true at least on osx.
+    with open(orig_path, 'rb') as fil:
+        orig_bytes = fil.read()
+
+    assert py36_env.prefix.encode() in orig_bytes
+    assert py36_env.prefix.encode() not in binary_from_conda
+    assert dest_bytes in binary_from_conda

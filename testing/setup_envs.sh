@@ -37,3 +37,6 @@ else
   cp "${current_dir}/extra_scripts/conda_pack_test_activate.sh" "${activate_scripts}/etc/conda/activate.d/"
   cp "${current_dir}/extra_scripts/conda_pack_test_deactivate.sh" "${activate_scripts}/etc/conda/deactivate.d/"
 fi
+
+echo "Creating nested environment"
+conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/environments/py36/envs/nested" $@
