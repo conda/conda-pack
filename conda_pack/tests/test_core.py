@@ -249,7 +249,7 @@ def test_roundtrip(tmpdir, py36_env):
         for member in fil.getnames():
             assert not member.startswith(os.path.sep)
 
-        extract_path = str(tmpdir)
+        extract_path = str(tmpdir.join('env'))
         fil.extractall(extract_path)
 
     # Shebang rewriting happens before prefixes are fixed
@@ -268,13 +268,23 @@ def test_roundtrip(tmpdir, py36_env):
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('conda-unpack')
 
-    # Check bash scripts all don't error
-    command = (". {path}/bin/activate && "
-               "conda-unpack && "
-               ". {path}/bin/deactivate && "
-               "echo 'Done'").format(path=extract_path)
+    if on_win:
+        command = (r"@call {path}\Scripts\activate.bat && "
+                   "conda-unpack.exe && "
+                   r"call {path}\Scripts\deactivate.bat && "
+                   "echo Done").format(path=extract_path)
+        unpack = tmpdir.join('unpack.bat')
+        unpack.write(command)
+        out = subprocess.check_output(['cmd.exe', '/c', str(unpack)],
+                                      stderr=subprocess.STDOUT).decode()
+        assert out == 'Done\r\n'
 
-    if not on_win:
+    else:
+        # Check bash scripts all don't error
+        command = (". {path}/bin/activate && "
+                   "conda-unpack && "
+                   ". {path}/bin/deactivate && "
+                   "echo 'Done'").format(path=extract_path)
         out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
                                       stderr=subprocess.STDOUT).decode()
         assert out == 'Done\n'

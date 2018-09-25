@@ -37,7 +37,10 @@ BIN_DIR = 'Scripts' if on_win else 'bin'
 
 _current_dir = os.path.dirname(__file__)
 if on_win:
-    _scripts = []# raise NotImplementedError("Windows support")
+    _scripts = [(os.path.join(_current_dir, 'scripts', 'windows', 'activate.bat'),
+                 os.path.join(BIN_DIR, 'activate.bat')),
+                (os.path.join(_current_dir, 'scripts', 'windows', 'deactivate.bat'),
+                 os.path.join(BIN_DIR, 'deactivate.bat'))]
 else:
     _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
                  os.path.join(BIN_DIR, 'activate')),
