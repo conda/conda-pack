@@ -956,13 +956,18 @@ class Packer(object):
 
         if not on_win:
             shebang = '#!/usr/bin/env python'
+            python_pattern = re.compile(os.path.join(BIN_DIR, 'python\d.\d'))
         else:
             shebang = ('@SETLOCAL ENABLEDELAYEDEXPANSION & CALL "%~f0" & (IF '
                        'NOT ERRORLEVEL 1 (python -x "%~f0" %*) ELSE (ECHO No '
                        'python environment found on path)) & PAUSE & EXIT /B '
                        '!ERRORLEVEL!')
+            python_pattern = re.compile(os.path.join(BIN_DIR, 'python'))
 
-        prefix_records = ',\n'.join(repr(p) for p in self.prefixes)
+        # We skip prefix rewriting in python executables (if needed)
+        # to avoid editing a running file.
+        prefix_records = ',\n'.join(repr(p) for p in self.prefixes
+                                    if not python_pattern.match(p[0]))
 
         with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
             prefixes_py = fil.read()
