@@ -9,11 +9,13 @@
 @set "NEW_PREFIX=%RETVAL%"
 
 @if "%CONDA_PREFIX%" == "" @goto skipdeactivate
-    @if "%CONDA_PREFIX%" == "%NEW_PREFIX%" @exit /b
-    @REM If the current environment is a conda-pack environment, or a root environment
-    @if exist "%CONDA_PREFIX%\Scripts\deactivate.bat" @call "%CONDA_PREFIX%\Scripts\deactivate.bat"
-    @REM Newer versions of conda only have the deactivate script in the root environment
-    @if exist "%CONDA_PREFIX%\..\..\Scripts\deactivate.bat" @call "%CONDA_PREFIX%\..\..\Scripts\deactivate.bat"
+@if "%CONDA_PREFIX%" == "%NEW_PREFIX%" @exit /b
+
+@REM If the current environment is a conda-pack environment, or a root environment
+@REM
+@if exist "%CONDA_PREFIX%\Scripts\deactivate.bat" @call "%CONDA_PREFIX%\Scripts\deactivate.bat"
+@REM Newer versions of conda only have the deactivate script in the root environment
+@if exist "%CONDA_PREFIX%\..\..\Scripts\deactivate.bat" @call "%CONDA_PREFIX%\..\..\Scripts\deactivate.bat"
 :skipdeactivate
 
 @for /F "delims=" %%i in ("%NEW_PREFIX%") do @SET "ENV_NAME=%%~ni"

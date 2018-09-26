@@ -474,7 +474,7 @@ def test_dest_prefix(tmpdir, py36_env):
 
 def test_activate(tmpdir):
     out_path = os.path.join(str(tmpdir), 'activate_scripts.tar')
-    extract_path = str(tmpdir)
+    extract_path = str(tmpdir.join('env'))
 
     env = CondaEnv.from_prefix(activate_scripts_path)
     env.pack(out_path)
@@ -483,13 +483,28 @@ def test_activate(tmpdir):
         fil.extractall(extract_path)
 
     # Check that activate environment variable is set
-    command = (". {path}/bin/activate && "
-               "test $CONDAPACK_ACTIVATED -eq 1 && "
-               ". {path}/bin/deactivate && "
-               "test ! $CONDAPACK_ACTIVATED && "
-               "echo 'Done'").format(path=extract_path)
+    if on_win:
+        command = (r"@CALL {path}\Scripts\activate" "\r\n"
+                   r"@ECHO CONDAPACK_ACTIVATED=%CONDAPACK_ACTIVATED%" "\r\n"
+                   r"@CALL {path}\Scripts\deactivate" "\r\n"
+                   r"@ECHO CONDAPACK_ACTIVATED=%CONDAPACK_ACTIVATED%" "\r\n"
+                   r"@echo Done").format(path=extract_path)
+        unpack = tmpdir.join('unpack.bat')
+        unpack.write(command)
 
-    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
-                                  stderr=subprocess.STDOUT).decode()
+        out = subprocess.check_output(['cmd', '/c', str(unpack)],
+                                      stderr=subprocess.STDOUT).decode()
 
-    assert out == 'Done\n'
+        assert out == 'CONDAPACK_ACTIVATED=1\r\nCONDAPACK_ACTIVATED=\r\nDone\r\n'
+
+    else:
+        command = (". {path}/bin/activate && "
+                   "test $CONDAPACK_ACTIVATED -eq 1 && "
+                   ". {path}/bin/deactivate && "
+                   "test ! $CONDAPACK_ACTIVATED && "
+                   "echo 'Done'").format(path=extract_path)
+
+        out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                      stderr=subprocess.STDOUT).decode()
+
+        assert out == 'Done\n'

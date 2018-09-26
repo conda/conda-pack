@@ -1,17 +1,20 @@
 @REM @ symbols in this file indicate that output should not be printed.
 @REM   Setting it this way allows us to not touch the user's echo setting.
 @REM   For debugging, remove the @ on the section you need to study.
-@setlocal enabledelayedexpansion
-
-@REM If there's no active environment, there's nothing to do
-@IF "%CONDA_PREFIX%" == "" @GOTO skipdeactivate
-
+@REM
 @REM Run any activate scripts
+@REM Do this before running setlocal so that variables are cleared properly
 @IF EXIST "%CONDA_PREFIX%\etc\conda\deactivate.d" (
     @PUSHD "%CONDA_PREFIX%\etc\conda\deactivate.d"
     @FOR %%g in (*.bat) DO @CALL "%%g"
     @POPD
 )
+
+@setlocal enabledelayedexpansion
+
+@REM If there's no active environment, there's nothing to do
+@IF "%CONDA_PREFIX%" == "" @GOTO skipdeactivate
+
 
 @REM Remove path entries for this environment
 @SET "TARGETS=;%CONDA_PREFIX%;%CONDA_PREFIX%\Library\mingw-w64\bin;%CONDA_PREFIX%\Library\usr\bin;%CONDA_PREFIX%\Library\bin;%CONDA_PREFIX%\Scripts"
