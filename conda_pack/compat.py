@@ -5,12 +5,22 @@ on_win = sys.platform == 'win32'
 
 
 if sys.version_info.major == 2:
+    from imp import load_source
+
     def source_from_cache(path):
         if path.endswith('.pyc') or path.endswith('.pyo'):
             return path[:-1]
         raise ValueError("Path %s is not a python bytecode file" % path)
 else:
+    import importlib
     from importlib.util import source_from_cache
+
+    def load_source(name, path):
+        loader = importlib.machinery.SourceFileLoader(name, path)
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
 
 
 def find_py_source(path, ignore=True):

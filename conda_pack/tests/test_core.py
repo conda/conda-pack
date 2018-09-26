@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function, division
 
 import json
 import os
+import re
 import subprocess
 import tarfile
 from glob import glob
@@ -10,6 +11,7 @@ import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.core import name_to_prefix, File
+from conda_pack.compat import load_source
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
@@ -237,6 +239,13 @@ def test_roundtrip(tmpdir, py36_env):
     out = subprocess.check_output([conda_unpack, '--version'],
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('conda-unpack')
+
+    # Check no prefix generated for python executable
+    python_pattern = re.compile('bin/python\d.\d')
+    conda_unpack_mod = load_source('conda_unpack', conda_unpack)
+    pythons = [r for r in conda_unpack_mod._prefix_records
+               if python_pattern.match(r[0])]
+    assert not pythons
 
     # Check bash scripts all don't error
     command = (". {path}/bin/activate && "
