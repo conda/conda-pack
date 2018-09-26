@@ -1,0 +1,7 @@
+name: activate_scripts
+
+channels:
+    - conda-forge
+
+dependencies:
+    - python=3.6

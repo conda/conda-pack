@@ -15,7 +15,7 @@ from conda_pack.core import name_to_prefix, File, BIN_DIR
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
-                       env_dir)
+                       activate_scripts_path, env_dir)
 
 
 @pytest.fixture(scope="module")
@@ -470,3 +470,26 @@ def test_dest_prefix(tmpdir, py36_env):
         if py36_env.prefix.encode() in orig_bytes:
             assert py36_env.prefix.encode() not in binary_from_conda
             assert dest_bytes in binary_from_conda
+
+
+def test_activate(tmpdir):
+    out_path = os.path.join(str(tmpdir), 'activate_scripts.tar')
+    extract_path = str(tmpdir)
+
+    env = CondaEnv.from_prefix(activate_scripts_path)
+    env.pack(out_path)
+
+    with tarfile.open(out_path) as fil:
+        fil.extractall(extract_path)
+
+    # Check that activate environment variable is set
+    command = (". {path}/bin/activate && "
+               "test $CONDAPACK_ACTIVATED -eq 1 && "
+               ". {path}/bin/deactivate && "
+               "test ! $CONDAPACK_ACTIVATED && "
+               "echo 'Done'").format(path=extract_path)
+
+    out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
+                                  stderr=subprocess.STDOUT).decode()
+
+    assert out == 'Done\n'
