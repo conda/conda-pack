@@ -246,7 +246,7 @@ class CondaEnv(object):
                 format = 'tar'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'tar.zst'}:
             raise CondaPackException("Unknown format %r" % format)
 
         if output is None:
@@ -315,7 +315,7 @@ class CondaEnv(object):
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with archive(temp_file, arcroot, format,
+                with archive(temp_file, temp_path, arcroot, format,
                              compress_level=compress_level,
                              zip_symlinks=zip_symlinks,
                              zip_64=zip_64) as arc:
