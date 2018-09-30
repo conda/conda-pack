@@ -20,8 +20,14 @@ from .formats import archive
 from .prefixes import SHEBANG_REGEX, replace_prefix
 from ._progress import progressbar
 
+formats = {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}
+try:
+    import libarchive  # noqa
+    formats.add('tar.zst')
+except Exception:
+    pass
 
-__all__ = ('CondaPackException', 'CondaEnv', 'File', 'pack')
+__all__ = ('CondaPackException', 'CondaEnv', 'File', 'pack', 'formats')
 
 
 class CondaPackException(Exception):
@@ -250,7 +256,7 @@ class CondaEnv(object):
                 format = 'tar'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
+        elif format not in formats:
             raise CondaPackException("Unknown format %r" % format)
 
         if output is None:
@@ -319,7 +325,7 @@ class CondaEnv(object):
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with archive(temp_file, arcroot, format,
+                with archive(temp_file, temp_path, arcroot, format,
                              compress_level=compress_level,
                              zip_symlinks=zip_symlinks,
                              zip_64=zip_64) as arc:

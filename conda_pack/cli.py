@@ -5,7 +5,7 @@ import sys
 import traceback
 
 from . import __version__
-from .core import pack, CondaPackException, context
+from .core import pack, CondaPackException, context, formats
 
 
 class MultiAppendAction(argparse.Action):
@@ -27,6 +27,10 @@ def build_parser():
                   add_help=False)
     if sys.version_info >= (3, 5):
         kwargs['allow_abbrev'] = False
+
+    formats_available = list(formats)
+    formats_available.insert(0, 'infer')
+
     parser = argparse.ArgumentParser(**kwargs)
     parser.add_argument("--name", "-n",
                         metavar="ENV",
@@ -50,8 +54,7 @@ def build_parser():
                               "path before packaging. In this case the "
                               "`conda-unpack` script will not be generated."))
     parser.add_argument("--format",
-                        choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
-                                 'tbz2', 'tar'],
+                        choices=formats_available,
                         default='infer',
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension."))

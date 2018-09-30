@@ -5,40 +5,34 @@ import tarfile
 import time
 import zipfile
 from io import BytesIO
+from .formats_base import ArchiveBase
 
 _tar_mode = {'tar.gz': 'w:gz',
              'tgz': 'w:gz',
              'tar.bz2': 'w:bz2',
              'tbz2': 'w:bz2',
-             'tar': 'w'}
+             'tar': 'w',
+             'tar.zst': 'zstd:compression-level=22'}
 
 
-def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
+def archive(fileobj, filename, arcroot, format, compress_level=4, zip_symlinks=False,
             zip_64=True):
     if format == 'zip':
-        return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks,
+        return ZipArchive(fileobj, filename, arcroot, zip_symlinks=zip_symlinks,
                           zip_64=zip_64)
+    elif format == 'tar.zst':
+        from .formats_libarchive import TarZstArchive
+        return TarZstArchive(fileobj, filename, arcroot, _tar_mode[format],
+                             compress_level=compress_level)
     else:
-        return TarArchive(fileobj, arcroot, _tar_mode[format],
+        return TarArchive(fileobj, filename, arcroot, _tar_mode[format],
                           compress_level=compress_level)
 
 
-class ArchiveBase(object):
-    def __exit__(self, *args):
-        self.archive.close()
-
-    def add(self, source, target):
-        target = os.path.join(self.arcroot, target)
-        self._add(source, target)
-
-    def add_bytes(self, source, sourcebytes, target):
-        target = os.path.join(self.arcroot, target)
-        self._add_bytes(source, sourcebytes, target)
-
-
 class TarArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, mode, compress_level):
+    def __init__(self, fileobj, filename, arcroot, mode, compress_level):
         self.fileobj = fileobj
+        self.filename = filename
         self.arcroot = arcroot
         self.mode = mode
         self.compress_level = compress_level
@@ -63,8 +57,9 @@ class TarArchive(ArchiveBase):
 
 
 class ZipArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
+    def __init__(self, fileobj, filename, arcroot, zip_symlinks=False, zip_64=True):
         self.fileobj = fileobj
+        self.filename = filename
         self.arcroot = arcroot
         self.zip_symlinks = zip_symlinks
         self.zip_64 = zip_64

@@ -116,7 +116,7 @@ def test_format(tmpdir, format, root_and_paths):
     os.mkdir(out_dir)
 
     with open(out_path, mode='wb') as fil:
-        with archive(fil, '', format, zip_symlinks=symlinks) as arc:
+        with archive(fil, out_path, '', format, zip_symlinks=symlinks) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
             arc.add_bytes(join(root, "file"),
