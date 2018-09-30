@@ -722,7 +722,7 @@ def load_environment(prefix, on_missing_cache='warn'):
             if targets.difference(all_files):
                 # Collect packages missing files as we progress to provide a
                 # complete error message on failure.
-                missing_files.append((info['name'], info['version']))
+                missing_files.append((info['name'], info['version'], targets.difference(all_files)))
 
             managed.update(targets)
             files.extend(new_files)
@@ -743,7 +743,7 @@ def load_environment(prefix, on_missing_cache='warn'):
                       file_mode=None))
 
     if missing_files:
-        packages = '\n'.join('- %s=%r' % i for i in missing_files)
+        packages = '\n'.join('- %s=%r (%s)' % (i[0], i[1], i[2]) for i in missing_files)
         raise CondaPackException(_missing_files_error.format(packages))
 
     # Add unmanaged files
