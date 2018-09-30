@@ -562,7 +562,7 @@ def load_files(prefix):
 
     ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
               'LICENSE.txt', 'info', 'conda-recipes', '.index', '.unionfs',
-              '.nonadmin', 'python.app', 'Launcher.app'}
+              '.nonadmin', 'Launcher.app'}
 
     res = set()
 
