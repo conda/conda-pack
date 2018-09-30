@@ -4,6 +4,7 @@ import tarfile
 import zipfile
 from os.path import isdir, isfile, islink, join, exists
 from subprocess import check_output, STDOUT
+from ..core import tmp_chdir
 
 import pytest
 
@@ -102,7 +103,7 @@ def has_infozip():
     return "Info-ZIP" in out
 
 
-@pytest.mark.parametrize('format', ['zip', 'tar.gz', 'tar.bz2', 'tar'])
+@pytest.mark.parametrize('format', ['zip', 'tar.gz', 'tar.bz2', 'tar', 'tar.zst'])
 def test_format(tmpdir, format, root_and_paths):
     # Test symlinks whenever possible:
     # - not on windows
@@ -129,6 +130,18 @@ def test_format(tmpdir, format, root_and_paths):
         else:
             with zipfile.ZipFile(out_path) as out:
                 out.extractall(out_dir)
+    elif format == 'tar.zst':
+        try:
+            from libarchive import (extract, extract_file)
+        except Exception:
+            return
+        with tmp_chdir(out_dir):
+            extract_file(out_path,
+                         extract.EXTRACT_TIME |
+                         extract.EXTRACT_PERM |
+                         extract.EXTRACT_SECURE_NODOTDOT |
+                         extract.EXTRACT_SECURE_SYMLINKS |
+                         extract.EXTRACT_SECURE_NOABSOLUTEPATHS)
     else:
         with tarfile.open(out_path) as out:
             out.extractall(out_dir)

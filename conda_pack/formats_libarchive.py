@@ -1,18 +1,8 @@
 import libarchive
 import os
 import tempfile
-from contextlib import contextmanager
 from .formats_base import ArchiveBase
-
-
-@contextmanager
-def tmp_chdir(dest):
-    curdir = os.getcwd()
-    try:
-        os.chdir(dest)
-        yield
-    finally:
-        os.chdir(curdir)
+from .core import tmp_chdir
 
 
 class _NewArchiveWrite(libarchive.write.ArchiveWrite):

@@ -831,6 +831,16 @@ def rewrite_conda_meta(source):
     return out.encode()
 
 
+@contextmanager
+def tmp_chdir(dest):
+    curdir = os.getcwd()
+    try:
+        os.chdir(dest)
+        yield
+    finally:
+        os.chdir(curdir)
+
+
 _conda_unpack_template = """\
 {shebang}
 {prefixes_py}
