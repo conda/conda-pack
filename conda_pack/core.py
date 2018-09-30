@@ -246,7 +246,7 @@ class CondaEnv(object):
                 format = 'tar'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'tar.zst'}:
             raise CondaPackException("Unknown format %r" % format)
 
         if output is None:
@@ -315,7 +315,7 @@ class CondaEnv(object):
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with archive(temp_file, arcroot, format,
+                with archive(temp_file, temp_path, arcroot, format,
                              compress_level=compress_level,
                              zip_symlinks=zip_symlinks,
                              zip_64=zip_64) as arc:
@@ -562,7 +562,7 @@ def load_files(prefix):
 
     ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
               'LICENSE.txt', 'info', 'conda-recipes', '.index', '.unionfs',
-              '.nonadmin', 'python.app', 'Launcher.app'}
+              '.nonadmin', 'Launcher.app'}
 
     res = set()
 
@@ -722,7 +722,7 @@ def load_environment(prefix, on_missing_cache='warn'):
             if targets.difference(all_files):
                 # Collect packages missing files as we progress to provide a
                 # complete error message on failure.
-                missing_files.append((info['name'], info['version']))
+                missing_files.append((info['name'], info['version'], targets.difference(all_files)))
 
             managed.update(targets)
             files.extend(new_files)
@@ -743,7 +743,7 @@ def load_environment(prefix, on_missing_cache='warn'):
                       file_mode=None))
 
     if missing_files:
-        packages = '\n'.join('- %s=%r' % i for i in missing_files)
+        packages = '\n'.join('- %s=%r (%s)' % (i[0], i[1], i[2]) for i in missing_files)
         raise CondaPackException(_missing_files_error.format(packages))
 
     # Add unmanaged files

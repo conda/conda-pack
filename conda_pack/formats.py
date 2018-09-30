@@ -1,31 +1,38 @@
+import libarchive
 import os
 import stat
 import sys
 import tarfile
+import tempfile
 import time
 import zipfile
+from contextlib import contextmanager
 from io import BytesIO
 
 _tar_mode = {'tar.gz': 'w:gz',
              'tgz': 'w:gz',
              'tar.bz2': 'w:bz2',
              'tbz2': 'w:bz2',
-             'tar': 'w'}
+             'tar': 'w',
+             'tar.zst': 'zstd:compression-level=22'}
 
 
-def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
+def archive(fileobj, filename, arcroot, format, compress_level=4, zip_symlinks=False,
             zip_64=True):
     if format == 'zip':
-        return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks,
+        return ZipArchive(fileobj, filename, arcroot, zip_symlinks=zip_symlinks,
                           zip_64=zip_64)
-    else:
-        return TarArchive(fileobj, arcroot, _tar_mode[format],
+    elif format == 'tar.zst':
+        return TarZstArchive(fileobj, filename, arcroot, _tar_mode[format],
                           compress_level=compress_level)
-
+    else:
+        return TarArchive(fileobj, filename, arcroot, _tar_mode[format],
+                          compress_level=compress_level)
 
 class ArchiveBase(object):
     def __exit__(self, *args):
-        self.archive.close()
+        if hasattr(self.archive, "close"):
+            self.archive.close()
 
     def add(self, source, target):
         target = os.path.join(self.arcroot, target)
@@ -37,8 +44,9 @@ class ArchiveBase(object):
 
 
 class TarArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, mode, compress_level):
+    def __init__(self, fileobj, filename, arcroot, mode, compress_level):
         self.fileobj = fileobj
+        self.filename = filename
         self.arcroot = arcroot
         self.mode = mode
         self.compress_level = compress_level
@@ -61,10 +69,92 @@ class TarArchive(ArchiveBase):
         info.size = len(sourcebytes)
         self.archive.addfile(info, BytesIO(sourcebytes))
 
+@contextmanager
+def tmp_chdir(dest):
+    curdir = os.getcwd()
+    try:
+        os.chdir(dest)
+        yield
+    finally:
+        os.chdir(curdir)
+
+
+class NewArchiveWrite(libarchive.ArchiveWrite):
+    def __init__(self, filename, format_name, filter_name=None, options=''):
+        from libarchive import ffi
+        self.filename = filename
+        self.archive_p = ffi.write_new()
+        libarchive.ArchiveWrite.__init__(self, self.archive_p)
+        getattr(ffi, 'write_set_format_' + format_name)(self.archive_p)
+        if filter_name:
+            getattr(ffi, 'write_add_filter_' + filter_name)(self.archive_p)
+        if options:
+            if not isinstance(options, bytes):
+                options = options.encode('utf-8')
+            ffi.write_set_options(self.archive_p, options)
+        ffi.write_open_filename_w(self.archive_p, self.filename)
+
+    def __del__(self):
+        from libarchive import ffi
+        ffi.write_close(self.archive_p)
+        ffi.write_free(self.archive_p)
+
+
+class TarZstArchive(ArchiveBase):
+    def __init__(self, fileobj, filename, arcroot, mode, compress_level):
+        self.fileobj = fileobj
+        self.filename = filename
+        self.arcroot = arcroot
+        self.mode = mode
+        self.compress_level = compress_level
+
+    def __enter__(self):
+        if self.mode != 'w':
+            kwargs = {'compresslevel': self.compress_level}
+        else:
+            kwargs = {}
+
+        # Context manager shennanigans.
+        self.archive = None
+        self.archive = NewArchiveWrite(self.filename, 'ustar', filter_name='zstd', options=self.mode)
+
+        return self
+
+    def __exit__(self, type, value, traceback):
+        del self.archive
+
+    def libarchive_write(self, temp_path, target, archive_filename, container, filter_name, options):
+        with tmp_chdir(temp_path):
+            self.archive.add_files(target)
+
+
+    def _add_via_tempfile(self, target, bytes_or_sourcefile):
+        temp_path = tempfile.mkdtemp()
+        target_file = os.path.join(temp_path, target)
+        os.makedirs(os.path.dirname(target_file))
+        if isinstance(bytes_or_sourcefile, (bytes, bytearray)):
+            with open(target_file, 'wb') as temp_file:
+                temp_file.write(bytes_or_sourcefile)
+        else:
+            from shutil import copyfile
+            copyfile(bytes_or_sourcefile, target_file)
+        self.libarchive_write(temp_path, target, self.filename, 'ustar', filter_name='zstd', options=self.mode)
+
+
+    def _add(self, source, target):
+        if source.endswith(target):
+            self.libarchive_write(source.replace(target, ""), target, self.filename, 'ustar', filter_name='zstd',
+                                  options=self.mode)
+        else:
+            self._add_via_tempfile(target, source)
+
+    def _add_bytes(self, source, sourcebytes, target):
+        self._add_via_tempfile(target, sourcebytes)
 
 class ZipArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
+    def __init__(self, fileobj, filename, arcroot, zip_symlinks=False, zip_64=True):
         self.fileobj = fileobj
+        self.filename = filename
         self.arcroot = arcroot
         self.zip_symlinks = zip_symlinks
         self.zip_64 = zip_64
