@@ -879,18 +879,21 @@ class Packer(object):
 
     def add(self, file):
         # Windows note:
-        # When adding files to an archive, that archive is generally case-sensitive.
-        # The target paths can be mixed case, and that means that they will be distinct
-        # directories in the archive.
+        # When adding files to an archive, that archive is generally
+        # case-sensitive.  The target paths can be mixed case, and that means
+        # that they will be distinct directories in the archive.
         #
-        # If those files are then extracted onto a case-sensitive file-system (such as a
-        # network share), Windows will not be able to traverse them correctly.
+        # If those files are then extracted onto a case-sensitive file-system
+        # (such as a network share), Windows will not be able to traverse them
+        # correctly.
         #
-        # The simple (undesirable) solution is to normalize (lowercase) the filenames when
-        # adding them to the archive.
-        # A nicer solution would be to note the "canonical" capitalization of a prefix when
-        # it first occurs, and use that every time the prefix occurs subsequently.
-        # 
+        # The simple (undesirable) solution is to normalize (lowercase) the
+        # filenames when adding them to the archive.
+        #
+        # A nicer solution would be to note the "canonical" capitalization of a
+        # prefix when it first occurs, and use that every time the prefix
+        # occurs subsequently.
+        #
         # We just ignore this problem for the time being.
         if file.file_mode is None:
             if fnmatch(file.target, 'conda-meta/*.json'):
@@ -998,7 +1001,8 @@ class Packer(object):
             fil.close()
             st = os.stat(fil.name)
             os.chmod(fil.name, st.st_mode | 0o111)  # make executable
-            self.archive.add(fil.name, os.path.join(BIN_DIR, 'conda-unpack-script.py' if on_win else 'conda-unpack'))
+            script_name = 'conda-unpack-script.py' if on_win else 'conda-unpack'
+            self.archive.add(fil.name, os.path.join(BIN_DIR, script_name))
         finally:
             os.unlink(fil.name)
 

@@ -4,7 +4,6 @@ import json
 import os
 import re
 import subprocess
-import sys
 import tarfile
 from glob import glob
 
@@ -156,6 +155,7 @@ def test_loaded_file_properties(py36_env):
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
 
+
 @pytest.mark.skipif(not on_win, reason='Different filenames and paths on Windows')
 def test_loaded_file_properties_win(py36_env):
     lk = {os.path.normcase(f.target): f for f in py36_env}
@@ -175,7 +175,7 @@ def test_loaded_file_properties_win(py36_env):
     # Conda installed entrypoint
     fil = lk[r'scripts\conda-pack-test-lib2.exe']
     assert fil.is_conda
-    assert fil.file_mode == None
+    assert fil.file_mode is None
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed file
@@ -183,8 +183,6 @@ def test_loaded_file_properties_win(py36_env):
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
-
-
 
 
 def test_works_with_no_python():
@@ -260,8 +258,13 @@ def test_roundtrip(tmpdir, py36_env):
         assert shebang == '#!/usr/bin/env python'
 
     # Check conda-unpack --help and --version
-    conda_unpack = os.path.join(extract_path, BIN_DIR, 'conda-unpack.exe' if on_win else 'conda-pack')
-    conda_unpack_script = os.path.join(extract_path, BIN_DIR, 'conda-unpack-script.py') if on_win else conda_unpack
+    if on_win:
+        binary_name = 'conda-unpack.exe'
+        script_name =  'conda-unpack-script.py'
+    else:
+        binary_name = script_name = 'conda-pack'
+    conda_unpack = os.path.join(extract_path, BIN_DIR, binary_name)
+    conda_unpack_script = os.path.join(extract_path, BIN_DIR, script_name)
     out = subprocess.check_output([conda_unpack, '--help'], shell=True,
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('usage: conda-unpack')
@@ -456,8 +459,10 @@ def test_dest_prefix(tmpdir, py36_env):
 
     # shebangs are rewritten using env
     with tarfile.open(out_path) as fil:
-        text_from_conda = fil.extractfile('/'.join([BIN_DIR, 'conda-pack-test-lib1'])).read()
-        text_from_pip = fil.extractfile('scripts/pytest.exe' if on_win else 'bin/pytest').read()
+        lib1_script = '/'.join([BIN_DIR, 'conda-pack-test-lib1'])
+        pytest_binary = 'scripts/pytest.exe' if on_win else 'bin/pytest'
+        text_from_conda = fil.extractfile(lib1_script).read()
+        text_from_pip = fil.extractfile(pytest_binary).read()
 
     assert dest_bytes not in text_from_conda
     assert dest_bytes not in text_from_pip
