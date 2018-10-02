@@ -261,6 +261,7 @@ def test_roundtrip(tmpdir, py36_env):
 
     # Check conda-unpack --help and --version
     conda_unpack = os.path.join(extract_path, BIN_DIR, 'conda-unpack.exe' if on_win else 'conda-pack')
+    conda_unpack_script = os.path.join(extract_path, BIN_DIR, 'conda-unpack-script.py') if on_win else conda_unpack
     out = subprocess.check_output([conda_unpack, '--help'], shell=True,
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('usage: conda-unpack')
@@ -271,7 +272,7 @@ def test_roundtrip(tmpdir, py36_env):
 
     # Check no prefix generated for python executable
     python_pattern = re.compile('bin/python\d.\d')
-    conda_unpack_mod = load_source('conda_unpack', conda_unpack)
+    conda_unpack_mod = load_source('conda_unpack', conda_unpack_script)
     pythons = [r for r in conda_unpack_mod._prefix_records
                if python_pattern.match(r[0])]
     assert not pythons
