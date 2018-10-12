@@ -260,16 +260,16 @@ def test_roundtrip(tmpdir, py36_env):
     # Check conda-unpack --help and --version
     if on_win:
         binary_name = 'conda-unpack.exe'
-        script_name =  'conda-unpack-script.py'
+        script_name = 'conda-unpack-script.py'
     else:
-        binary_name = script_name = 'conda-pack'
+        binary_name = script_name = 'conda-unpack'
     conda_unpack = os.path.join(extract_path, BIN_DIR, binary_name)
     conda_unpack_script = os.path.join(extract_path, BIN_DIR, script_name)
-    out = subprocess.check_output([conda_unpack, '--help'], shell=True,
+    out = subprocess.check_output([conda_unpack, '--help'],
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('usage: conda-unpack')
 
-    out = subprocess.check_output([conda_unpack, '--version'], shell=True,
+    out = subprocess.check_output([conda_unpack, '--version'],
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('conda-unpack')
 
