@@ -801,7 +801,7 @@ def rewrite_shebang(data, target, prefix):
                                                    options.decode('utf-8'))
             data = data.replace(shebang, new_shebang.encode('utf-8'))
 
-        return data, True
+            return data, True
 
     return data, False
 
@@ -930,13 +930,12 @@ class Packer(object):
                     file_mode = 'binary'
 
         if file_mode != 'unknown':
-            fixed = False
-            if file_mode == 'text' and file.target.startswith(BIN_DIR):
+            if self.has_dest:
+                data = replace_prefix(data, file_mode, placeholder, self.dest)
+            elif file_mode == 'text' and file.target.startswith(BIN_DIR):
                 data, fixed = rewrite_shebang(data, file.target, placeholder)
                 if not fixed:
                     self.prefixes.append((file.target, placeholder, file_mode))
-            if self.has_dest and not fixed:
-                data = replace_prefix(data, file_mode, placeholder, self.dest)
 
         self.archive.add_bytes(file.source, data, file.target)
 
