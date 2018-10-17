@@ -274,7 +274,7 @@ def test_roundtrip(tmpdir, py36_env):
     assert out.startswith('conda-unpack')
 
     # Check no prefix generated for python executable
-    python_pattern = re.compile('bin/python\d.\d')
+    python_pattern = re.compile(r'bin/python\d.\d')
     conda_unpack_mod = load_source('conda_unpack', conda_unpack_script)
     pythons = [r for r in conda_unpack_mod._prefix_records
                if python_pattern.match(r[0])]
@@ -440,7 +440,7 @@ def test_pack(tmpdir, py36_env):
 
 def test_dest_prefix(tmpdir, py36_env):
     out_path = os.path.join(str(tmpdir), 'py36.tar')
-    dest = '/foo/bar/baz/biz'
+    dest = r'C:\foo\bar\baz\biz' if on_win else '/foo/bar/baz/biz'
     res = pack(prefix=py36_path,
                dest_prefix=dest,
                output=out_path)
@@ -455,35 +455,27 @@ def test_dest_prefix(tmpdir, py36_env):
     # No conda-unpack generated
     assert 'conda-unpack' not in paths
 
-    dest_bytes = dest.encode()
+    if on_win:
+        test_files = ['Scripts/conda-pack-test-lib1',
+                      'Scripts/pytest.exe']
+    else:
+        test_files = ['bin/conda-pack-test-lib1',
+                      'bin/pytest',
+                      'bin/clear']
 
-    # shebangs are rewritten using env
+    orig_bytes = py36_env.prefix.encode()
+    new_bytes = dest.encode()
+
+    # all paths, including shebangs, are rewritten using the prefix
     with tarfile.open(out_path) as fil:
-        lib1_script = '/'.join([BIN_DIR, 'conda-pack-test-lib1'])
-        pytest_binary = 'scripts/pytest.exe' if on_win else 'bin/pytest'
-        text_from_conda = fil.extractfile(lib1_script).read()
-        text_from_pip = fil.extractfile(pytest_binary).read()
-
-    assert dest_bytes not in text_from_conda
-    assert dest_bytes not in text_from_pip
-    assert b'env python' in text_from_conda
-
-    if not on_win:
-        # pip entrypoint on Windows is complicated...
-        assert b'env python' in text_from_pip
-
-        with tarfile.open(out_path) as fil:
-            binary_from_conda = fil.extractfile('bin/clear').read()
-
-        # Other files are rewritten to use specified prefix This is only checked if
-        # the original file did include the prefix, which is true at least on osx.
-        orig_path = os.path.join(py36_env.prefix, 'bin/clear')
-        with open(orig_path, 'rb') as fil:
-            orig_bytes = fil.read()
-
-        if py36_env.prefix.encode() in orig_bytes:
-            assert py36_env.prefix.encode() not in binary_from_conda
-            assert dest_bytes in binary_from_conda
+        for test_file in test_files:
+            orig_path = os.path.join(py36_env.prefix, test_file)
+            with open(orig_path, 'rb') as fil2:
+                orig_data = fil2.read()
+            if orig_bytes in orig_data:
+                data = fil.extractfile(test_file).read()
+                assert orig_bytes not in data, test_file
+                assert new_bytes in data, test_file
 
 
 def test_activate(tmpdir):
