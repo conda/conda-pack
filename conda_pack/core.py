@@ -705,10 +705,14 @@ def load_environment(prefix, on_missing_cache='warn'):
     managed = set()
     uncached = []
     missing_files = []
+    conda_in_env = False
     for path in os.listdir(conda_meta):
         if path.endswith('.json'):
             with open(os.path.join(conda_meta, path)) as fil:
                 info = json.load(fil)
+            if info['name'] == 'conda':
+                conda_in_env = True
+
             pkg = info['link']['source']
 
             if not os.path.exists(pkg):
@@ -762,8 +766,9 @@ def load_environment(prefix, on_missing_cache='warn'):
                       file_mode='unknown')
                  for p in unmanaged if not find_py_source(p) in managed)
 
-    # Override activate/deactivate scripts
-    files.extend(File(*s) for s in _scripts)
+    # Add activate/deactivate scripts to non-conda envs
+    if not conda_in_env:
+        files.extend(File(*s) for s in _scripts)
 
     if uncached and on_missing_cache in ('warn', 'raise'):
         packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
