@@ -977,10 +977,12 @@ class Packer(object):
 
         if on_win:
             shebang = '#!python.exe'
-            python_pattern = re.compile(os.path.join(BIN_DIR, 'python\d.\d'))
+            # Don't just use os.path.join here: the backslash needs
+            # to be doubled up for the sake of the regex match
+            python_pattern = re.compile(BIN_DIR + r'\\python\d.\d')
         else:
             shebang = '#!/usr/bin/env python'
-            python_pattern = re.compile(os.path.join(BIN_DIR, 'python'))
+            python_pattern = re.compile(BIN_DIR + '/python')
 
         # We skip prefix rewriting in python executables (if needed)
         # to avoid editing a running file.
