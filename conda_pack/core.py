@@ -766,8 +766,10 @@ def load_environment(prefix, on_missing_cache='warn'):
                       file_mode='unknown')
                  for p in unmanaged if not find_py_source(p) in managed)
 
-    # Add activate/deactivate scripts to non-conda envs
-    if not conda_in_env:
+    # Add activate/deactivate scripts to non-conda envs, but only if the
+    # destination prefix is given. We'll need to do a little more work to
+    # get this working in the general case.
+    if not (self.has_dest and conda_in_env):
         files.extend(File(*s) for s in _scripts)
 
     if uncached and on_missing_cache in ('warn', 'raise'):
