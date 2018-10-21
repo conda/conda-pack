@@ -900,9 +900,9 @@ class Packer(object):
 
         file_mode = file.file_mode
         placeholder = file.prefix_placeholder
-        if (self.has_dest or
-            file_mode == 'unknown' or
-            file_mode == 'text' and file.target.startswith(BIN_DIR)):
+        if ((self.has_dest or
+             file_mode == 'unknown' or
+             file_mode == 'text' and file.target.startswith(BIN_DIR))):
             # In each of these cases, we need to inspect the file contents here.
             with open(file.source, 'rb') as fil:
                 data = fil.read()
@@ -924,12 +924,13 @@ class Packer(object):
             except UnicodeDecodeError:
                 file_mode = 'binary'
 
-        if self.has_dest:
-            data = replace_prefix(data, file_mode, placeholder, self.dest)
-        elif file_mode == 'text' and file.target.startswith(BIN_DIR):
+        fixed = False
+        if file_mode == 'text' and file.target.startswith(BIN_DIR):
             data, fixed = rewrite_shebang(data, file.target, placeholder)
             if not fixed:
                 self.prefixes.append((file.target, placeholder, file_mode))
+        if self.has_dest and not fixed:
+            data = replace_prefix(data, file_mode, placeholder, self.dest)
 
         self.archive.add_bytes(file.source, data, file.target)
 
