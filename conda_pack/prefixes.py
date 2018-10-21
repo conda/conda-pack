@@ -109,7 +109,7 @@ def text_replace(data, placeholder, new_prefix):
 
 if on_win:
     def binary_replace(data, placeholder, new_prefix):
-        if data.rfind(b'PK\x05\x06') < 0:
+        if placeholder not in data:
             return data
         return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
 

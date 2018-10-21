@@ -775,19 +775,6 @@ def load_environment(prefix, on_missing_cache='warn'):
     return files
 
 
-def strip_prefix(data, prefix, placeholder=PREFIX_PLACEHOLDER):
-    try:
-        s = data.decode('utf-8')
-        if prefix in s:
-            data = s.replace(prefix, placeholder).encode('utf-8')
-        else:
-            placeholder = None
-    except UnicodeDecodeError:  # data is binary
-        placeholder = None
-
-    return data, placeholder
-
-
 def rewrite_shebang(data, target, prefix):
     """Rewrite a shebang header to ``#!usr/bin/env program...``.
 
@@ -902,71 +889,49 @@ class Packer(object):
                                        file.target)
             else:
                 self.archive.add(file.source, file.target)
+            return
+
+        elif file.file_mode not in ('text', 'binary', 'unknown'):
+            raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
 
         elif os.path.isdir(file.source) or os.path.islink(file.source):
             self.archive.add(file.source, file.target)
+            return
 
-        elif file.file_mode == 'unknown':
+        file_mode = file.file_mode
+        placeholder = file.prefix_placeholder
+        if (self.has_dest or
+            file_mode == 'unknown' or
+            file_mode == 'text' and file.target.startswith(BIN_DIR)):
+            # In each of these cases, we need to inspect the file contents here.
             with open(file.source, 'rb') as fil:
                 data = fil.read()
-
-            data, placeholder = strip_prefix(data, self.prefix)
-
-            if placeholder is not None:
-                fixed = False
-                if file.target.startswith(BIN_DIR):
-                    data, fixed = rewrite_shebang(data, file.target, placeholder)
-
-                if not fixed:
-                    if self.has_dest:
-                        data = replace_prefix(data, 'text', placeholder, self.dest)
-                    else:
-                        self.prefixes.append((file.target, placeholder, 'text'))
-
-            self.archive.add_bytes(file.source, data, file.target)
-
-        elif file.file_mode == 'text':
-            placeholder = file.prefix_placeholder
-
-            if self.has_dest:
-                with open(file.source, 'rb') as fil:
-                    data = fil.read()
-
-                fixed = False
-                if file.target.startswith(BIN_DIR):
-                    data, fixed = rewrite_shebang(data, file.target, placeholder)
-                if not fixed:
-                    data = replace_prefix(data, 'text', placeholder, self.dest)
-
-                self.archive.add_bytes(file.source, data, file.target)
-
-            elif file.target.startswith(BIN_DIR):
-                with open(file.source, 'rb') as fil:
-                    data = fil.read()
-
-                data, fixed = rewrite_shebang(data, file.target, placeholder)
-                if not fixed:
-                    self.prefixes.append((file.target, placeholder, 'text'))
-
-                self.archive.add_bytes(file.source, data, file.target)
-
-            else:
-                self.archive.add(file.source, file.target)
-                self.prefixes.append((file.target, placeholder, 'text'))
-
-        elif file.file_mode == 'binary':
-            if self.has_dest:
-                with open(file.source, 'rb') as fil:
-                    data = fil.read()
-                data = replace_prefix(data, 'binary', file.prefix_placeholder,
-                                      self.dest)
-                self.archive.add_bytes(file.source, data, file.target)
-            else:
-                self.archive.add(file.source, file.target)
-                self.prefixes.append((file.target, file.prefix_placeholder, 'binary'))
-
         else:
-            raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
+            # No need to read the file; just pass the filename to the archiver.
+            self.archive.add(file.source, file.target)
+            self.prefixes.append((file.target, placeholder, file_mode))
+            return
+
+        # Deduce file type for unmanaged packages. If decoding utf-8 is
+        # successful, we assume text, otherwise binary. In these cases, the
+        # prefix we need to replace is the environment prefix, and not the
+        # conda placeholder string.
+        if file.file_mode == 'unknown':
+            placeholder = self.prefix
+            try:
+                data.decode('utf-8')
+                file_mode = 'text'
+            except UnicodeDecodeError:
+                file_mode = 'binary'
+
+        if self.has_dest:
+            data = replace_prefix(data, file_mode, placeholder, self.dest)
+        elif file_mode == 'text' and file.target.startswith(BIN_DIR):
+            data, fixed = rewrite_shebang(data, file.target, placeholder)
+            if not fixed:
+                self.prefixes.append((file.target, placeholder, file_mode))
+
+        self.archive.add_bytes(file.source, data, file.target)
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
