@@ -916,21 +916,27 @@ class Packer(object):
         # successful, we assume text, otherwise binary. In these cases, the
         # prefix we need to replace is the environment prefix, and not the
         # conda placeholder string.
-        if file.file_mode == 'unknown':
+        if file_mode == 'unknown':
             placeholder = self.prefix
             try:
                 data.decode('utf-8')
                 file_mode = 'text'
             except UnicodeDecodeError:
-                file_mode = 'binary'
+                # The only binary replacement we do on Windows is distlib
+                # shebang replacement, so it's safer to do on unmanged
+                # binaries. Otherwise, we cannot trust that prefixes found
+                # in unmanaged binaries can be relocated.
+                if on_win:
+                    file_mode = 'binary'
 
-        fixed = False
-        if file_mode == 'text' and file.target.startswith(BIN_DIR):
-            data, fixed = rewrite_shebang(data, file.target, placeholder)
-            if not fixed:
-                self.prefixes.append((file.target, placeholder, file_mode))
-        if self.has_dest and not fixed:
-            data = replace_prefix(data, file_mode, placeholder, self.dest)
+        if file_mode != 'unknown':
+            fixed = False
+            if file_mode == 'text' and file.target.startswith(BIN_DIR):
+                data, fixed = rewrite_shebang(data, file.target, placeholder)
+                if not fixed:
+                    self.prefixes.append((file.target, placeholder, file_mode))
+            if self.has_dest and not fixed:
+                data = replace_prefix(data, file_mode, placeholder, self.dest)
 
         self.archive.add_bytes(file.source, data, file.target)
 
