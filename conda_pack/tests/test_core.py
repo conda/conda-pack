@@ -109,16 +109,19 @@ def test_env_properties(py36_env):
     assert 'CondaEnv<' in repr(py36_env)
 
 
-@pytest.mark.skipif(on_win, reason='Activate/deactivate are different on Win')
 def test_load_environment_ignores(py36_env):
     lk = {f.target: f for f in py36_env}
 
-    for path in ['bin/conda', 'conda-meta']:
+    for path in ['{}/conda'.format(BIN_DIR), 'conda-meta']:
         assert path not in lk
 
     # activate/deactivate exist, but aren't from conda
-    assert not lk['bin/activate'].source.startswith(py36_path)
-    assert not lk['bin/deactivate'].source.startswith(py36_path)
+    if on_win:
+        ad_files = ['Scripts/activate.bat', 'Scripts/deactivate.bat']
+    else:
+        ad_files = ['bin/activate', 'bin/deactivate']
+    for file in ad_files:
+        assert not lk[file].source.startswith(py36_path)
 
 
 def test_file():
@@ -127,59 +130,30 @@ def test_file():
     repr(f)
 
 
-@pytest.mark.skipif(on_win, reason='Different filenames and paths on Windows')
 def test_loaded_file_properties(py36_env):
-    lk = {f.target: f for f in py36_env}
+    lk = {os.path.normcase(f.target).repl('\\', '/'): f for f in py36_env}
 
     # Pip installed entrypoint
-    fil = lk['bin/pytest']
+    fil = lk['scripts/pytest.exe' if on_win else 'bin/pytest']
     assert not fil.is_conda
     assert fil.file_mode == 'unknown'
     assert fil.prefix_placeholder is None
 
     # Conda installed noarch entrypoint
-    fil = lk['bin/conda-pack-test-lib1']
+    fil = lk['{}/conda-pack-test-lib1'.format(BIN_DIR)]
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed entrypoint
-    fil = lk['bin/conda-pack-test-lib2']
+    fil = lk['{}/conda-pack-test-lib2'.format(BIN_DIR)]
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed file
-    fil = lk['lib/python3.6/site-packages/conda_pack_test_lib1/cli.py']
-    assert fil.is_conda
-    assert fil.file_mode is None
-    assert fil.prefix_placeholder is None
-
-
-@pytest.mark.skipif(not on_win, reason='Different filenames and paths on Windows')
-def test_loaded_file_properties_win(py36_env):
-    lk = {os.path.normcase(f.target): f for f in py36_env}
-
-    # Pip installed entrypoint
-    fil = lk[r'scripts\pytest.exe']
-    assert not fil.is_conda
-    assert fil.file_mode == 'unknown'
-    assert fil.prefix_placeholder is None
-
-    # Conda installed noarch entrypoint
-    fil = lk[r'scripts\conda-pack-test-lib1']
-    assert fil.is_conda
-    assert fil.file_mode == 'text'
-    assert fil.prefix_placeholder != py36_env.prefix
-
-    # Conda installed entrypoint
-    fil = lk[r'scripts\conda-pack-test-lib2.exe']
-    assert fil.is_conda
-    assert fil.file_mode is None
-    assert fil.prefix_placeholder != py36_env.prefix
-
-    # Conda installed file
-    fil = lk[r'lib\site-packages\conda_pack_test_lib1\cli.py']
+    LIB_DIR = 'lib' if on_win else 'lib/python3.6'
+    fil = lk['{}/python3.6/site-packages/conda_pack_test_lib1/cli.py'.format(LIB_DIR)]
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
@@ -319,6 +293,8 @@ def test_pack_with_conda(tmpdir):
         # Check conda/activate/deactivate all present
         if on_win:
             assert 'Scripts/conda.exe' in names
+            assert 'Scripts/activate.bat' in names
+            assert 'Scripts/deactivate.bat' in names
         else:
             assert 'bin/conda' in names
             assert 'bin/activate' in names
