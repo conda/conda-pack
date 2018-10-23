@@ -1,4 +1,5 @@
 import os
+import shutil
 import tarfile
 import zipfile
 from os.path import isdir, isfile, islink, join, exists
@@ -8,9 +9,6 @@ import pytest
 
 from conda_pack.formats import archive
 from conda_pack.compat import on_win
-
-
-pytestmark = pytest.mark.skipif(on_win, reason='symlink not supported on Windows')
 
 
 @pytest.fixture(scope="module")
@@ -27,8 +25,14 @@ def root_and_paths(tmpdir_factory):
     def symlink(path, target):
         target = join(root, target)
         path = join(root, path)
-        target = os.path.relpath(target, os.path.dirname(path))
-        os.symlink(target, path)
+        if not on_win:
+            target = os.path.relpath(target, os.path.dirname(path))
+            os.symlink(target, path)
+        # Copy the files instead of symlinking
+        elif isdir(target):
+            shutil.copytree(target, path)
+        else:
+            shutil.copyfile(target, path)
 
     # Build test directory structure
     mkdir("empty_dir")
@@ -46,12 +50,18 @@ def root_and_paths(tmpdir_factory):
              "link_to_empty_dir",
              join("dir", "one"),
              join("dir", "two"),
-             "link_to_dir",
              "file",
-             "link_to_file"]
+             "link_to_file",
+             "link_to_dir"]
+
+    if on_win:
+        # Since we have no symlinks, these are actual
+        # files that need to be added to the archive
+        paths.extend([join("link_to_dir", "one"),
+                      join("link_to_dir", "two")])
 
     # make sure the input matches the test
-    check(root)
+    check(root, not on_win)
 
     return root, paths
 
@@ -64,6 +74,8 @@ def check(out_dir, links=False):
     assert isfile(join(out_dir, "dir", "one"))
     assert isfile(join(out_dir, "dir", "two"))
     assert isdir(join(out_dir, "link_to_dir"))
+    assert isfile(join(out_dir, "link_to_dir", "one"))
+    assert isfile(join(out_dir, "link_to_dir", "two"))
     assert isfile(join(out_dir, "file"))
     assert isfile(join(out_dir, "link_to_file"))
 
@@ -90,15 +102,12 @@ def has_infozip():
     return "Info-ZIP" in out
 
 
-@pytest.mark.parametrize('format, symlinks',
-                         [('zip', False),
-                          ('zip', True),
-                          ('tar.gz', True),
-                          ('tar.bz2', True),
-                          ('tar', True)])
-def test_format(tmpdir, format, symlinks, root_and_paths):
-    if 'zip' and symlinks and not has_infozip():
-        pytest.skip("Info-ZIP not installed")
+@pytest.mark.parametrize('format', ['zip', 'tar.gz', 'tar.bz2', 'tar'])
+def test_format(tmpdir, format, root_and_paths):
+    # Test symlinks whenever possible:
+    # - not on windows
+    # - not with zip files unless InfoZIP is installed
+    symlinks = not on_win and (format != 'zip' or has_infozip())
 
     root, paths = root_and_paths
 
