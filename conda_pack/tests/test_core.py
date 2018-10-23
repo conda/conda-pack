@@ -314,14 +314,21 @@ def test_pack_with_conda(tmpdir):
         fil.extractall(extract_path)
 
     # Check the packaged conda works, and the output is a conda environment
-    if not on_win:
+    if on_win:
+        command = (r"@call {path}\Scripts\activate && "
+                   r"@conda.exe list --json -p {path} && "
+                   r"@call {path}\Scripts\deactivate").format(path=extract_path)
+        cmd = ['cmd', '/c', command]
+
+    else:
         command = (". {path}/bin/activate && "
                    "conda list --json -p {path} &&"
                    ". {path}/bin/deactivate").format(path=extract_path)
-        out = subprocess.check_output(['/usr/bin/env', 'bash', '-c', command],
-                                      stderr=subprocess.STDOUT).decode()
-        data = json.loads(out)
-        assert 'conda' in {i['name'] for i in data}
+        cmd = ['/usr/bin/env', 'bash', '-c', command]
+
+    out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+    data = json.loads(out)
+    assert 'conda' in {i['name'] for i in data}
 
     # Check the conda-meta directory has been anonymized
     for path in glob(os.path.join(extract_path, 'conda-meta', '*.json')):
