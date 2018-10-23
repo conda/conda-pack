@@ -25,8 +25,9 @@ setup(name='conda-pack',
       description='Package conda environments for redistribution',
       long_description=open('README.rst').read(),
       packages=['conda_pack'],
-      package_data={'conda_pack': ['scripts/windows/*' if is_win
-                                   else 'scripts/posix/*']},
+      # We need to install both here so noarch packages build properly
+      package_data={'conda_pack': ['scripts/windows/*',
+                                   'scripts/posix/*']},
       entry_points='''
         [console_scripts]
         conda-pack=conda_pack.cli:main

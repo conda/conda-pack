@@ -130,7 +130,7 @@ def test_load_environment_ignores(py36_env):
     # activate/deactivate exist, but aren't from conda
     bat_suffix = '.bat' if on_win else ''
     for file in ('activate', 'deactivate'):
-        fname ='{}/{}{}'.format(BIN_DIR_L, file, bat_suffix)
+        fname = '{}/{}{}'.format(BIN_DIR_L, file, bat_suffix)
         assert not lk[fname].source.startswith(py36_path)
 
 

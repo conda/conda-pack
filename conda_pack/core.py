@@ -856,6 +856,16 @@ if __name__ == '__main__':
 """
 
 
+# Deduce file type for unmanaged packages. If decoding utf-8 is
+# successful, we assume text, otherwise binary.
+def is_binary_file(data):
+    try:
+        data.decode('utf-8')
+        return False
+    except UnicodeDecodeError:
+        return True
+
+
 class Packer(object):
     def __init__(self, prefix, archive, dest_prefix=None):
         self.prefix = prefix
@@ -912,28 +922,26 @@ class Packer(object):
             self.prefixes.append((file.target, placeholder, file_mode))
             return
 
-        # Deduce file type for unmanaged packages. If decoding utf-8 is
-        # successful, we assume text, otherwise binary. In these cases, the
-        # prefix we need to replace is the environment prefix, and not the
-        # conda placeholder string.
         if file_mode == 'unknown':
             placeholder = self.prefix
-            try:
-                data.decode('utf-8')
-                file_mode = 'text'
-            except UnicodeDecodeError:
-                # The only binary replacement we do on Windows is distlib
-                # shebang replacement, so it's safer to do on unmanged
-                # binaries. Otherwise, we cannot trust that prefixes found
-                # in unmanaged binaries can be relocated.
+            if is_binary_file(data):
                 if on_win:
+                    # The only binary replacement we do on Windows is distlib
+                    # shebang replacement, safe for unmanaged binaries. For
+                    # Unix (and other Windows binaries), we cannot trust that
+                    # binary replacement can be done safely.
                     file_mode = 'binary'
+            else:
+                file_mode = 'text'
 
         if file_mode != 'unknown':
             if self.has_dest:
                 data = replace_prefix(data, file_mode, placeholder, self.dest)
-            elif file_mode == 'text' and file.target.startswith(BIN_DIR):
-                data, fixed = rewrite_shebang(data, file.target, placeholder)
+            else:
+                if file_mode == 'text' and file.target.startswith(BIN_DIR):
+                    data, fixed = rewrite_shebang(data, file.target, placeholder)
+                else:
+                    fixed = False
                 if not fixed:
                     self.prefixes.append((file.target, placeholder, file_mode))
 
