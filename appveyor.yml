@@ -21,12 +21,13 @@ install:
 
     - cmd: set PYTHONUNBUFFERED=1
 
-    # Create the test environments
-    - cmd: bash.exe testing/setup_envs.sh
-
     # Install the required packages
     - cmd: conda.exe install --yes flake8 pytest
     - cmd: pip.exe install .
+
+    # Create the test environments. Do this after install
+    # so pip doesn't copy them to the build directory
+    - cmd: bash.exe testing/setup_envs.sh
 
 # Skip .NET project specific build phase.
 build: off
