@@ -17,6 +17,18 @@ from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
                        activate_scripts_path, env_dir)
 
+BIN_DIR_L = BIN_DIR.lower()
+SP_36 = 'Lib\\site-packages' if on_win else 'lib/python3.6/site-packages'
+SP_36_L = SP_36.lower().replace('\\', '/')
+
+
+if on_win:
+    def normpath(f):
+        return os.path.normcase(f).replace('\\', '/')
+else:
+    def normpath(f):
+        return f
+
 
 @pytest.fixture(scope="module")
 def py36_env():
@@ -110,18 +122,16 @@ def test_env_properties(py36_env):
 
 
 def test_load_environment_ignores(py36_env):
-    lk = {f.target: f for f in py36_env}
+    lk = {normpath(f.target): f for f in py36_env}
 
-    for path in ['{}/conda'.format(BIN_DIR), 'conda-meta']:
+    for path in ['{}/conda'.format(BIN_DIR_L), 'conda-meta']:
         assert path not in lk
 
     # activate/deactivate exist, but aren't from conda
-    if on_win:
-        ad_files = ['Scripts/activate.bat', 'Scripts/deactivate.bat']
-    else:
-        ad_files = ['bin/activate', 'bin/deactivate']
-    for file in ad_files:
-        assert not lk[file].source.startswith(py36_path)
+    bat_suffix = '.bat' if on_win else ''
+    for file in ('activate', 'deactivate'):
+        fname ='{}/{}{}'.format(BIN_DIR_L, file, bat_suffix)
+        assert not lk[fname].source.startswith(py36_path)
 
 
 def test_file():
@@ -131,29 +141,30 @@ def test_file():
 
 
 def test_loaded_file_properties(py36_env):
-    lk = {os.path.normcase(f.target).repl('\\', '/'): f for f in py36_env}
+    lk = {normpath(f.target): f for f in py36_env}
 
     # Pip installed entrypoint
-    fil = lk['scripts/pytest.exe' if on_win else 'bin/pytest']
+    exe_suffix = '.exe' if on_win else ''
+    fil = lk['{}/pytest{}'.format(BIN_DIR_L, exe_suffix)]
     assert not fil.is_conda
     assert fil.file_mode == 'unknown'
     assert fil.prefix_placeholder is None
 
     # Conda installed noarch entrypoint
-    fil = lk['{}/conda-pack-test-lib1'.format(BIN_DIR)]
+    fil = lk['{}/conda-pack-test-lib1'.format(BIN_DIR_L)]
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed entrypoint
-    fil = lk['{}/conda-pack-test-lib2'.format(BIN_DIR)]
+    suffix = '-script.py' if on_win else ''
+    fil = lk['{}/conda-pack-test-lib2{}'.format(BIN_DIR_L, suffix)]
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py36_env.prefix
 
     # Conda installed file
-    LIB_DIR = 'lib' if on_win else 'lib/python3.6'
-    fil = lk['{}/python3.6/site-packages/conda_pack_test_lib1/cli.py'.format(LIB_DIR)]
+    fil = lk['{}/conda_pack_test_lib1/cli.py'.format(SP_36_L)]
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
@@ -178,9 +189,8 @@ def test_include_exclude(py36_env):
     # Re-add the removed files, envs are equivalent
     assert len(env2.include("*.pyc")) == len(py36_env)
 
-    site_packages = r"Lib\site-packages" if on_win else "lib/python3.6/site-packages"
-    env3 = env2.exclude(os.path.join(site_packages, "conda_pack_test_lib1", "*"))
-    env4 = env3.include(os.path.join(site_packages, "conda_pack_test_lib1", "cli.py"))
+    env3 = env2.exclude(os.path.join(SP_36, "conda_pack_test_lib1", "*"))
+    env4 = env3.include(os.path.join(SP_36, "conda_pack_test_lib1", "cli.py"))
     assert len(env3) + 1 == len(env4)
 
 
@@ -380,7 +390,7 @@ def test_pack(tmpdir, py36_env):
 
     exclude1 = "*.py"
     exclude2 = "*.pyc"
-    include = "lib/python3.6/site-packages/conda_pack_test_lib1/*"
+    include = os.path.join(SP_36, 'conda_pack_test_lib1', '*')
 
     res = pack(prefix=py36_path,
                output=out_path,
