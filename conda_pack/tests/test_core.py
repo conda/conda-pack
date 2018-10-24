@@ -127,12 +127,6 @@ def test_load_environment_ignores(py36_env):
     for path in ['{}/conda'.format(BIN_DIR_L), 'conda-meta']:
         assert path not in lk
 
-    # activate/deactivate exist, but aren't from conda
-    bat_suffix = '.bat' if on_win else ''
-    for file in ('activate', 'deactivate'):
-        fname = '{}/{}{}'.format(BIN_DIR_L, file, bat_suffix)
-        assert not lk[fname].source.startswith(py36_path)
-
 
 def test_file():
     f = File('/root/path/to/foo/bar', 'foo/bar')
@@ -183,7 +177,6 @@ def test_include_exclude(py36_env):
     # No mutation
     assert len(py36_env) == old_len
     assert env2 is not py36_env
-
     assert len(env2) < len(py36_env)
 
     # Re-add the removed files, envs are equivalent
@@ -423,12 +416,12 @@ def test_pack(tmpdir, py36_env):
     diff = res.difference(sol)
 
     if on_win:
-        # conda-unpack.exe and conda-unpack-script.py
-        assert len(diff) == 2
+        assert diff == {'{}/{}'.format(BIN_DIR_L, extra)
+                        for extra in ('conda-unpack', 'conda-unpack-script',
+                                      'activate', 'deactivate')}
     else:
-        assert len(diff) == 1
-    extra = list(diff)[0]
-    assert 'conda-unpack' in extra
+        assert diff == {'{}/{}'.format(BIN_DIR_L, extra)
+                        for extra in ('conda-unpack', 'activate', 'deactivate')}
 
 
 def test_dest_prefix(tmpdir, py36_env):

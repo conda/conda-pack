@@ -705,13 +705,10 @@ def load_environment(prefix, on_missing_cache='warn'):
     managed = set()
     uncached = []
     missing_files = []
-    conda_in_env = False
     for path in os.listdir(conda_meta):
         if path.endswith('.json'):
             with open(os.path.join(conda_meta, path)) as fil:
                 info = json.load(fil)
-            if info['name'] == 'conda':
-                conda_in_env = True
 
             pkg = info['link']['source']
 
@@ -756,8 +753,6 @@ def load_environment(prefix, on_missing_cache='warn'):
 
     # Add unmanaged files
     unmanaged = all_files - managed
-    # Remove conda related files if they aren't already claimed by conda
-    unmanaged -= {'bin/activate', 'bin/deactivate', 'bin/conda'}
 
     files.extend(File(os.path.join(prefix, p),
                       p,
@@ -765,12 +760,6 @@ def load_environment(prefix, on_missing_cache='warn'):
                       prefix_placeholder=None,
                       file_mode='unknown')
                  for p in unmanaged if not find_py_source(p) in managed)
-
-    # Add activate/deactivate scripts to non-conda envs, but only if the
-    # destination prefix is given. We'll need to do a little more work to
-    # get this working in the general case.
-    if not (self.has_dest and conda_in_env):
-        files.extend(File(*s) for s in _scripts)
 
     if uncached and on_missing_cache in ('warn', 'raise'):
         packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
@@ -879,6 +868,7 @@ class Packer(object):
         self.archive = archive
         self.dest = dest_prefix
         self.has_dest = dest_prefix is not None
+        self.has_conda = False
         self.prefixes = []
 
     def add(self, file):
@@ -901,6 +891,8 @@ class Packer(object):
         # We just ignore this problem for the time being.
         if file.file_mode is None:
             if fnmatch(file.target, 'conda-meta/*.json'):
+                if file.target.rsplit('-', 2)[0] == 'conda':
+                    self.has_conda = True
                 self.archive.add_bytes(file.source,
                                        rewrite_conda_meta(file.source),
                                        file.target)
@@ -956,6 +948,11 @@ class Packer(object):
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
+
+        # Add conda-pack's activate/deactivate scripts
+        if not (self.has_dest and self.has_conda):
+            for source, target in _scripts:
+                self.archive.add(source, target)
 
         # No `conda-unpack` command if dest-prefix specified
         if self.has_dest:
