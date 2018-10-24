@@ -417,12 +417,11 @@ def test_pack(tmpdir, py36_env):
     diff = res.difference(sol)
 
     if on_win:
-        assert diff == {'{}/{}'.format(BIN_DIR_L, extra)
-                        for extra in ('conda-unpack', 'conda-unpack-script',
-                                      'activate', 'deactivate')}
+        fnames = ('conda-unpack.exe', 'conda-unpack-script.py',
+                  'activate.bat', 'deactivate.bat')
     else:
-        assert diff == {'{}/{}'.format(BIN_DIR_L, extra)
-                        for extra in ('conda-unpack', 'activate', 'deactivate')}
+        fnames = ('conda-unpack', 'activate', 'deactivate')
+    assert diff == set(os.path.join(BIN_DIR_L, f) for f in fnames)
 
 
 def test_dest_prefix(tmpdir, py36_env):
