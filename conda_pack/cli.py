@@ -89,7 +89,8 @@ def build_parser():
                         help="Re-add excluded files matching this pattern")
     parser.add_argument("--recursive",
                         action="store_true",
-                        help="Additional environments if the prefix is a root environment")
+                        help=("Include child environments if the prefix is "
+                              "a root conda environment."))
     parser.add_argument("--force", "-f",
                         action="store_true",
                         help="Overwrite any existing archive at the output path.")
