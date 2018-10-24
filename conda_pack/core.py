@@ -331,7 +331,8 @@ class CondaEnv(object):
                     packer = Packer(self.prefix, arc, dest_prefix=dest_prefix)
                     data = [(packer, f) for f in self.files]
                     for subenv in subenvirons:
-                        p = NestedPacker(packer, os.path.relpath(subenv.prefix, self.prefix))
+                        relpath = os.path.relpath(subenv.prefix, self.prefix)
+                        p = NestedPacker(packer, relpath)
                         data.extend(((p, f) for f in subenv.files))
                     with progressbar(data, enabled=verbose) as files:
                         try:
@@ -387,7 +388,8 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
-         compress_level=4, zip_symlinks=False, zip_64=True, filters=None, recursive=False):
+         compress_level=4, zip_symlinks=False, zip_64=True,
+         filters=None, recursive=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -469,7 +471,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         if os.path.exists(env_dir):
             for env_name in os.listdir(env_dir):
                 try:
-                    subenvirons.append(CondaEnv.from_prefix(os.path.join(env_dir, env_name)))
+                    child = CondaEnv.from_prefix(os.path.join(env_dir, env_name))
+                    subenvirons.append(child)
                 except CondaPackException as exc:
                     print('Could not pack environment: %s: %s' % (env_name, exc))
 
@@ -1034,6 +1037,9 @@ class NestedArchive(object):
 class NestedPacker(Packer):
     def __init__(self, packer, extra_prefix):
         if not packer.has_dest:
-            raise CondaPackError('Recursive pack is only supported with a fixed destination')
-        super(NestedPacker, self).__init__(os.path.join(packer.prefix, extra_prefix), packer.archive, os.path.join(packer.dest, extra_prefix))
+            raise CondaPackException(('Recursive pack is only supported '
+                                      'with a fixed destination'))
+        super(NestedPacker, self).__init__(os.path.join(packer.prefix, extra_prefix),
+                                           packer.archive,
+                                           os.path.join(packer.dest, extra_prefix))
         self.archive = NestedArchive(packer.archive, extra_prefix)
