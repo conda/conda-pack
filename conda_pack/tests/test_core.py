@@ -279,12 +279,13 @@ def test_roundtrip(tmpdir, py36_env):
         assert out == 'Done\n'
 
 
-def test_pack_with_conda(tmpdir):
+@pytest.mark.parametrize('fix_dest', (True, False))
+def test_pack_with_conda(tmpdir, fix_dest):
     env = CondaEnv.from_prefix(has_conda_path)
     out_path = os.path.join(str(tmpdir), 'has_conda.tar')
-    env.pack(out_path)
-
     extract_path = os.path.join(str(tmpdir), 'output')
+    env.pack(out_path, dest_prefix=extract_path if fix_dest else None)
+
     os.mkdir(extract_path)
 
     assert os.path.exists(out_path)
