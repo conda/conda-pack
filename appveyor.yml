@@ -18,19 +18,11 @@ install:
     # Add path, activate `conda` and update conda.
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
     - cmd: conda.exe update --yes --quiet conda
-
+    - cmd: conda.exe install conda-build --yes
     - cmd: set PYTHONUNBUFFERED=1
-
-    # Install the required packages
-    - cmd: conda.exe install --yes flake8 pytest
-    - cmd: pip.exe install .
-
-    # Create the test environments. Do this after install
-    # so pip doesn't copy them to the build directory
-    - cmd: bash.exe testing/setup_envs.sh
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    - py.test.exe conda_pack --runslow -s -vv
+    - conda build conda-recipe

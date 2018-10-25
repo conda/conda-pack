@@ -23,20 +23,18 @@ jobs:
 
 install:
   - source testing/ci/install_conda.sh
-  - ./testing/setup_envs.sh
-  - conda install -y flake8 pytest
+  - conda install -y conda-build flake8
   - |
     if [[ "$DOCS" == "true" ]]; then
         conda install -y sphinx numpydoc
         pip install sphinxcontrib.autoprogram
     fi
-  - pip install .
 
 script:
-  - py.test conda_pack --runslow -s -vv
-  - flake8 conda_pack
+  - conda build conda-recipe
   - |
     if [[ "$DOCS" == "true" ]]; then
+        conda install -y --use-local conda-pack
         pushd docs && make html && popd
     fi
 
