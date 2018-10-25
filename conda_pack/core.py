@@ -844,7 +844,7 @@ def rewrite_conda_meta(source):
         data["link"]["source"] = ""
 
     out = json.dumps(data, indent=True, sort_keys=True)
-    return out.encode()
+    return out.encode(), data["name"]
 
 
 _conda_unpack_template = """\
@@ -917,11 +917,10 @@ class Packer(object):
         # We just ignore this problem for the time being.
         if file.file_mode is None:
             if fnmatch(file.target, 'conda-meta/*.json'):
-                if file.target.rsplit('-', 2)[0] == 'conda':
+                data, pkg_name = rewrite_conda_meta(file.source)
+                if pkg_name == 'conda':
                     self.has_conda = True
-                self.archive.add_bytes(file.source,
-                                       rewrite_conda_meta(file.source),
-                                       file.target)
+                self.archive.add_bytes(file.source, data, file.target)
             else:
                 self.archive.add(file.source, file.target)
             return
