@@ -134,9 +134,9 @@ def main(args=None, pack=pack):
                  filters=args.filters)
     except CondaPackException as e:
         fail("CondaPackError: %s" % e)
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         fail("Interrupted")
-    except Exception as e:
+    except Exception:
         fail(traceback.format_exc())
     sys.exit(0)
 
