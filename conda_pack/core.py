@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function
 import glob
 import json
 import os
+import pkg_resources
 import re
 import shlex
 import shutil
@@ -36,7 +37,10 @@ BIN_DIR = 'Scripts' if on_win else 'bin'
 
 _current_dir = os.path.dirname(__file__)
 if on_win:
-    raise NotImplementedError("Windows support")
+    _scripts = [(os.path.join(_current_dir, 'scripts', 'windows', 'activate.bat'),
+                 os.path.join(BIN_DIR, 'activate.bat')),
+                (os.path.join(_current_dir, 'scripts', 'windows', 'deactivate.bat'),
+                 os.path.join(BIN_DIR, 'deactivate.bat'))]
 else:
     _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
                  os.path.join(BIN_DIR, 'activate')),
@@ -643,9 +647,9 @@ def load_managed_package(info, prefix, site_packages):
                      for p in paths]
 
     if noarch_type == 'python':
-        seen = {i.target for i in files}
+        seen = {os.path.normcase(i.target) for i in files}
         for fil in info['files']:
-            if fil not in seen:
+            if os.path.normcase(fil) not in seen:
                 file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
@@ -695,7 +699,7 @@ def load_environment(prefix, on_missing_cache='warn'):
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 
-    all_files = load_files(prefix)
+    all_files = {os.path.normcase(p) for p in load_files(prefix)}
 
     files = []
     managed = set()
@@ -717,7 +721,7 @@ def load_environment(prefix, on_missing_cache='warn'):
             else:
                 new_files = load_managed_package(info, prefix, site_packages)
 
-            targets = {f.target for f in new_files}
+            targets = {os.path.normcase(f.target) for f in new_files}
 
             if targets.difference(all_files):
                 # Collect packages missing files as we progress to provide a
@@ -771,19 +775,6 @@ def load_environment(prefix, on_missing_cache='warn'):
     return files
 
 
-def strip_prefix(data, prefix, placeholder=PREFIX_PLACEHOLDER):
-    try:
-        s = data.decode('utf-8')
-        if prefix in s:
-            data = s.replace(prefix, placeholder).encode('utf-8')
-        else:
-            placeholder = None
-    except UnicodeDecodeError:  # data is binary
-        placeholder = None
-
-    return data, placeholder
-
-
 def rewrite_shebang(data, target, prefix):
     """Rewrite a shebang header to ``#!usr/bin/env program...``.
 
@@ -810,7 +801,7 @@ def rewrite_shebang(data, target, prefix):
                                                    options.decode('utf-8'))
             data = data.replace(shebang, new_shebang.encode('utf-8'))
 
-        return data, True
+            return data, True
 
     return data, False
 
@@ -865,6 +856,16 @@ if __name__ == '__main__':
 """
 
 
+# Deduce file type for unmanaged packages. If decoding utf-8 is
+# successful, we assume text, otherwise binary.
+def is_binary_file(data):
+    try:
+        data.decode('utf-8')
+        return False
+    except UnicodeDecodeError:
+        return True
+
+
 class Packer(object):
     def __init__(self, prefix, archive, dest_prefix=None):
         self.prefix = prefix
@@ -874,6 +875,23 @@ class Packer(object):
         self.prefixes = []
 
     def add(self, file):
+        # Windows note:
+        # When adding files to an archive, that archive is generally
+        # case-sensitive.  The target paths can be mixed case, and that means
+        # that they will be distinct directories in the archive.
+        #
+        # If those files are then extracted onto a case-sensitive file-system
+        # (such as a network share), Windows will not be able to traverse them
+        # correctly.
+        #
+        # The simple (undesirable) solution is to normalize (lowercase) the
+        # filenames when adding them to the archive.
+        #
+        # A nicer solution would be to note the "canonical" capitalization of a
+        # prefix when it first occurs, and use that every time the prefix
+        # occurs subsequently.
+        #
+        # We just ignore this problem for the time being.
         if file.file_mode is None:
             if fnmatch(file.target, 'conda-meta/*.json'):
                 self.archive.add_bytes(file.source,
@@ -881,71 +899,53 @@ class Packer(object):
                                        file.target)
             else:
                 self.archive.add(file.source, file.target)
+            return
+
+        elif file.file_mode not in ('text', 'binary', 'unknown'):
+            raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
 
         elif os.path.isdir(file.source) or os.path.islink(file.source):
             self.archive.add(file.source, file.target)
+            return
 
-        elif file.file_mode == 'unknown':
+        file_mode = file.file_mode
+        placeholder = file.prefix_placeholder
+        if ((self.has_dest or
+             file_mode == 'unknown' or
+             file_mode == 'text' and file.target.startswith(BIN_DIR))):
+            # In each of these cases, we need to inspect the file contents here.
             with open(file.source, 'rb') as fil:
                 data = fil.read()
-
-            data, placeholder = strip_prefix(data, self.prefix)
-
-            if placeholder is not None:
-                fixed = False
-                if file.target.startswith(BIN_DIR):
-                    data, fixed = rewrite_shebang(data, file.target, placeholder)
-
-                if not fixed:
-                    if self.has_dest:
-                        data = replace_prefix(data, 'text', placeholder, self.dest)
-                    else:
-                        self.prefixes.append((file.target, placeholder, 'text'))
-
-            self.archive.add_bytes(file.source, data, file.target)
-
-        elif file.file_mode == 'text':
-            placeholder = file.prefix_placeholder
-
-            if self.has_dest:
-                with open(file.source, 'rb') as fil:
-                    data = fil.read()
-
-                fixed = False
-                if file.target.startswith(BIN_DIR):
-                    data, fixed = rewrite_shebang(data, file.target, placeholder)
-                if not fixed:
-                    data = replace_prefix(data, 'text', placeholder, self.dest)
-
-                self.archive.add_bytes(file.source, data, file.target)
-
-            elif file.target.startswith(BIN_DIR):
-                with open(file.source, 'rb') as fil:
-                    data = fil.read()
-
-                data, fixed = rewrite_shebang(data, file.target, placeholder)
-                if not fixed:
-                    self.prefixes.append((file.target, placeholder, 'text'))
-
-                self.archive.add_bytes(file.source, data, file.target)
-
-            else:
-                self.archive.add(file.source, file.target)
-                self.prefixes.append((file.target, placeholder, 'text'))
-
-        elif file.file_mode == 'binary':
-            if self.has_dest:
-                with open(file.source, 'rb') as fil:
-                    data = fil.read()
-                data = replace_prefix(data, 'binary', file.prefix_placeholder,
-                                      self.dest)
-                self.archive.add_bytes(file.source, data, file.target)
-            else:
-                self.archive.add(file.source, file.target)
-                self.prefixes.append((file.target, file.prefix_placeholder, 'binary'))
-
         else:
-            raise ValueError("unknown file_mode: %r" % file.file_mode)  # pragma: no cover
+            # No need to read the file; just pass the filename to the archiver.
+            self.archive.add(file.source, file.target)
+            self.prefixes.append((file.target, placeholder, file_mode))
+            return
+
+        if file_mode == 'unknown':
+            placeholder = self.prefix
+            if is_binary_file(data):
+                if on_win:
+                    # The only binary replacement we do on Windows is distlib
+                    # shebang replacement, safe for unmanaged binaries. For
+                    # Unix (and other Windows binaries), we cannot trust that
+                    # binary replacement can be done safely.
+                    file_mode = 'binary'
+            else:
+                file_mode = 'text'
+
+        if file_mode != 'unknown':
+            if self.has_dest:
+                data = replace_prefix(data, file_mode, placeholder, self.dest)
+            else:
+                if file_mode == 'text' and file.target.startswith(BIN_DIR):
+                    data, fixed = rewrite_shebang(data, file.target, placeholder)
+                else:
+                    fixed = False
+                if not fixed:
+                    self.prefixes.append((file.target, placeholder, file_mode))
+
+        self.archive.add_bytes(file.source, data, file.target)
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
@@ -954,15 +954,14 @@ class Packer(object):
         if self.has_dest:
             return
 
-        if not on_win:
-            shebang = '#!/usr/bin/env python'
-            python_pattern = re.compile(os.path.join(BIN_DIR, 'python\d.\d'))
+        if on_win:
+            shebang = '#!python.exe'
+            # Don't just use os.path.join here: the backslash needs
+            # to be doubled up for the sake of the regex match
+            python_pattern = re.compile(BIN_DIR + r'\\python\d.\d')
         else:
-            shebang = ('@SETLOCAL ENABLEDELAYEDEXPANSION & CALL "%~f0" & (IF '
-                       'NOT ERRORLEVEL 1 (python -x "%~f0" %*) ELSE (ECHO No '
-                       'python environment found on path)) & PAUSE & EXIT /B '
-                       '!ERRORLEVEL!')
-            python_pattern = re.compile(os.path.join(BIN_DIR, 'python'))
+            shebang = '#!/usr/bin/env python'
+            python_pattern = re.compile(BIN_DIR + '/python')
 
         # We skip prefix rewriting in python executables (if needed)
         # to avoid editing a running file.
@@ -977,9 +976,17 @@ class Packer(object):
                                                prefixes_py=prefixes_py,
                                                version=__version__)
 
-        with tempfile.NamedTemporaryFile(mode='w') as fil:
+        fil = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        try:
             fil.write(script)
-            fil.flush()
+            fil.close()
             st = os.stat(fil.name)
             os.chmod(fil.name, st.st_mode | 0o111)  # make executable
-            self.archive.add(fil.name, os.path.join(BIN_DIR, 'conda-unpack'))
+            script_name = 'conda-unpack-script.py' if on_win else 'conda-unpack'
+            self.archive.add(fil.name, os.path.join(BIN_DIR, script_name))
+        finally:
+            os.unlink(fil.name)
+
+        if on_win:
+            cli_exe = pkg_resources.resource_filename('setuptools', 'cli-64.exe')
+            self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))

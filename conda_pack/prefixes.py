@@ -94,22 +94,12 @@ def replace_prefix(data, mode, placeholder, new_prefix):
 
 
 def text_replace(data, placeholder, new_prefix):
-    data = data.replace(placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
-    if not on_win:
-        shebang_match = re.match(SHEBANG_REGEX, data, re.MULTILINE)
-        if shebang_match:
-            shebang, executable, options = shebang_match.groups()
-            if len(shebang) > 127:
-                executable_name = executable.decode('utf-8').split('/')[-1]
-                new_shebang = '#!/usr/bin/env %s%s' % (executable_name,
-                                                       options.decode('utf-8'))
-                data = data.replace(shebang, new_shebang.encode('utf-8'))
-    return data
+    return data.replace(placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
 
 
 if on_win:
     def binary_replace(data, placeholder, new_prefix):
-        if data.rfind(b'PK\x05\x06') < 0:
+        if placeholder not in data:
             return data
         return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
 

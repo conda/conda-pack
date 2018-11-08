@@ -1,5 +1,8 @@
 from setuptools import setup
 import versioneer
+import sys
+
+is_win = sys.platform.startswith('win')
 
 setup(name='conda-pack',
       version=versioneer.get_version(),
@@ -22,7 +25,9 @@ setup(name='conda-pack',
       description='Package conda environments for redistribution',
       long_description=open('README.rst').read(),
       packages=['conda_pack'],
-      package_data={'conda_pack': ['scripts/posix/*']},
+      # We need to install both here so noarch packages build properly
+      package_data={'conda_pack': ['scripts/windows/*',
+                                   'scripts/posix/*']},
       entry_points='''
         [console_scripts]
         conda-pack=conda_pack.cli:main
