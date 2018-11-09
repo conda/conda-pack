@@ -25,6 +25,7 @@ install:
   - source testing/ci/install_conda.sh
   - ./testing/setup_envs.sh
   - conda install -y flake8 pytest
+  - pip install zstandard
   - |
     if [[ "$DOCS" == "true" ]]; then
         conda install -y sphinx numpydoc

@@ -23,6 +23,7 @@ install:
 
     # Install the required packages
     - cmd: conda.exe install --yes flake8 pytest
+    - cmd: pip.exe install zstandard
     - cmd: pip.exe install .
 
     # Create the test environments. Do this after install
