@@ -246,15 +246,28 @@ class CondaEnv(object):
                 format = 'tar.gz'
             elif output.endswith('.tar.bz2') or output.endswith('.tbz2'):
                 format = 'tar.bz2'
+            elif output.endswith('.tar.zst') or output.endswith('.tzst'):
+                format = 'tar.zst'
             elif output.endswith('.tar'):
                 format = 'tar'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2',
+                            'tar.zst', 'tzst', 'tar'}:
             raise CondaPackException("Unknown format %r" % format)
 
         if output is None:
             output = os.extsep.join([self.name, format])
+
+        if format == 'tar.zst':
+            try:
+                import zstandard  # noqa
+            except ImportError:
+                raise CondaPackException(
+                        "Need to install the `zstandard` library for `zst` support:\n"
+                        "$ conda install zstandard -c conda-forge\n"
+                        "or\n"
+                        "$ pip install zstandard")
 
         return output, format
 
@@ -311,6 +324,10 @@ class CondaEnv(object):
 
         if os.path.exists(output) and not force:
             raise CondaPackException("File %r already exists" % output)
+
+        if not 0 <= compress_level <= 9:
+            raise CondaPackException("compression level must be in [0, 9], got %d"
+                                     % compress_level)
 
         if verbose:
             print("Packing environment at %r to %r" % (self.prefix, output))

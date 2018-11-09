@@ -4,6 +4,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tarfile
 from glob import glob
 
@@ -194,31 +195,48 @@ def test_include_exclude(py36_env):
     assert len(env3) + 1 == len(env4)
 
 
-def test_output_and_format(py36_env):
+def test_output_and_format_default(py36_env):
     output, format = py36_env._output_and_format()
     assert output == 'py36.tar.gz'
     assert format == 'tar.gz'
 
-    for format in ['tar.gz', 'tar.bz2', 'tar', 'zip']:
-        output = os.extsep.join([py36_env.name, format])
 
-        o, f = py36_env._output_and_format(format=format)
-        assert f == format
-        assert o == output
+@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2', 'tar.zst', 'tar', 'zip'])
+def test_output_and_format_types(py36_env, format):
+    if format == 'tar.zst':
+        pytest.importorskip('zstandard')
 
-        o, f = py36_env._output_and_format(output=output)
-        assert o == output
-        assert f == format
+    output = os.extsep.join([py36_env.name, format])
 
-        o, f = py36_env._output_and_format(output='foo.zip', format=format)
-        assert f == format
-        assert o == 'foo.zip'
+    o, f = py36_env._output_and_format(format=format)
+    assert f == format
+    assert o == output
 
+    o, f = py36_env._output_and_format(output=output)
+    assert o == output
+    assert f == format
+
+    o, f = py36_env._output_and_format(output='foo.zip', format=format)
+    assert f == format
+    assert o == 'foo.zip'
+
+
+def test_output_and_format_exceptions(py36_env):
     with pytest.raises(CondaPackException):
         py36_env._output_and_format(format='foo')
 
     with pytest.raises(CondaPackException):
         py36_env._output_and_format(output='foo.bar')
+
+
+def test_no_zstandard_exception(py36_env, monkeypatch):
+    # Make zstandard non-importable
+    monkeypatch.setitem(sys.modules, 'zstandard', None)
+
+    with pytest.raises(CondaPackException) as exc:
+        py36_env._output_and_format(format='tar.zst')
+
+    assert 'zstandard' in str(exc.value)
 
 
 def test_roundtrip(tmpdir, py36_env):
@@ -353,6 +371,14 @@ def test_pack_exceptions(py36_env):
         pack(prefix=py36_path,
              filters=[("exclude", "*.py"),
                       ("foo", "*.pyc")])
+
+    # compress_level out of range
+    with pytest.raises(CondaPackException):
+        pack(prefix=py36_path, compress_level=10)
+
+    # compress_level out of range
+    with pytest.raises(CondaPackException):
+        pack(prefix=py36_path, compress_level=-1)
 
 
 @pytest.mark.slow

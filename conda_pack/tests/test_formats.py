@@ -2,6 +2,7 @@ import os
 import shutil
 import tarfile
 import zipfile
+from io import BytesIO
 from os.path import isdir, isfile, islink, join, exists
 from subprocess import check_output, STDOUT
 
@@ -102,8 +103,11 @@ def has_infozip():
     return "Info-ZIP" in out
 
 
-@pytest.mark.parametrize('format', ['zip', 'tar.gz', 'tar.bz2', 'tar'])
+@pytest.mark.parametrize('format', ['zip', 'tar.gz', 'tar.bz2', 'tar.zst', 'tar'])
 def test_format(tmpdir, format, root_and_paths):
+    if format == 'tar.zst':
+        zstandard = pytest.importorskip('zstandard')
+
     # Test symlinks whenever possible:
     # - not on windows
     # - not with zip files unless InfoZIP is installed
@@ -129,6 +133,19 @@ def test_format(tmpdir, format, root_and_paths):
         else:
             with zipfile.ZipFile(out_path) as out:
                 out.extractall(out_dir)
+    elif format == 'tar.zst':
+        dctx = zstandard.ZstdDecompressor()
+        with open(out_path, 'rb') as fil:
+            data = BytesIO()
+            with dctx.stream_reader(fil) as reader:
+                while True:
+                    chunk = reader.read(16384)
+                    if not chunk:
+                        break
+                    data.write(chunk)
+        data.seek(0)
+        with tarfile.open(fileobj=data) as out:
+            out.extractall(out_dir)
     else:
         with tarfile.open(out_path) as out:
             out.extractall(out_dir)

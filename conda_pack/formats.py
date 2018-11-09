@@ -1,3 +1,6 @@
+from __future__ import division
+
+import math
 import os
 import stat
 import sys
@@ -10,6 +13,8 @@ _tar_mode = {'tar.gz': 'w:gz',
              'tgz': 'w:gz',
              'tar.bz2': 'w:bz2',
              'tbz2': 'w:bz2',
+             'tar.zst': 'w:zst',
+             'tzst': 'w:zst',
              'tar': 'w'}
 
 
@@ -23,9 +28,30 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
                           compress_level=compress_level)
 
 
+class ZstdFile(object):
+    def __init__(self, fileobj, compress_level=4):
+        import zstandard
+        level = int(math.ceil(compress_level * 22 / 9))
+        self.fileobj = fileobj
+        self.cctx = zstandard.ZstdCompressor(level=level)
+        self._stream = self.cctx.stream_writer(self.fileobj)
+        self._stream.__enter__()
+
+    def write(self, bytes):
+        self._stream.write(bytes)
+
+    def tell(self):
+        return self._stream.tell()
+
+    def close(self):
+        self._stream.__exit__(None, None, None)
+
+
 class ArchiveBase(object):
     def __exit__(self, *args):
         self.archive.close()
+        if hasattr(self, '_wrapper'):
+            self._wrapper.close()
 
     def add(self, source, target):
         target = os.path.join(self.arcroot, target)
@@ -44,13 +70,15 @@ class TarArchive(ArchiveBase):
         self.compress_level = compress_level
 
     def __enter__(self):
-        if self.mode != 'w':
-            kwargs = {'compresslevel': self.compress_level}
+        if self.mode == 'w:zst':
+            self._wrapper = fileobj = ZstdFile(self.fileobj, self.compress_level)
+            kwargs = {'fileobj': fileobj, 'mode': 'w'}
         else:
-            kwargs = {}
+            kwargs = {'fileobj': self.fileobj, 'mode': self.mode}
+            if self.mode != 'w':
+                kwargs['compresslevel'] = self.compress_level
 
-        self.archive = tarfile.open(fileobj=self.fileobj, mode=self.mode,
-                                    dereference=False, **kwargs)
+        self.archive = tarfile.open(dereference=False, **kwargs)
         return self
 
     def _add(self, source, target):

@@ -51,7 +51,7 @@ def build_parser():
                               "`conda-unpack` script will not be generated."))
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
-                                 'tbz2', 'tar'],
+                                 'tbz2', 'tar.zst', 'tzst', 'tar'],
                         default='infer',
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension."))
