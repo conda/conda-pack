@@ -891,7 +891,8 @@ class Packer(object):
         # We just ignore this problem for the time being.
         if file.file_mode is None:
             if fnmatch(file.target, 'conda-meta/*.json'):
-                if file.target.rsplit('-', 2)[0] == 'conda':
+                # Detect if conda is installed
+                if os.path.basename(file.target).rsplit('-', 2)[0] == 'conda':
                     self.has_conda = True
                 self.archive.add_bytes(file.source,
                                        rewrite_conda_meta(file.source),

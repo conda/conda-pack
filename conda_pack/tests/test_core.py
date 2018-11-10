@@ -121,13 +121,6 @@ def test_env_properties(py36_env):
     assert 'CondaEnv<' in repr(py36_env)
 
 
-def test_load_environment_ignores(py36_env):
-    lk = {normpath(f.target): f for f in py36_env}
-
-    for path in ['{}/conda'.format(BIN_DIR_L), 'conda-meta']:
-        assert path not in lk
-
-
 def test_file():
     f = File('/root/path/to/foo/bar', 'foo/bar')
     # smoketest repr
@@ -290,22 +283,28 @@ def test_pack_with_conda(tmpdir, fix_dest):
 
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
-
+    # Extract tarfile
     with tarfile.open(out_path) as fil:
-        names = fil.getnames()
-
-        # Check conda/activate/deactivate all present
-        if on_win:
-            assert 'Scripts/conda.exe' in names
-            assert 'Scripts/activate.bat' in names
-            assert 'Scripts/deactivate.bat' in names
-        else:
-            assert 'bin/conda' in names
-            assert 'bin/activate' in names
-            assert 'bin/deactivate' in names
-
-        # Extract tarfile
         fil.extractall(extract_path)
+
+    if on_win:
+        fnames = ('conda.exe', 'activate.bat', 'deactivate.bat')
+    else:
+        fnames = ('conda', 'activate', 'deactivate')
+    # Check conda/activate/deactivate all present
+    for fname in fnames:
+        fpath = os.path.join(extract_path, BIN_DIR, fname)
+        assert os.path.exists(fpath)
+        # Make sure we have replaced the activate/deactivate scripts
+        # if the dest_prefix was not fixed; make sure we haven't
+        # done so if it is.
+        if 'activate' in fname:
+            with open(fpath) as fp:
+                data = fp.read()
+                if fix_dest:
+                    assert 'CONDA_PACK' not in data
+                else:
+                    assert 'CONDA_PACK' in data
 
     # Check the packaged conda works, and the output is a conda environment
     if on_win:
