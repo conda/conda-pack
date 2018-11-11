@@ -306,22 +306,32 @@ def test_pack_with_conda(tmpdir, fix_dest):
                 else:
                     assert 'CONDA_PACK' in data
 
-    # Check the packaged conda works, and the output is a conda environment
+    # Check the packaged conda works and recognizes its environment.
+    # We need to unset CONDA_PREFIX to simulate unpacking into an environment
+    # where conda is not already present.
     if on_win:
-        command = (r"@call {path}\Scripts\activate && "
-                   r"@conda.exe list --json -p {path} && "
-                   r"@call {path}\Scripts\deactivate").format(path=extract_path)
-        cmd = ['cmd', '/c', command]
+        commands = (r"@set CONDA_PREFIX=",
+                    r"@call {path}\Scripts\activate".format(path=extract_path),
+                    r"@conda info --json",
+                    r"@deactivate")
+        script_file = tmpdir.join('unpack.bat')
+        cmd = ['cmd', '/c', str(script_file)]
 
     else:
-        command = (". {path}/bin/activate && "
-                   "conda list --json -p {path} &&"
-                   ". {path}/bin/deactivate").format(path=extract_path)
-        cmd = ['/usr/bin/env', 'bash', '-c', command]
+        commands = ("unset CONDA_PREFIX",
+                    ". {path}/bin/activate".format(path=extract_path),
+                    "conda info --json",
+                    ". deactivate")
+        script_file = tmpdir.join('unpack.sh')
+        cmd = ['/usr/bin/env', 'bash', str(script_file)]
 
+    script_file.write('\n'.join(commands))
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
-    data = json.loads(out)
-    assert 'conda' in {i['name'] for i in data}
+    conda_info = json.loads(out)
+    extract_path_n = normpath(extract_path)
+    for var in ('conda_prefix', 'sys.prefix', 'default_prefix', 'root_prefix'):
+        assert normpath(conda_info[var]) == extract_path_n
+    assert extract_path_n in list(map(normpath, conda_info['envs']))
 
     # Check the conda-meta directory has been anonymized
     for path in glob(os.path.join(extract_path, 'conda-meta', '*.json')):
