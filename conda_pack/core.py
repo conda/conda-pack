@@ -11,12 +11,10 @@ import subprocess
 import sys
 import tempfile
 import warnings
-import zipfile
 from contextlib import contextmanager
 from fnmatch import fnmatch
 
 from .compat import on_win, default_encoding, find_py_source
-from .formats import archive
 from .prefixes import SHEBANG_REGEX, replace_prefix
 from ._progress import progressbar
 
@@ -259,8 +257,8 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', arcroot='', dest_prefix=None,
-             verbose=False, force=False, compress_level=4, zip_symlinks=False,
-             zip_64=True):
+             verbose=False, force=False, compress_level=4, n_threads=1,
+             zip_symlinks=False, zip_64=True):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -287,6 +285,10 @@ class CondaEnv(object):
             The compression level to use, from 0 to 9. Higher numbers decrease
             output file size at the expense of compression time. Ignored for
             ``format='zip'``. Default is 4.
+        n_threads : int, optional
+            The number of threads to use. Set to -1 to use the number of cpus
+            on this machine. If a file format doesn't support threaded
+            packaging, this option will be ignored. Default is 1.
         zip_symlinks : bool, optional
             Symbolic links aren't supported by the Zip standard, but are
             supported by *many* common Zip implementations. If True, store
@@ -303,6 +305,7 @@ class CondaEnv(object):
         out_path : str
             The path to the archived environment.
         """
+        from .formats import archive
         # Ensure the prefix is a relative path
         arcroot = arcroot.strip(os.path.sep)
 
@@ -319,20 +322,16 @@ class CondaEnv(object):
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with archive(temp_file, arcroot, format,
-                             compress_level=compress_level,
-                             zip_symlinks=zip_symlinks,
-                             zip_64=zip_64) as arc:
-                    packer = Packer(self.prefix, arc, dest_prefix=dest_prefix)
-                    with progressbar(self.files, enabled=verbose) as files:
-                        try:
-                            for f in files:
-                                packer.add(f)
-                            packer.finish()
-                        except zipfile.LargeZipFile:
-                            raise CondaPackException(
-                                    "Large Zip File: ZIP64 extensions required "
-                                    "but were disabled")
+                with progressbar(self.files, enabled=verbose) as files:
+                    with archive(temp_file, arcroot, format,
+                                 compress_level=compress_level,
+                                 zip_symlinks=zip_symlinks,
+                                 zip_64=zip_64,
+                                 n_threads=n_threads) as arc:
+                        packer = Packer(self.prefix, arc, dest_prefix=dest_prefix)
+                        for f in files:
+                            packer.add(f)
+                        packer.finish()
 
         except Exception:
             # Writing failed, remove tempfile
@@ -378,7 +377,8 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
-         compress_level=4, zip_symlinks=False, zip_64=True, filters=None):
+         compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
+         filters=None):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -416,6 +416,10 @@ def pack(name=None, prefix=None, output=None, format='infer',
         resulting archive may silently fail on decompression if the ``unzip``
         implementation doesn't support symlinks*. Default is False. Ignored if
         format isn't ``zip``.
+    n_threads : int, optional
+        The number of threads to use. Set to -1 to use the number of cpus on
+        this machine. If a file format doesn't support threaded packaging, this
+        option will be ignored. Default is 1.
     zip_64 : bool, optional
         Whether to enable ZIP64 extensions. Default is True.
     filters : list, optional
@@ -454,7 +458,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
     return env.pack(output=output, format=format, arcroot=arcroot,
                     dest_prefix=dest_prefix,
                     verbose=verbose, force=force,
-                    compress_level=compress_level,
+                    compress_level=compress_level, n_threads=n_threads,
                     zip_symlinks=zip_symlinks, zip_64=zip_64)
 
 

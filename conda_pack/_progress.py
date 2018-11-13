@@ -51,7 +51,7 @@ class progressbar(object):
     def __init__(self, iterable, width=40, enabled=True, file=None):
         self._iterable = iterable
         self._ndone = 0
-        self._ntotal = len(iterable)
+        self._ntotal = len(iterable) + 1  # wait for exit to finish
         self._width = width
         self._enabled = enabled
         self._file = sys.stdout if file is None else file
@@ -70,6 +70,8 @@ class progressbar(object):
         if self._enabled:
             self._running = False
             self._timer.join()
+            if type is None:  # Finished if no exception
+                self._ndone += 1
             self._update_bar()
             self._file.write('\n')
             self._file.flush()
