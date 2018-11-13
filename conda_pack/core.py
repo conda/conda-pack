@@ -703,7 +703,10 @@ def load_environment(prefix, on_missing_cache='warn'):
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 
-    all_files = {os.path.normcase(p) for p in load_files(prefix)}
+    # Save the unnormalized filenames here so that we can preserve the
+    # case of unmanaged files. The case of managed files is dictated by
+    # the conda package itself.
+    all_files = {os.path.normcase(p): p for p in load_files(prefix)}
 
     files = []
     managed = set()
@@ -713,6 +716,7 @@ def load_environment(prefix, on_missing_cache='warn'):
         if path.endswith('.json'):
             with open(os.path.join(conda_meta, path)) as fil:
                 info = json.load(fil)
+
             pkg = info['link']['source']
 
             if not os.path.exists(pkg):
@@ -754,10 +758,15 @@ def load_environment(prefix, on_missing_cache='warn'):
         packages = '\n'.join('- %s=%r' % i for i in missing_files)
         raise CondaPackException(_missing_files_error.format(packages))
 
-    # Add unmanaged files
-    unmanaged = all_files - managed
-    # Remove conda related files if they aren't already claimed by conda
-    unmanaged -= {'bin/activate', 'bin/deactivate', 'bin/conda'}
+    # Add unmanaged files, preserving their original case
+    unmanaged = {fn for fn_l, fn in all_files.items() if fn_l not in managed}
+    # Older versions of conda insert unmanaged conda, activate, and deactivate
+    # scripts into child environments upon activation. Remove these
+    fnames = ('conda', 'activate', 'deactivate')
+    if on_win:
+        # Windows includes the POSIX and .bat versions of each
+        fnames = fnames + ('conda.bat', 'activate.bat', 'deactivate.bat')
+    unmanaged -= {os.path.join(BIN_DIR, f) for f in fnames}
 
     files.extend(File(os.path.join(prefix, p),
                       p,
@@ -765,9 +774,6 @@ def load_environment(prefix, on_missing_cache='warn'):
                       prefix_placeholder=None,
                       file_mode='unknown')
                  for p in unmanaged if not find_py_source(p) in managed)
-
-    # Override activate/deactivate scripts
-    files.extend(File(*s) for s in _scripts)
 
     if uncached and on_missing_cache in ('warn', 'raise'):
         packages = '\n'.join('- %s=%r   %s' % i for i in uncached)
@@ -876,6 +882,7 @@ class Packer(object):
         self.archive = archive
         self.dest = dest_prefix
         self.has_dest = dest_prefix is not None
+        self.has_conda = False
         self.prefixes = []
 
     def add(self, file):
@@ -898,6 +905,9 @@ class Packer(object):
         # We just ignore this problem for the time being.
         if file.file_mode is None:
             if fnmatch(file.target, 'conda-meta/*.json'):
+                # Detect if conda is installed
+                if os.path.basename(file.target).rsplit('-', 2)[0] == 'conda':
+                    self.has_conda = True
                 self.archive.add_bytes(file.source,
                                        rewrite_conda_meta(file.source),
                                        file.target)
@@ -953,6 +963,11 @@ class Packer(object):
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
+
+        # Add conda-pack's activate/deactivate scripts
+        if not (self.has_dest and self.has_conda):
+            for source, target in _scripts:
+                self.archive.add(source, target)
 
         # No `conda-unpack` command if dest-prefix specified
         if self.has_dest:

@@ -8,6 +8,19 @@ conda env create -f "${current_dir}/env_yamls/py27.yml" -p "${current_dir}/envir
 
 echo "Creating py36 environment"
 conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36" $@
+# Create unmanaged conda-related files for conda-pack to remove
+if [[ "$OS" == "Windows_NT" ]]; then
+	touch ${current_dir}/environments/py36/Scripts/activate
+	touch ${current_dir}/environments/py36/Scripts/activate.bat
+	touch ${current_dir}/environments/py36/Scripts/deactivate
+	touch ${current_dir}/environments/py36/Scripts/deactivate.bat
+	touch ${current_dir}/environments/py36/Scripts/conda
+	touch ${current_dir}/environments/py36/Scripts/conda.bat
+else
+	touch ${current_dir}/environments/py36/bin/activate
+	touch ${current_dir}/environments/py36/bin/deactivate
+	touch ${current_dir}/environments/py36/bin/conda
+fi
 
 echo "Creating py36_editable environment"
 py36_editable="${current_dir}/environments/py36_editable"
