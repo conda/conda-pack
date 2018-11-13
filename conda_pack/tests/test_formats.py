@@ -1,13 +1,16 @@
 import os
 import shutil
 import tarfile
+import threading
 import zipfile
+from multiprocessing import cpu_count
 from os.path import isdir, isfile, islink, join, exists
 from subprocess import check_output, STDOUT
 
 import pytest
 
-from conda_pack.formats import archive
+from conda_pack.core import CondaPackException
+from conda_pack.formats import archive, _parse_n_threads
 from conda_pack.compat import on_win
 
 
@@ -16,8 +19,9 @@ def root_and_paths(tmpdir_factory):
     root = str(tmpdir_factory.mktemp('example_dir'))
 
     def mkfil(*paths):
-        with open(join(root, *paths), mode='w'):
-            pass
+        with open(join(root, *paths), mode='wb') as fil:
+            # Write 512 KiB to file
+            fil.write(os.urandom(512 * 2 ** 10))
 
     def mkdir(path):
         os.mkdir(join(root, path))
@@ -61,12 +65,12 @@ def root_and_paths(tmpdir_factory):
                       join("link_to_dir", "two")])
 
     # make sure the input matches the test
-    check(root, not on_win)
+    check(root, links=not on_win)
 
     return root, paths
 
 
-def check(out_dir, links=False):
+def check(out_dir, root=None, links=False):
     assert exists(join(out_dir, "empty_dir"))
     assert isdir(join(out_dir, "empty_dir"))
     assert isdir(join(out_dir, "link_to_empty_dir"))
@@ -78,6 +82,20 @@ def check(out_dir, links=False):
     assert isfile(join(out_dir, "link_to_dir", "two"))
     assert isfile(join(out_dir, "file"))
     assert isfile(join(out_dir, "link_to_file"))
+
+    if root is not None:
+        def check_equal_contents(*paths):
+            with open(join(out_dir, *paths), 'rb') as path1:
+                packaged = path1.read()
+
+            with open(join(root, *paths), 'rb') as path2:
+                source = path2.read()
+
+            assert packaged == source
+
+        check_equal_contents("dir", "one")
+        check_equal_contents("dir", "two")
+        check_equal_contents("file")
 
     if links:
         def checklink(path, sol):
@@ -133,7 +151,38 @@ def test_format(tmpdir, format, root_and_paths):
         with tarfile.open(out_path) as out:
             out.extractall(out_dir)
 
-    check(out_dir, links=symlinks)
+    check(out_dir, links=symlinks, root=root)
     assert isfile(join(out_dir, "dir", "from_bytes"))
     with open(join(out_dir, "dir", "from_bytes"), 'rb') as fil:
         assert fil.read() == b"foo bar"
+
+
+def test_n_threads():
+    assert _parse_n_threads(-1) == cpu_count()
+    assert _parse_n_threads(40) == 40
+
+    for n in [-10, 0]:
+        with pytest.raises(CondaPackException):
+            _parse_n_threads(n)
+
+
+@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2'])
+def test_format_parallel(tmpdir, format, root_and_paths):
+    root, paths = root_and_paths
+
+    out_path = join(str(tmpdir), 'test.' + format)
+    out_dir = join(str(tmpdir), 'test')
+    os.mkdir(out_dir)
+
+    active = threading.active_count()
+    with open(out_path, mode='wb') as fil:
+        with archive(fil, '', format, n_threads=2) as arc:
+            for rel in paths:
+                arc.add(join(root, rel), rel)
+    current = threading.active_count()
+    assert active == current
+
+    with tarfile.open(out_path) as out:
+        out.extractall(out_dir)
+
+    check(out_dir, links=(not on_win), root=root)
