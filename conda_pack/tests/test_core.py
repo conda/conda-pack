@@ -121,6 +121,15 @@ def test_env_properties(py36_env):
     assert 'CondaEnv<' in repr(py36_env)
 
 
+def test_load_environment_ignores(py36_env):
+    lk = {normpath(f.target): f for f in py36_env}
+    for fname in ('conda', 'conda.bat'):
+        assert '{}/{}'.format(BIN_DIR_L, fname) not in lk
+    for fname in ('activate', 'activate.bat', 'deactivate', 'deactivate.bat'):
+        fpath = '{}/{}'.format(BIN_DIR_L, fname)
+        assert fpath not in lk or not lk[fpath].source.startswith(py36_path)
+
+
 def test_file():
     f = File('/root/path/to/foo/bar', 'foo/bar')
     # smoketest repr
