@@ -126,6 +126,8 @@ def has_infozip_cli():
 
 
 def has_tar_cli():
+    if on_win:
+        return False
     try:
         check_output(['tar', '-h'], stderr=STDOUT)
         return True
