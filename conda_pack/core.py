@@ -699,7 +699,10 @@ def load_environment(prefix, on_missing_cache='warn'):
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 
-    all_files = {os.path.normcase(p) for p in load_files(prefix)}
+    # Save the unnormalized filenames here so that we can preserve the
+    # case of unmanaged files. The case of managed files is dictated by
+    # the conda package itself.
+    all_files = {os.path.normcase(p): p for p in load_files(prefix)}
 
     files = []
     managed = set()
@@ -751,8 +754,15 @@ def load_environment(prefix, on_missing_cache='warn'):
         packages = '\n'.join('- %s=%r' % i for i in missing_files)
         raise CondaPackException(_missing_files_error.format(packages))
 
-    # Add unmanaged files
-    unmanaged = all_files - managed
+    # Add unmanaged files, preserving their original case
+    unmanaged = {fn for fn_l, fn in all_files.items() if fn_l not in managed}
+    # Older versions of conda insert unmanaged conda, activate, and deactivate
+    # scripts into child environments upon activation. Remove these
+    fnames = ('conda', 'activate', 'deactivate')
+    if on_win:
+        # Windows includes the POSIX and .bat versions of each
+        fnames = fnames + ('conda.bat', 'activate.bat', 'deactivate.bat')
+    unmanaged -= {os.path.join(BIN_DIR, f) for f in fnames}
 
     files.extend(File(os.path.join(prefix, p),
                       p,
