@@ -29,14 +29,15 @@ def root_and_paths(tmpdir_factory):
     def symlink(path, target):
         target = join(root, target)
         path = join(root, path)
-        if not on_win:
+        if on_win:
+            # Copy the files instead of symlinking
+            if isdir(target):
+                shutil.copytree(target, path)
+            else:
+                shutil.copyfile(target, path)
+        else:
             target = os.path.relpath(target, os.path.dirname(path))
             os.symlink(target, path)
-        # Copy the files instead of symlinking
-        elif isdir(target):
-            shutil.copytree(target, path)
-        else:
-            shutil.copyfile(target, path)
 
     # Build test directory structure
     mkdir("empty_dir")
@@ -109,7 +110,10 @@ def check(out_dir, root=None, links=False):
         checklink("link_to_empty_dir", "empty_dir")
     else:
         # Check that contents of directories are same
-        assert set(os.listdir(join(out_dir, "link_to_dir"))) == {'one', 'two'}
+        files = set(os.listdir(join(out_dir, "link_to_dir")))
+        # Remove the dynamically written file, if running in a test
+        files.discard('from_bytes')
+        assert files == {'one', 'two'}
 
 
 def has_infozip():
@@ -120,12 +124,17 @@ def has_infozip():
     return "Info-ZIP" in out
 
 
-@pytest.mark.parametrize('format', ['zip', 'tar.gz', 'tar.bz2', 'tar'])
-def test_format(tmpdir, format, root_and_paths):
-    # Test symlinks whenever possible:
-    # - not on windows
-    # - not with zip files unless InfoZIP is installed
-    symlinks = not on_win and (format != 'zip' or has_infozip())
+@pytest.mark.parametrize('format, zip_symlinks', [
+    ('zip', True), ('zip', False),
+    ('tar.gz', False), ('tar.bz2', False), ('tar', False)
+])
+def test_format(tmpdir, format, zip_symlinks, root_and_paths):
+    if format == 'zip':
+        if zip_symlinks and (on_win or not has_infozip()):
+            pytest.skip("Cannot test zipfile symlink support on this platform")
+        test_symlinks = zip_symlinks
+    else:
+        test_symlinks = not on_win
 
     root, paths = root_and_paths
 
@@ -134,7 +143,7 @@ def test_format(tmpdir, format, root_and_paths):
     os.mkdir(out_dir)
 
     with open(out_path, mode='wb') as fil:
-        with archive(fil, '', format, zip_symlinks=symlinks) as arc:
+        with archive(fil, '', format, zip_symlinks=zip_symlinks) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
             arc.add_bytes(join(root, "file"),
@@ -142,7 +151,7 @@ def test_format(tmpdir, format, root_and_paths):
                           join("dir", "from_bytes"))
 
     if format == 'zip':
-        if symlinks:
+        if test_symlinks:
             check_output(['unzip', out_path, '-d', out_dir])
         else:
             with zipfile.ZipFile(out_path) as out:
@@ -151,7 +160,7 @@ def test_format(tmpdir, format, root_and_paths):
         with tarfile.open(out_path) as out:
             out.extractall(out_dir)
 
-    check(out_dir, links=symlinks, root=root)
+    check(out_dir, links=test_symlinks, root=root)
     assert isfile(join(out_dir, "dir", "from_bytes"))
     with open(join(out_dir, "dir", "from_bytes"), 'rb') as fil:
         assert fil.read() == b"foo bar"
