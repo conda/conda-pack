@@ -126,8 +126,6 @@ def has_infozip_cli():
 
 
 def has_tar_cli():
-    if on_win:
-        return False
     try:
         check_output(['tar', '-h'], stderr=STDOUT)
         return True
@@ -189,8 +187,12 @@ def test_n_threads():
 @pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2'])
 def test_format_parallel(tmpdir, format, root_and_paths):
     # Python 2's bzip dpesn't support reading multipart files :(
-    if format == 'tar.bz2' and PY2 and not has_tar_cli():
-        pytest.skip("Unable to test parallel bz2 support on this platform")
+    if format == 'tar.bz2' and PY2:
+        if on_win or not has_tar_cli():
+            pytest.skip("Unable to test parallel bz2 support on this platform")
+        use_cli_to_extract = True
+    else:
+        use_cli_to_extract = False
 
     root, paths = root_and_paths
 
@@ -209,7 +211,7 @@ def test_format_parallel(tmpdir, format, root_and_paths):
         timeout -= 0.1
         assert timeout > 0, "Threads failed to shutdown in sufficient time"
 
-    if PY2:  # noqa
+    if use_cli_to_extract:
         check_output(['tar', '-xf', out_path, '-C', out_dir])
     else:
         with tarfile.open(out_path) as out:
