@@ -1,7 +1,5 @@
 from __future__ import print_function, division, absolute_import
 
-import bz2
-import gzip
 import os
 import stat
 import struct
@@ -14,7 +12,9 @@ import zlib
 
 from contextlib import closing
 from io import BytesIO
+from multiprocessing.pool import ThreadPool
 
+from .compat import Queue
 from .core import CondaPackException
 
 
@@ -37,23 +37,29 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
                           zip_64=zip_64)
 
     # Tar archives
-    close_file = True
     if format in ('tar.gz', 'tgz'):
         if n_threads == 1:
-            fileobj = gzip.GzipFile(fileobj=fileobj, compresslevel=compress_level,
-                                    mode='wb')
+            mode = 'w:gz'
+            close_file = False
         else:
+            mode = 'w'
+            close_file = True
             fileobj = ParallelGzipFileWriter(fileobj, compresslevel=compress_level,
                                              n_threads=n_threads)
     elif format in ('tar.bz2', 'tbz2'):
         if n_threads == 1:
-            fileobj = bz2.BZ2File(fileobj, compresslevel=compress_level, mode='wb')
+            mode = 'w:bz2'
+            close_file = False
         else:
+            mode = 'w'
+            close_file = True
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
     else:  # format == 'tar'
+        mode = 'w'
         close_file = False
-    return TarArchive(fileobj, arcroot, close_file=close_file)
+    return TarArchive(fileobj, arcroot, close_file=close_file,
+                      mode=mode, compresslevel=compress_level)
 
 
 class ParallelFileWriter(object):
@@ -71,8 +77,6 @@ class ParallelFileWriter(object):
         self.buffers = []
         self.buffer_length = 0
 
-        from multiprocessing.pool import ThreadPool
-        from queue import Queue
         self.pool = ThreadPool(n_threads)
         self.compress_queue = Queue(maxsize=n_threads)
 
@@ -148,14 +152,14 @@ class ParallelGzipFileWriter(ParallelFileWriter):
     _block_size = 256 * 2**10
 
     def _init_state(self):
-        self.crc = zlib.crc32(b"")
+        self.crc = zlib.crc32(b"") & 0xffffffff
 
     def _new_compressor(self):
         return zlib.compressobj(self.compresslevel, zlib.DEFLATED,
                                 -zlib.MAX_WBITS, zlib.DEF_MEM_LEVEL, 0)
 
     def _per_buffer_op(self, buffer):
-        self.crc = zlib.crc32(buffer, self.crc)
+        self.crc = zlib.crc32(buffer, self.crc) & 0xffffffff
 
     def _write32u(self, value):
         self.fileobj.write(struct.pack("<L", value))
@@ -181,6 +185,7 @@ class ParallelBZ2FileWriter(ParallelFileWriter):
         self._block_size = self.compresslevel * 100 * 2**10
 
     def _new_compressor(self):
+        import bz2
         return bz2.BZ2Compressor(self.compresslevel)
 
     def _per_buffer_op(self, buffer):
@@ -207,14 +212,20 @@ class ArchiveBase(object):
 
 
 class TarArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, close_file=False):
+    def __init__(self, fileobj, arcroot, close_file=False,
+                 mode='w', compresslevel=4):
         self.fileobj = fileobj
         self.arcroot = arcroot
         self.close_file = close_file
+        self.mode = mode
+        self.compresslevel = compresslevel
 
     def __enter__(self):
-        self.archive = tarfile.open(fileobj=self.fileobj, mode='w',
-                                    dereference=False)
+        kwargs = {'compresslevel': self.compresslevel} if self.mode != 'w' else {}
+        self.archive = tarfile.open(fileobj=self.fileobj,
+                                    dereference=False,
+                                    mode=self.mode,
+                                    **kwargs)
         return self
 
     def __exit__(self, *args):

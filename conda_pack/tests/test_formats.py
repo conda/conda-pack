@@ -2,6 +2,7 @@ import os
 import shutil
 import tarfile
 import threading
+import time
 import zipfile
 from multiprocessing import cpu_count
 from os.path import isdir, isfile, islink, join, exists
@@ -11,7 +12,7 @@ import pytest
 
 from conda_pack.core import CondaPackException
 from conda_pack.formats import archive, _parse_n_threads
-from conda_pack.compat import on_win
+from conda_pack.compat import on_win, PY2
 
 
 @pytest.fixture(scope="module")
@@ -116,12 +117,20 @@ def check(out_dir, root=None, links=False):
         assert files == {'one', 'two'}
 
 
-def has_infozip():
+def has_infozip_cli():
     try:
         out = check_output(['unzip', '-h'], stderr=STDOUT).decode()
     except Exception:
         return False
     return "Info-ZIP" in out
+
+
+def has_tar_cli():
+    try:
+        check_output(['tar', '-h'], stderr=STDOUT)
+        return True
+    except Exception:
+        return False
 
 
 @pytest.mark.parametrize('format, zip_symlinks', [
@@ -130,7 +139,7 @@ def has_infozip():
 ])
 def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     if format == 'zip':
-        if zip_symlinks and (on_win or not has_infozip()):
+        if zip_symlinks and (on_win or not has_infozip_cli()):
             pytest.skip("Cannot test zipfile symlink support on this platform")
         test_symlinks = zip_symlinks
     else:
@@ -177,21 +186,31 @@ def test_n_threads():
 
 @pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2'])
 def test_format_parallel(tmpdir, format, root_and_paths):
+    # Python 2's bzip dpesn't support reading multipart files :(
+    if format == 'tar.bz2' and PY2 and not has_tar_cli():
+        pytest.skip("Unable to test parallel bz2 support on this platform")
+
     root, paths = root_and_paths
 
     out_path = join(str(tmpdir), 'test.' + format)
     out_dir = join(str(tmpdir), 'test')
     os.mkdir(out_dir)
 
-    active = threading.active_count()
+    baseline = threading.active_count()
     with open(out_path, mode='wb') as fil:
         with archive(fil, '', format, n_threads=2) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
-    current = threading.active_count()
-    assert active == current
+    timeout = 5
+    while threading.active_count() > baseline:
+        time.sleep(0.1)
+        timeout -= 0.1
+        assert timeout > 0, "Threads failed to shutdown in sufficient time"
 
-    with tarfile.open(out_path) as out:
-        out.extractall(out_dir)
+    if PY2:  # noqa
+        check_output(['tar', '-xf', out_path, '-C', out_dir])
+    else:
+        with tarfile.open(out_path) as out:
+            out.extractall(out_dir)
 
     check(out_dir, links=(not on_win), root=root)
