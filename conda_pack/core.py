@@ -617,7 +617,7 @@ def managed_file(is_noarch, site_packages, pkg, _path, prefix_placeholder=None,
                 file_mode=file_mode)
 
 
-def load_managed_package(info, prefix, site_packages):
+def load_managed_package(info, prefix, site_packages, all_files):
     pkg = info['link']['source']
 
     noarch_type = read_noarch_type(pkg)
@@ -650,10 +650,15 @@ def load_managed_package(info, prefix, site_packages):
             files = [managed_file(is_noarch, site_packages, pkg, p)
                      for p in paths]
 
-    if noarch_type == 'python':
+    if is_noarch:
         seen = {os.path.normcase(i.target) for i in files}
         for fil in info['files']:
-            if os.path.normcase(fil) not in seen:
+            # If the path hasn't been added yet, *and* the path isn't a pyc
+            # file that failed to bytecode compile (e.g. a file that contains
+            # py3 only features in a py2 env), then add the path.
+            fil_normed = os.path.normcase(fil)
+            if (fil_normed not in seen and not
+                    (fil_normed.endswith('.pyc') and fil_normed not in all_files)):
                 file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
@@ -727,7 +732,8 @@ def load_environment(prefix, on_missing_cache='warn'):
                              for f in info['files']]
                 uncached.append((info['name'], info['version'], info['url']))
             else:
-                new_files = load_managed_package(info, prefix, site_packages)
+                new_files = load_managed_package(info, prefix, site_packages,
+                                                 all_files)
 
             targets = {os.path.normcase(f.target) for f in new_files}
 
