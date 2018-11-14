@@ -144,12 +144,9 @@ commandline. Repeating the examples from above:
 Caveats
 -------
 
-This tool is new, and has a few caveats.
+This tool has a few caveats.
 
 - Conda must be installed and be on your path.
-
-- Windows is not currently supported (should be easy to fix, contributions
-  welcome!)
 
 - The os *type* where the environment was built must match the os *type* of the
   target. This means that environments built on windows can't be relocated to
