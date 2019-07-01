@@ -1,4 +1,7 @@
 #/usr/bin/env bash
+
+set -eo pipefail
+
 echo "== Setting up environments for testing =="
 
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -25,7 +28,8 @@ fi
 echo "Creating py36_editable environment"
 py36_editable="${current_dir}/environments/py36_editable"
 conda env create -f "${current_dir}/env_yamls/py36.yml" -p $py36_editable $@
-source activate $py36_editable
+activation=`(type activate > /dev/null && echo 'source' ) || echo conda`
+$activation activate $py36_editable
 pushd "${current_dir}/.." && python setup.py develop && popd
 source deactivate
 

@@ -330,7 +330,7 @@ def test_pack_with_conda(tmpdir, fix_dest):
         commands = ("unset CONDA_PREFIX",
                     ". {path}/bin/activate".format(path=extract_path),
                     "conda info --json",
-                    ". deactivate")
+                    ". deactivate >/dev/null 2>/dev/null")
         script_file = tmpdir.join('unpack.sh')
         cmd = ['/usr/bin/env', 'bash', str(script_file)]
 

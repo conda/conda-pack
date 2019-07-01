@@ -36,7 +36,11 @@ _conda_pack_activate() {
     if [ -n "$CONDA_PREFIX" ]; then
         # If the source env differs from this env
         if [ "$CONDA_PREFIX" != "$full_path_env" ]; then
-            . deactivate
+            # Check whether deactivate is a function or executable
+            type deactivate >/dev/null
+            if [ $? -eq 0 ]; then
+                . deactivate >/dev/null 2>/dev/null
+            fi
         else
             return 0  # nothing to do
         fi
