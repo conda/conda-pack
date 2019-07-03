@@ -31,7 +31,8 @@ conda env create -f "${current_dir}/env_yamls/py36.yml" -p $py36_editable $@
 activation=`(type activate > /dev/null && echo 'source' ) || echo conda`
 $activation activate $py36_editable
 pushd "${current_dir}/.." && python setup.py develop && popd
-source deactivate
+deactivation=`(type deactivate > /dev/null && echo 'source' ) || echo conda`
+$deactivation deactivate
 
 echo "Creating py36_broken environment"
 conda env create -f "${current_dir}/env_yamls/py36_broken.yml" -p "${current_dir}/environments/py36_broken" $@
