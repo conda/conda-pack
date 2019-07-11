@@ -693,7 +693,7 @@ conda/pip conflicts using `conda list`, and fix the environment by ensuring
 only one version of each package is installed (conda preferred)."""
 
 
-def load_environment(prefix, on_missing_cache='warn'):
+def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=False):
     # Check if it's a conda environment
     if not os.path.exists(prefix):
         raise CondaPackException("Environment path %r doesn't exist" % prefix)
@@ -704,7 +704,7 @@ def load_environment(prefix, on_missing_cache='warn'):
     # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
-    if site_packages is not None:
+    if site_packages is not None and not ignore_editable_packages:
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 

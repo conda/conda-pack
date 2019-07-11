@@ -91,6 +91,10 @@ def test_errors_editable_packages():
     assert "Editable packages found" in str(exc.value)
 
 
+def test_ignore_errors_editable_packages():
+    CondaEnv.from_prefix(py36_editable_path, ignore_editable_packages=True)
+
+
 def test_errors_pip_overwrites():
     with pytest.raises(CondaPackException) as exc:
         CondaEnv.from_prefix(py36_broken_path)
