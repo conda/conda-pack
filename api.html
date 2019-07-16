@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>API Docs &#8212; conda-pack 0.3.0+2.gee7efc3 documentation</title>
+    <meta charset="utf-8" />
+    <title>API Docs &#8212; conda-pack 0.3.0+3.g48c0b21 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="CLI Docs" href="cli.html" />
@@ -40,7 +38,7 @@
 <h2>CondaEnv<a class="headerlink" href="#condaenv" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="conda_pack.CondaEnv">
-<em class="property">class </em><code class="descclassname">conda_pack.</code><code class="descname">CondaEnv</code><span class="sig-paren">(</span><em>prefix</em>, <em>files</em>, <em>excluded_files=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">conda_pack.</code><code class="sig-name descname">CondaEnv</code><span class="sig-paren">(</span><em class="sig-param">prefix</em>, <em class="sig-param">files</em>, <em class="sig-param">excluded_files=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Conda Environment for packaging.</p>
 <p>Use <a class="reference internal" href="#conda_pack.CondaEnv.from_prefix" title="conda_pack.CondaEnv.from_prefix"><code class="xref py py-func docutils literal notranslate"><span class="pre">CondaEnv.from_prefix()</span></code></a>, <a class="reference internal" href="#conda_pack.CondaEnv.from_name" title="conda_pack.CondaEnv.from_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">CondaEnv.from_name()</span></code></a>, or
 <a class="reference internal" href="#conda_pack.CondaEnv.from_default" title="conda_pack.CondaEnv.from_default"><code class="xref py py-func docutils literal notranslate"><span class="pre">CondaEnv.from_default()</span></code></a> instead of the default constructor.</p>
@@ -60,129 +58,101 @@ files, into a <code class="docutils literal notranslate"><span class="pre">tar.g
 <span class="go">&quot;/full/path/to/foo.zip&quot;</span>
 </pre></div>
 </div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The path to the conda environment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>prefix</strong><span class="classifier">str</span></dt><dd><p>The path to the conda environment.</p>
 </dd>
-<dt><strong>files</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of File</span></dt>
-<dd><p class="first last">A list of <a class="reference internal" href="#conda_pack.File" title="conda_pack.File"><code class="xref py py-class docutils literal notranslate"><span class="pre">File</span></code></a> objects representing all files in conda
+<dt><strong>files</strong><span class="classifier">list of File</span></dt><dd><p>A list of <a class="reference internal" href="#conda_pack.File" title="conda_pack.File"><code class="xref py py-class docutils literal notranslate"><span class="pre">File</span></code></a> objects representing all files in conda
 environment.</p>
 </dd>
-<dt><a class="reference internal" href="#conda_pack.CondaEnv.name" title="conda_pack.CondaEnv.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The name of the environment</p>
+<dt><a class="reference internal" href="#conda_pack.CondaEnv.name" title="conda_pack.CondaEnv.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a><span class="classifier">str</span></dt><dd><p>The name of the environment</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="attribute">
+</dd>
+</dl>
+<dl class="method">
 <dt id="conda_pack.CondaEnv.name">
-<code class="descname">name</code><a class="headerlink" href="#conda_pack.CondaEnv.name" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#conda_pack.CondaEnv.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>The name of the environment</p>
 </dd></dl>
 
-<dl class="classmethod">
+<dl class="method">
 <dt id="conda_pack.CondaEnv.from_prefix">
-<em class="property">classmethod </em><code class="descname">from_prefix</code><span class="sig-paren">(</span><em>prefix</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.from_prefix" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">from_prefix</code><span class="sig-paren">(</span><em class="sig-param">prefix</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.from_prefix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a <code class="docutils literal notranslate"><span class="pre">CondaEnv</span></code> from a given prefix.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The path to the conda environment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>prefix</strong><span class="classifier">str</span></dt><dd><p>The path to the conda environment.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>env</strong> <span class="classifier-delimiter">:</span> <span class="classifier">CondaEnv</span></dt>
-<dd></dd>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>env</strong><span class="classifier">CondaEnv</span></dt><dd></dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="classmethod">
+<dl class="method">
 <dt id="conda_pack.CondaEnv.from_name">
-<em class="property">classmethod </em><code class="descname">from_name</code><span class="sig-paren">(</span><em>name</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.from_name" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">from_name</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.from_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a <code class="docutils literal notranslate"><span class="pre">CondaEnv</span></code> from a named environment.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>name</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The name of the conda environment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>The name of the conda environment.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>env</strong> <span class="classifier-delimiter">:</span> <span class="classifier">CondaEnv</span></dt>
-<dd></dd>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>env</strong><span class="classifier">CondaEnv</span></dt><dd></dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="classmethod">
+<dl class="method">
 <dt id="conda_pack.CondaEnv.from_default">
-<em class="property">classmethod </em><code class="descname">from_default</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.from_default" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">from_default</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.from_default" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a <code class="docutils literal notranslate"><span class="pre">CondaEnv</span></code> from the current environment.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>env</strong> <span class="classifier-delimiter">:</span> <span class="classifier">CondaEnv</span></dt>
-<dd></dd>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>env</strong><span class="classifier">CondaEnv</span></dt><dd></dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="conda_pack.CondaEnv.exclude">
-<code class="descname">exclude</code><span class="sig-paren">(</span><em>pattern</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.exclude" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">exclude</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">pattern</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.exclude" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exclude all files that match <code class="docutils literal notranslate"><span class="pre">pattern</span></code> from being packaged.</p>
 <p>This can be useful to remove functionality that isn’t needed in the
 archive but is part of the original conda package.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>pattern</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">A file pattern. May include shell-style wildcards a-la <code class="docutils literal notranslate"><span class="pre">glob</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pattern</strong><span class="classifier">str</span></dt><dd><p>A file pattern. May include shell-style wildcards a-la <code class="docutils literal notranslate"><span class="pre">glob</span></code>.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>env</strong> <span class="classifier-delimiter">:</span> <span class="classifier">CondaEnv</span></dt>
-<dd><p class="first last">A new env with any matching files excluded.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>env</strong><span class="classifier">CondaEnv</span></dt><dd><p>A new env with any matching files excluded.</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="#conda_pack.CondaEnv.include" title="conda_pack.CondaEnv.include"><code class="xref py py-obj docutils literal notranslate"><span class="pre">include</span></code></a></p>
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#conda_pack.CondaEnv.include" title="conda_pack.CondaEnv.include"><code class="xref py py-obj docutils literal notranslate"><span class="pre">include</span></code></a></dt><dd></dd>
+</dl>
 </div>
 <p class="rubric">Examples</p>
 <p>Exclude all <code class="docutils literal notranslate"><span class="pre">*.pyx</span></code> files, except those from <code class="docutils literal notranslate"><span class="pre">cytoolz</span></code>.</p>
@@ -196,80 +166,65 @@ archive but is part of the original conda package.</p>
 
 <dl class="method">
 <dt id="conda_pack.CondaEnv.include">
-<code class="descname">include</code><span class="sig-paren">(</span><em>pattern</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.include" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">include</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">pattern</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.include" title="Permalink to this definition">¶</a></dt>
 <dd><p>Re-add all excluded files that match <code class="docutils literal notranslate"><span class="pre">pattern</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>pattern</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">A file pattern. May include shell-style wildcards a-la <code class="docutils literal notranslate"><span class="pre">glob</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pattern</strong><span class="classifier">str</span></dt><dd><p>A file pattern. May include shell-style wildcards a-la <code class="docutils literal notranslate"><span class="pre">glob</span></code>.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>env</strong> <span class="classifier-delimiter">:</span> <span class="classifier">CondaEnv</span></dt>
-<dd><p class="first last">A new env with any matching files that were previously excluded
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>env</strong><span class="classifier">CondaEnv</span></dt><dd><p>A new env with any matching files that were previously excluded
 re-included.</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="#conda_pack.CondaEnv.exclude" title="conda_pack.CondaEnv.exclude"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exclude</span></code></a></p>
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#conda_pack.CondaEnv.exclude" title="conda_pack.CondaEnv.exclude"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exclude</span></code></a></dt><dd></dd>
+</dl>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="conda_pack.CondaEnv.pack">
-<code class="descname">pack</code><span class="sig-paren">(</span><em>output=None</em>, <em>format='infer'</em>, <em>arcroot=''</em>, <em>dest_prefix=None</em>, <em>verbose=False</em>, <em>force=False</em>, <em>compress_level=4</em>, <em>n_threads=1</em>, <em>zip_symlinks=False</em>, <em>zip_64=True</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.pack" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">pack</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">output=None</em>, <em class="sig-param">format='infer'</em>, <em class="sig-param">arcroot=''</em>, <em class="sig-param">dest_prefix=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">force=False</em>, <em class="sig-param">compress_level=4</em>, <em class="sig-param">n_threads=1</em>, <em class="sig-param">zip_symlinks=False</em>, <em class="sig-param">zip_64=True</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.pack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package the conda environment into an archive file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>output</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">The path of the output file. Defaults to the environment name with a
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">str, optional</span></dt><dd><p>The path of the output file. Defaults to the environment name with a
 <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> suffix (e.g. <code class="docutils literal notranslate"><span class="pre">my_env.tar.gz</span></code>).</p>
 </dd>
-<dt><strong>format</strong> <span class="classifier-delimiter">:</span> <span class="classifier">{‘infer’, ‘zip’, ‘tar.gz’, ‘tgz’, ‘tar.bz2’, ‘tbz2’, ‘tar’}</span></dt>
-<dd><p class="first last">The archival format to use. By default this is inferred by the
+<dt><strong>format</strong><span class="classifier">{‘infer’, ‘zip’, ‘tar.gz’, ‘tgz’, ‘tar.bz2’, ‘tbz2’, ‘tar’}</span></dt><dd><p>The archival format to use. By default this is inferred by the
 output file extension.</p>
 </dd>
-<dt><strong>arcroot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">The relative path in the archive to the conda environment.
+<dt><strong>arcroot</strong><span class="classifier">str, optional</span></dt><dd><p>The relative path in the archive to the conda environment.
 Defaults to ‘’.</p>
 </dd>
-<dt><strong>dest_prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">If present, prefixes will be rewritten to this path before
+<dt><strong>dest_prefix</strong><span class="classifier">str, optional</span></dt><dd><p>If present, prefixes will be rewritten to this path before
 packaging. In this case the <code class="docutils literal notranslate"><span class="pre">conda-unpack</span></code> script will not be
 generated.</p>
 </dd>
-<dt><strong>verbose</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">If True, progress is reported to stdout. Default is False.</p>
+<dt><strong>verbose</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, progress is reported to stdout. Default is False.</p>
 </dd>
-<dt><strong>force</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Whether to overwrite any existing archive at the output path.
+<dt><strong>force</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to overwrite any existing archive at the output path.
 Default is False.</p>
 </dd>
-<dt><strong>compress_level</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">The compression level to use, from 0 to 9. Higher numbers decrease
+<dt><strong>compress_level</strong><span class="classifier">int, optional</span></dt><dd><p>The compression level to use, from 0 to 9. Higher numbers decrease
 output file size at the expense of compression time. Ignored for
 <code class="docutils literal notranslate"><span class="pre">format='zip'</span></code>. Default is 4.</p>
 </dd>
-<dt><strong>n_threads</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">The number of threads to use. Set to -1 to use the number of cpus
+<dt><strong>n_threads</strong><span class="classifier">int, optional</span></dt><dd><p>The number of threads to use. Set to -1 to use the number of cpus
 on this machine. If a file format doesn’t support threaded
 packaging, this option will be ignored. Default is 1.</p>
 </dd>
-<dt><strong>zip_symlinks</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Symbolic links aren’t supported by the Zip standard, but are
+<dt><strong>zip_symlinks</strong><span class="classifier">bool, optional</span></dt><dd><p>Symbolic links aren’t supported by the Zip standard, but are
 supported by <em>many</em> common Zip implementations. If True, store
 symbolic links in the archive, instead of the file referred to
 by the link. This can avoid storing multiple copies of the same
@@ -277,21 +232,17 @@ files. <em>Note that the resulting archive may silently fail on
 decompression if the ``unzip`` implementation doesn’t support
 symlinks</em>. Default is False. Ignored if format isn’t <code class="docutils literal notranslate"><span class="pre">zip</span></code>.</p>
 </dd>
-<dt><strong>zip_64</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Whether to enable ZIP64 extensions. Default is True.</p>
+<dt><strong>zip_64</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to enable ZIP64 extensions. Default is True.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>out_path</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The path to the archived environment.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>out_path</strong><span class="classifier">str</span></dt><dd><p>The path to the archived environment.</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -301,33 +252,24 @@ symlinks</em>. Default is False. Ignored if format isn’t <code class="docutils
 <h2>File<a class="headerlink" href="#file" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="conda_pack.File">
-<em class="property">class </em><code class="descclassname">conda_pack.</code><code class="descname">File</code><span class="sig-paren">(</span><em>source</em>, <em>target</em>, <em>is_conda=True</em>, <em>file_mode=None</em>, <em>prefix_placeholder=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.File" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">conda_pack.</code><code class="sig-name descname">File</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">target</em>, <em class="sig-param">is_conda=True</em>, <em class="sig-param">file_mode=None</em>, <em class="sig-param">prefix_placeholder=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.File" title="Permalink to this definition">¶</a></dt>
 <dd><p>A single archive record.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>source</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">Absolute path to the source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>source</strong><span class="classifier">str</span></dt><dd><p>Absolute path to the source.</p>
 </dd>
-<dt><strong>target</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">Relative path from the target prefix (e.g. <code class="docutils literal notranslate"><span class="pre">lib/foo/bar.py</span></code>).</p>
+<dt><strong>target</strong><span class="classifier">str</span></dt><dd><p>Relative path from the target prefix (e.g. <code class="docutils literal notranslate"><span class="pre">lib/foo/bar.py</span></code>).</p>
 </dd>
-<dt><strong>is_conda</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Whether the file was installed by conda, or comes from somewhere else.</p>
+<dt><strong>is_conda</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether the file was installed by conda, or comes from somewhere else.</p>
 </dd>
-<dt><strong>file_mode</strong> <span class="classifier-delimiter">:</span> <span class="classifier">{None, ‘text’, ‘binary’, ‘unknown’}, optional</span></dt>
-<dd><p class="first last">The type of record.</p>
+<dt><strong>file_mode</strong><span class="classifier">{None, ‘text’, ‘binary’, ‘unknown’}, optional</span></dt><dd><p>The type of record.</p>
 </dd>
-<dt><strong>prefix_placeholder</strong> <span class="classifier-delimiter">:</span> <span class="classifier">None or str, optional</span></dt>
-<dd><p class="first last">The prefix placeholder in the file (if any)</p>
+<dt><strong>prefix_placeholder</strong><span class="classifier">None or str, optional</span></dt><dd><p>The prefix placeholder in the file (if any)</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -335,49 +277,37 @@ symlinks</em>. Default is False. Ignored if format isn’t <code class="docutils
 <h2>pack<a class="headerlink" href="#pack" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="conda_pack.pack">
-<code class="descclassname">conda_pack.</code><code class="descname">pack</code><span class="sig-paren">(</span><em>name=None</em>, <em>prefix=None</em>, <em>output=None</em>, <em>format='infer'</em>, <em>arcroot=''</em>, <em>dest_prefix=None</em>, <em>verbose=False</em>, <em>force=False</em>, <em>compress_level=4</em>, <em>n_threads=1</em>, <em>zip_symlinks=False</em>, <em>zip_64=True</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.pack" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">conda_pack.</code><code class="sig-name descname">pack</code><span class="sig-paren">(</span><em class="sig-param">name=None</em>, <em class="sig-param">prefix=None</em>, <em class="sig-param">output=None</em>, <em class="sig-param">format='infer'</em>, <em class="sig-param">arcroot=''</em>, <em class="sig-param">dest_prefix=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">force=False</em>, <em class="sig-param">compress_level=4</em>, <em class="sig-param">n_threads=1</em>, <em class="sig-param">zip_symlinks=False</em>, <em class="sig-param">zip_64=True</em>, <em class="sig-param">filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.pack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package an existing conda environment into an archive file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>name</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">The name of the conda environment to pack.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str, optional</span></dt><dd><p>The name of the conda environment to pack.</p>
 </dd>
-<dt><strong>prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">A path to a conda environment to pack.</p>
+<dt><strong>prefix</strong><span class="classifier">str, optional</span></dt><dd><p>A path to a conda environment to pack.</p>
 </dd>
-<dt><strong>output</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">The path of the output file. Defaults to the environment name with a
+<dt><strong>output</strong><span class="classifier">str, optional</span></dt><dd><p>The path of the output file. Defaults to the environment name with a
 <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> suffix (e.g. <code class="docutils literal notranslate"><span class="pre">my_env.tar.gz</span></code>).</p>
 </dd>
-<dt><strong>format</strong> <span class="classifier-delimiter">:</span> <span class="classifier">{‘infer’, ‘zip’, ‘tar.gz’, ‘tgz’, ‘tar.bz2’, ‘tbz2’, ‘tar’}, optional</span></dt>
-<dd><p class="first last">The archival format to use. By default this is inferred by the output
+<dt><strong>format</strong><span class="classifier">{‘infer’, ‘zip’, ‘tar.gz’, ‘tgz’, ‘tar.bz2’, ‘tbz2’, ‘tar’}, optional</span></dt><dd><p>The archival format to use. By default this is inferred by the output
 file extension.</p>
 </dd>
-<dt><strong>arcroot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">The relative path in the archive to the conda environment.
+<dt><strong>arcroot</strong><span class="classifier">str, optional</span></dt><dd><p>The relative path in the archive to the conda environment.
 Defaults to ‘’.</p>
 </dd>
-<dt><strong>dest_prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">If present, prefixes will be rewritten to this path before packaging.
+<dt><strong>dest_prefix</strong><span class="classifier">str, optional</span></dt><dd><p>If present, prefixes will be rewritten to this path before packaging.
 In this case the <code class="docutils literal notranslate"><span class="pre">conda-unpack</span></code> script will not be generated.</p>
 </dd>
-<dt><strong>verbose</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">If True, progress is reported to stdout. Default is False.</p>
+<dt><strong>verbose</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, progress is reported to stdout. Default is False.</p>
 </dd>
-<dt><strong>force</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Whether to overwrite any existing archive at the output path. Default
+<dt><strong>force</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to overwrite any existing archive at the output path. Default
 is False.</p>
 </dd>
-<dt><strong>compress_level</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">The compression level to use, from 0 to 9. Higher numbers decrease
+<dt><strong>compress_level</strong><span class="classifier">int, optional</span></dt><dd><p>The compression level to use, from 0 to 9. Higher numbers decrease
 output file size at the expense of compression time. Ignored for
 <code class="docutils literal notranslate"><span class="pre">format='zip'</span></code>. Default is 4.</p>
 </dd>
-<dt><strong>zip_symlinks</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Symbolic links aren’t supported by the Zip standard, but are supported
+<dt><strong>zip_symlinks</strong><span class="classifier">bool, optional</span></dt><dd><p>Symbolic links aren’t supported by the Zip standard, but are supported
 by <em>many</em> common Zip implementations. If True, store symbolic links in
 the archive, instead of the file referred to by the link. This can
 avoid storing multiple copies of the same files. <em>Note that the
@@ -385,32 +315,26 @@ resulting archive may silently fail on decompression if the ``unzip``
 implementation doesn’t support symlinks</em>. Default is False. Ignored if
 format isn’t <code class="docutils literal notranslate"><span class="pre">zip</span></code>.</p>
 </dd>
-<dt><strong>n_threads</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">The number of threads to use. Set to -1 to use the number of cpus on
+<dt><strong>n_threads</strong><span class="classifier">int, optional</span></dt><dd><p>The number of threads to use. Set to -1 to use the number of cpus on
 this machine. If a file format doesn’t support threaded packaging, this
 option will be ignored. Default is 1.</p>
 </dd>
-<dt><strong>zip_64</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Whether to enable ZIP64 extensions. Default is True.</p>
+<dt><strong>zip_64</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to enable ZIP64 extensions. Default is True.</p>
 </dd>
-<dt><strong>filters</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list, optional</span></dt>
-<dd><p class="first last">A list of filters to apply to the files. Each filter is a tuple of
+<dt><strong>filters</strong><span class="classifier">list, optional</span></dt><dd><p>A list of filters to apply to the files. Each filter is a tuple of
 <code class="docutils literal notranslate"><span class="pre">(kind,</span> <span class="pre">pattern)</span></code>, where <code class="docutils literal notranslate"><span class="pre">kind</span></code> is either <code class="docutils literal notranslate"><span class="pre">'exclude'</span></code> or
 <code class="docutils literal notranslate"><span class="pre">'include'</span></code> and <code class="docutils literal notranslate"><span class="pre">pattern</span></code> is a file pattern. Filters are applied in
 the order specified.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>out_path</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The path to the archived environment.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>out_path</strong><span class="classifier">str</span></dt><dd><p>The path to the archived environment.</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -471,13 +395,11 @@ the order specified.</p>
   Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
 </p>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>

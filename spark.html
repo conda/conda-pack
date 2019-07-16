@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0.3.0+2.gee7efc3 documentation</title>
+    <meta charset="utf-8" />
+    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0.3.0+3.g48c0b21 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="CLI Docs" href="cli.html" />
@@ -143,32 +141,32 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
 </pre></div>
 </div>
 <p>Write an R script, for example:</p>
-<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="kn">library</span><span class="p">(</span>sparklyr<span class="p">)</span>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="nf">library</span><span class="p">(</span><span class="n">sparklyr</span><span class="p">)</span>
 
 <span class="c1"># Create a spark configuration</span>
-config <span class="o">&lt;-</span> spark_config<span class="p">()</span>
+<span class="n">config</span> <span class="o">&lt;-</span> <span class="nf">spark_config</span><span class="p">()</span>
 
 <span class="c1"># Specify that the packaged environment should be distributed</span>
 <span class="c1"># and unpacked to the directory &quot;environment&quot;</span>
-config<span class="o">$</span>spark.yarn.dist.archives <span class="o">&lt;-</span> <span class="s">&quot;environment.tar.gz#environment&quot;</span>
+<span class="n">config</span><span class="o">$</span><span class="n">spark.yarn.dist.archives</span> <span class="o">&lt;-</span> <span class="s">&quot;environment.tar.gz#environment&quot;</span>
 
 <span class="c1"># Specify the R command to use, as well as various R locations on the workers</span>
-config<span class="o">$</span>spark.r.command <span class="o">&lt;-</span> <span class="s">&quot;./environment/bin/Rscript&quot;</span>
-config<span class="o">$</span>sparklyr.apply.env.R_HOME <span class="o">&lt;-</span> <span class="s">&quot;./environment/lib/R&quot;</span>
-config<span class="o">$</span>sparklyr.apply.env.RHOME <span class="o">&lt;-</span> <span class="s">&quot;./environment&quot;</span>
-config<span class="o">$</span>sparklyr.apply.env.R_SHARE_DIR <span class="o">&lt;-</span> <span class="s">&quot;./environment/lib/R/share&quot;</span>
-config<span class="o">$</span>sparklyr.apply.env.R_INCLUDE_DIR <span class="o">&lt;-</span> <span class="s">&quot;./environment/lib/R/include&quot;</span>
+<span class="n">config</span><span class="o">$</span><span class="n">spark.r.command</span> <span class="o">&lt;-</span> <span class="s">&quot;./environment/bin/Rscript&quot;</span>
+<span class="n">config</span><span class="o">$</span><span class="n">sparklyr.apply.env.R_HOME</span> <span class="o">&lt;-</span> <span class="s">&quot;./environment/lib/R&quot;</span>
+<span class="n">config</span><span class="o">$</span><span class="n">sparklyr.apply.env.RHOME</span> <span class="o">&lt;-</span> <span class="s">&quot;./environment&quot;</span>
+<span class="n">config</span><span class="o">$</span><span class="n">sparklyr.apply.env.R_SHARE_DIR</span> <span class="o">&lt;-</span> <span class="s">&quot;./environment/lib/R/share&quot;</span>
+<span class="n">config</span><span class="o">$</span><span class="n">sparklyr.apply.env.R_INCLUDE_DIR</span> <span class="o">&lt;-</span> <span class="s">&quot;./environment/lib/R/include&quot;</span>
 
 <span class="c1"># Create a spark context.</span>
 <span class="c1"># You can also specify `master = &quot;yarn-cluster&quot;` for cluster mode.</span>
-sc <span class="o">&lt;-</span> spark_connect<span class="p">(</span>master <span class="o">=</span> <span class="s">&quot;yarn-client&quot;</span><span class="p">,</span> config <span class="o">=</span> config<span class="p">)</span>
+<span class="n">sc</span> <span class="o">&lt;-</span> <span class="nf">spark_connect</span><span class="p">(</span><span class="n">master</span> <span class="o">=</span> <span class="s">&quot;yarn-client&quot;</span><span class="p">,</span> <span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
 
 <span class="c1"># Use a user defined function, which requires a working R environment on</span>
 <span class="c1"># every worker node. Since all R packages already exist on every node, we</span>
 <span class="c1"># pass in ``packages = FALSE`` to avoid redistributing them.</span>
-sdf_copy_to<span class="p">(</span>sc<span class="p">,</span> iris<span class="p">)</span> <span class="o">%&gt;%</span>
-    spark_apply<span class="p">(</span><span class="kr">function</span><span class="p">(</span>e<span class="p">)</span> broom<span class="o">::</span>tidy<span class="p">(</span>lm<span class="p">(</span>Petal_Length <span class="o">~</span> Petal_Width<span class="p">,</span> e<span class="p">)),</span>
-                packages <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+<span class="nf">sdf_copy_to</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">iris</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="nf">spark_apply</span><span class="p">(</span><span class="nf">function</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="n">broom</span><span class="o">::</span><span class="nf">tidy</span><span class="p">(</span><span class="nf">lm</span><span class="p">(</span><span class="n">Petal_Length</span> <span class="o">~</span> <span class="n">Petal_Width</span><span class="p">,</span> <span class="n">e</span><span class="p">)),</span>
+                <span class="n">packages</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Run the script.</p>
@@ -238,13 +236,11 @@ sdf_copy_to<span class="p">(</span>sc<span class="p">,</span> iris<span class="p
   Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
 </p>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>

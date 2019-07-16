@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Conda-Pack &#8212; conda-pack 0.3.0+2.gee7efc3 documentation</title>
+    <meta charset="utf-8" />
+    <title>Conda-Pack &#8212; conda-pack 0.3.0+3.g48c0b21 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="API Docs" href="api.html" />
@@ -44,14 +42,14 @@ already installed.</p>
 </div><div class="section" id="use-cases">
 <h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Bundling an application with its environment for deployment</li>
-<li>Packaging a conda environment for usage with Apache Spark when deploying on
-YARN (<a class="reference internal" href="spark.html"><span class="doc">see here</span></a> for more information).</li>
-<li>Packaging a conda environment for deployment on Apache YARN. One way to do
-this is to use <a class="reference external" href="https://jcrist.github.io/skein/">Skein</a>.</li>
-<li>Archiving an environment in a functioning state. Note that a more sustainable
+<li><p>Bundling an application with its environment for deployment</p></li>
+<li><p>Packaging a conda environment for usage with Apache Spark when deploying on
+YARN (<a class="reference internal" href="spark.html"><span class="doc">see here</span></a> for more information).</p></li>
+<li><p>Packaging a conda environment for deployment on Apache YARN. One way to do
+this is to use <a class="reference external" href="https://jcrist.github.io/skein/">Skein</a>.</p></li>
+<li><p>Archiving an environment in a functioning state. Note that a more sustainable
 way to do this is to specify your environment as a <a class="reference external" href="https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment">environment.yml</a>,
-and recreate the environment when needed.</li>
+and recreate the environment when needed.</p></li>
 </ul>
 </div>
 <div class="section" id="installation">
@@ -60,19 +58,19 @@ and recreate the environment when needed.</li>
 command will then be available in all sub-environments as well.</p>
 <p><strong>Install from Conda-Forge:</strong></p>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is available on <a class="reference external" href="https://conda-forge.org/">conda-forge</a>:</p>
-<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
 </pre></div>
 </div>
 <p><strong>Install from PyPI:</strong></p>
 <p>While <code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> requires an existing <code class="docutils literal notranslate"><span class="pre">conda</span></code> install, it can also be
 installed from PyPI:</p>
-<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
 </pre></div>
 </div>
 <p><strong>Install from source:</strong></p>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is <a class="reference external" href="https://github.com/conda/conda-pack">available on github</a>
 and can always be installed from source.</p>
-<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">conda</span><span class="o">/</span><span class="n">conda</span><span class="o">-</span><span class="n">pack</span><span class="o">.</span><span class="n">git</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">conda</span><span class="o">/</span><span class="n">conda</span><span class="o">-</span><span class="n">pack</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
 </div>
@@ -145,10 +143,10 @@ commandline. Repeating the examples from above:</p>
 <h2>Caveats<a class="headerlink" href="#caveats" title="Permalink to this headline">¶</a></h2>
 <p>This tool has a few caveats.</p>
 <ul class="simple">
-<li>Conda must be installed and be on your path.</li>
-<li>The os <em>type</em> where the environment was built must match the os <em>type</em> of the
+<li><p>Conda must be installed and be on your path.</p></li>
+<li><p>The os <em>type</em> where the environment was built must match the os <em>type</em> of the
 target. This means that environments built on windows can’t be relocated to
-linux.</li>
+linux.</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
@@ -205,13 +203,11 @@ linux.</li>
   Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
 </p>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
