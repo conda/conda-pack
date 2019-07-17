@@ -442,7 +442,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         print("Collecting packages...")
 
     if prefix:
-        env = CondaEnv.from_prefix(prefix, ignore_editable_packages=ignore_editable_packages)
+        env = CondaEnv.from_prefix(prefix,
+                                   ignore_editable_packages=ignore_editable_packages)
     elif name:
         env = CondaEnv.from_name(name, ignore_editable_packages=ignore_editable_packages)
     else:
