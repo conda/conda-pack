@@ -60,7 +60,7 @@ _conda_pack_activate() {
     local _script_dir="${full_path_env}/etc/conda/activate.d"
     if [ -d "$_script_dir" ] && [ -n "$(ls -A "$_script_dir")" ]; then
         local _path
-        for _path in "$_script_dir"/*; do
+        for _path in "$_script_dir"/*.sh; do
             . "$_path"
         done
     fi
