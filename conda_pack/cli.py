@@ -86,6 +86,9 @@ def build_parser():
     parser.add_argument("--no-zip-64",
                         action="store_true",
                         help="Disable ZIP64 extensions.")
+    parser.add_argument("--ignore-editable-packages",
+                        action="store_true",
+                        help="Ignore installed editable packages")
     parser.add_argument("--exclude",
                         action=MultiAppendAction,
                         metavar="PATTERN",
@@ -141,7 +144,8 @@ def main(args=None, pack=pack):
                  arcroot=args.arcroot,
                  dest_prefix=args.dest_prefix,
                  verbose=not args.quiet,
-                 filters=args.filters)
+                 filters=args.filters,
+                 ignore_editable_packages=args.ignore_editable_packages)
     except CondaPackException as e:
         fail("CondaPackError: %s" % e)
     except KeyboardInterrupt:

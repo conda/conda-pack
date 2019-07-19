@@ -378,7 +378,7 @@ class File(object):
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
          compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
-         filters=None):
+         filters=None, ignore_editable_packages=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -427,6 +427,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         ``(kind, pattern)``, where ``kind`` is either ``'exclude'`` or
         ``'include'`` and ``pattern`` is a file pattern. Filters are applied in
         the order specified.
+    ignore_editable_packages : bool, optional
+        Don't error on installed editable packages. Default is False.
 
     Returns
     -------
@@ -440,11 +442,12 @@ def pack(name=None, prefix=None, output=None, format='infer',
         print("Collecting packages...")
 
     if prefix:
-        env = CondaEnv.from_prefix(prefix)
+        env = CondaEnv.from_prefix(prefix,
+                                   ignore_editable_packages=ignore_editable_packages)
     elif name:
-        env = CondaEnv.from_name(name)
+        env = CondaEnv.from_name(name, ignore_editable_packages=ignore_editable_packages)
     else:
-        env = CondaEnv.from_default()
+        env = CondaEnv.from_default(ignore_editable_packages=ignore_editable_packages)
 
     if filters is not None:
         for kind, pattern in filters:
@@ -694,7 +697,7 @@ conda/pip conflicts using `conda list`, and fix the environment by ensuring
 only one version of each package is installed (conda preferred)."""
 
 
-def load_environment(prefix, on_missing_cache='warn'):
+def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=False):
     # Check if it's a conda environment
     if not os.path.exists(prefix):
         raise CondaPackException("Environment path %r doesn't exist" % prefix)
@@ -705,7 +708,7 @@ def load_environment(prefix, on_missing_cache='warn'):
     # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
-    if site_packages is not None:
+    if site_packages is not None and not ignore_editable_packages:
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 
