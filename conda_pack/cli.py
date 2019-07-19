@@ -88,7 +88,7 @@ def build_parser():
                         help="Disable ZIP64 extensions.")
     parser.add_argument("--ignore-editable-packages",
                         action="store_true",
-                        help="Ignore installed editable packages")
+                        help="Skips checks for editable packages.")
     parser.add_argument("--exclude",
                         action=MultiAppendAction,
                         metavar="PATTERN",

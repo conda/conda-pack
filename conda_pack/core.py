@@ -428,7 +428,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         ``'include'`` and ``pattern`` is a file pattern. Filters are applied in
         the order specified.
     ignore_editable_packages : bool, optional
-        Don't error on installed editable packages. Default is False.
+        By default conda-pack will error in the presence of editable packages.
+        Set to True to skip these checks.
 
     Returns
     -------
@@ -499,13 +500,16 @@ def check_no_editable_packages(prefix, site_packages):
         dirname = os.path.dirname(pth_fil)
         with open(pth_fil) as pth:
             for line in pth:
-                if line.startswith('#'):
-                    continue
                 line = line.rstrip()
-                if line:
-                    location = os.path.normpath(os.path.join(dirname, line))
-                    if not location.startswith(prefix):
-                        editable_packages.add(line)
+                # Blank lines are skipped
+                # Lines starting with "#" are skipped
+                # Lines starting with "import" are executed
+                if not line or line.startswith('#') or line.startswith('import'):
+                    continue
+                # All other lines are relative paths
+                location = os.path.normpath(os.path.join(dirname, line))
+                if not location.startswith(prefix):
+                    editable_packages.add(line)
     if editable_packages:
         msg = ("Cannot pack an environment with editable packages\n"
                "installed (e.g. from `python setup.py develop` or\n "
