@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>API Docs &#8212; conda-pack 0.3.0+6.g4e12a98 documentation</title>
+    <title>API Docs &#8212; conda-pack 0.3.0+7.g1bf0b5a documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -277,7 +277,7 @@ symlinks</em>. Default is False. Ignored if format isn’t <code class="docutils
 <h2>pack<a class="headerlink" href="#pack" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="conda_pack.pack">
-<code class="sig-prename descclassname">conda_pack.</code><code class="sig-name descname">pack</code><span class="sig-paren">(</span><em class="sig-param">name=None</em>, <em class="sig-param">prefix=None</em>, <em class="sig-param">output=None</em>, <em class="sig-param">format='infer'</em>, <em class="sig-param">arcroot=''</em>, <em class="sig-param">dest_prefix=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">force=False</em>, <em class="sig-param">compress_level=4</em>, <em class="sig-param">n_threads=1</em>, <em class="sig-param">zip_symlinks=False</em>, <em class="sig-param">zip_64=True</em>, <em class="sig-param">filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.pack" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">conda_pack.</code><code class="sig-name descname">pack</code><span class="sig-paren">(</span><em class="sig-param">name=None</em>, <em class="sig-param">prefix=None</em>, <em class="sig-param">output=None</em>, <em class="sig-param">format='infer'</em>, <em class="sig-param">arcroot=''</em>, <em class="sig-param">dest_prefix=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">force=False</em>, <em class="sig-param">compress_level=4</em>, <em class="sig-param">n_threads=1</em>, <em class="sig-param">zip_symlinks=False</em>, <em class="sig-param">zip_64=True</em>, <em class="sig-param">filters=None</em>, <em class="sig-param">ignore_editable_packages=False</em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.pack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package an existing conda environment into an archive file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -325,6 +325,8 @@ option will be ignored. Default is 1.</p>
 <code class="docutils literal notranslate"><span class="pre">(kind,</span> <span class="pre">pattern)</span></code>, where <code class="docutils literal notranslate"><span class="pre">kind</span></code> is either <code class="docutils literal notranslate"><span class="pre">'exclude'</span></code> or
 <code class="docutils literal notranslate"><span class="pre">'include'</span></code> and <code class="docutils literal notranslate"><span class="pre">pattern</span></code> is a file pattern. Filters are applied in
 the order specified.</p>
+</dd>
+<dt><strong>ignore_editable_packages</strong><span class="classifier">bool, optional</span></dt><dd><p>Don’t error on installed editable packages. Default is False.</p>
 </dd>
 </dl>
 </dd>

@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>CLI Docs &#8212; conda-pack 0.3.0+6.g4e12a98 documentation</title>
+    <title>CLI Docs &#8212; conda-pack 0.3.0+7.g1bf0b5a documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -41,8 +41,9 @@
 <span class="go">                  [--arcroot PATH] [--dest-prefix PATH]</span>
 <span class="go">                  [--format {infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar}]</span>
 <span class="go">                  [--compress-level LEVEL] [--n-threads N] [--zip-symlinks]</span>
-<span class="go">                  [--no-zip-64] [--exclude PATTERN] [--include PATTERN]</span>
-<span class="go">                  [--force] [--quiet] [--help] [--version]</span>
+<span class="go">                  [--no-zip-64] [--ignore-editable-packages]</span>
+<span class="go">                  [--exclude PATTERN] [--include PATTERN] [--force] [--quiet]</span>
+<span class="go">                  [--help] [--version]</span>
 </pre></div>
 </div>
 <dl class="option">
@@ -103,6 +104,12 @@
 <dt id="cmdoption-conda-pack-no-zip-64">
 <code class="sig-name descname">--no-zip-64</code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-no-zip-64" title="Permalink to this definition">¶</a></dt>
 <dd><p>Disable ZIP64 extensions.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-conda-pack-ignore-editable-packages">
+<code class="sig-name descname">--ignore-editable-packages</code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-ignore-editable-packages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ignore installed editable packages</p>
 </dd></dl>
 
 <dl class="option">
