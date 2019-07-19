@@ -428,7 +428,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
         ``'include'`` and ``pattern`` is a file pattern. Filters are applied in
         the order specified.
     ignore_editable_packages : bool, optional
-        Don't error on installed editable packages. Default is False.
+        By default conda-pack will error in the presence of editable packages.
+        Set to True to skip these checks.
 
     Returns
     -------
