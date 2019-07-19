@@ -658,7 +658,8 @@ def load_managed_package(info, prefix, site_packages, all_files):
             # py3 only features in a py2 env), then add the path.
             fil_normed = os.path.normcase(fil)
             if (fil_normed not in seen and not
-                    (fil_normed.endswith('.pyc') and fil_normed not in all_files)):
+                    ((fil_normed == ".nonadmin") or
+                     (fil_normed.endswith('.pyc') and fil_normed not in all_files))):
                 file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
@@ -729,7 +730,7 @@ def load_environment(prefix, on_missing_cache='warn'):
                 # handle prefix replacement ourselves later.
                 new_files = [File(os.path.join(prefix, f), f, is_conda=True,
                                   prefix_placeholder=None, file_mode='unknown')
-                             for f in info['files']]
+                             for f in info['files'] if f != '.nonadmin']
                 uncached.append((info['name'], info['version'], info['url']))
             else:
                 new_files = load_managed_package(info, prefix, site_packages,
