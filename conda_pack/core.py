@@ -829,6 +829,48 @@ def rewrite_shebang(data, target, prefix):
 
     return data, False
 
+#allmost the same method as the replace_pyzzer_entry_point_shebang
+def extract_entry_point_shebang(all_data):
+    """Because of the case-sensitivity we extract the placeholder from the binary itself.
+    """
+    # Copyright (c) 2013 Vinay Sajip.
+    #
+    # Permission is hereby granted, free of charge, to any person obtaining a copy
+    # of this software and associated documentation files (the "Software"), to deal
+    # in the Software without restriction, including without limitation the rights
+    # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    # copies of the Software, and to permit persons to whom the Software is
+    # furnished to do so, subject to the following conditions:
+    #
+    # The above copyright notice and this permission notice shall be included in
+    # all copies or substantial portions of the Software.
+    #
+    # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    # THE SOFTWARE.
+    launcher = shebang = None
+    pos = all_data.rfind(b'PK\x05\x06')
+    if pos >= 0:
+        end_cdr = all_data[pos + 12:pos + 20]
+        cdr_size, cdr_offset = struct.unpack('<LL', end_cdr)
+        arc_pos = pos - cdr_size - cdr_offset
+        data = all_data[arc_pos:]
+        if arc_pos > 0:
+            pos = all_data.rfind(b'#!', 0, arc_pos)
+            if pos >= 0:
+                shebang = all_data[pos:arc_pos]
+                if pos > 0:
+                    launcher = all_data[:pos]
+
+        if data and shebang and launcher:
+            shebang = shebang.encode()
+    return shebang
+
+
 
 def rewrite_conda_meta(source):
     """Remove absolute paths in conda-meta that reference local install.
@@ -958,6 +1000,10 @@ class Packer(object):
                     # shebang replacement, safe for unmanaged binaries. For
                     # Unix (and other Windows binaries), we cannot trust that
                     # binary replacement can be done safely.
+                    shenbang = extract_entry_point_shebang(data)
+                    if shenbang:
+                        placeholder = os.path.dirname(shenbang)
+
                     file_mode = 'binary'
             else:
                 file_mode = 'text'
