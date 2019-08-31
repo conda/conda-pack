@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import warnings
+import struct
 from contextlib import contextmanager
 from fnmatch import fnmatch
 
