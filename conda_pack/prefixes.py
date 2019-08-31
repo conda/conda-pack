@@ -81,7 +81,7 @@ def replace_prefix(data, mode, placeholder, new_prefix):
         data2 = binary_replace(data,
                                placeholder.encode('utf-8'),
                                new_prefix.encode('utf-8'))
-        if len(data2) != len(data):
+        if len(data2) - len(new_prefix.encode('utf-8')) != len(data) - len(placeholder.encode('utf-8')):
             message = ("Found mismatched data length in binary file:\n"
                        "original data length: {len_orig!d})\n"
                        "new data length: {len_new!d}\n"
