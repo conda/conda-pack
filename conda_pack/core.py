@@ -14,7 +14,7 @@ import warnings
 from contextlib import contextmanager
 from fnmatch import fnmatch
 
-from .compat import on_win, default_encoding, find_py_source
+from .compat import on_win, default_encoding, find_py_source, is_32bit
 from .prefixes import SHEBANG_REGEX, replace_prefix
 from ._progress import progressbar
 
@@ -1029,5 +1029,6 @@ class Packer(object):
             os.unlink(fil.name)
 
         if on_win:
-            cli_exe = pkg_resources.resource_filename('setuptools', 'cli-64.exe')
+            exe = 'cli-32.exe' if is_32bit else 'cli-64.exe'
+            cli_exe = pkg_resources.resource_filename('setuptools', exe)
             self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
