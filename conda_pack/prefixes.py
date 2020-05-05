@@ -83,8 +83,7 @@ def replace_prefix(data, mode, placeholder, new_prefix, is_repacking=False):
                                new_prefix.encode('utf-8'),
                                is_repacking)
         if (is_repacking):
-            print("length changed from {:d} to {:d} (diff {:d}). Removing padding...".format(len(data),
-                                len(data2), len(data2) - len(data)))
+            ## print("length changed from {:d} to {:d} (diff {:d}). Removing padding...".format(len(data), len(data2), len(data2) - len(data)))
             data3 = binary_remove_padding(data2, placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
             data2 = data3
         if len(data2) != len(data):
@@ -125,7 +124,7 @@ else:
         
         neg_padding = (len(new_prefix) - len(placeholder)) - 1
         neg_padding_str = neg_padding.__str__().encode('utf-8')
-        pat = re.compile(re.escape(new_prefix[:150]) + b'([^\0]*?)(\0+)') # {' + neg_padding_str + b',} # note : regex can't take more than 192 characters. FUCK YOU PYTHON.
+        pat = re.compile(re.escape(new_prefix[:150]) + b'([^\0]*?)(\0+)') # note : regex can't take more than 192 characters, so I truncate the prefix to first 150.
         return pat.sub(replace, data)
 
     def binary_replace(data, placeholder, new_prefix, is_repacking=False):

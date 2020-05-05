@@ -873,7 +873,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # Manually handle version printing to output to stdout in python < 3.4
     if args.version:
-        print('conda-unpack {version}')
+        print('conda-unpack 0.4.0')
+    elif args.repack:
+        script_dir = os.path.dirname(__file__)
+        new_prefix = os.path.abspath(os.path.dirname(script_dir))
+        for path, placeholder, mode in _prefix_records:
+            update_prefix(os.path.join(new_prefix, path), placeholder, new_prefix, mode=mode, is_repacking=True)  
     else:
         script_dir = os.path.dirname(__file__)
         new_prefix = os.path.abspath(os.path.dirname(script_dir))
