@@ -56,7 +56,7 @@ SHEBANG_REGEX = (
         br')$')
 
 
-def update_prefix(path, new_prefix, placeholder, mode='text'):
+def update_prefix(path, new_prefix, placeholder, mode='text', is_repacking=False):
     if on_win and mode == 'text':
         # force all prefix replacements to forward slashes to simplify need to
         # escape backslashes replace with unix-style path separators
@@ -66,7 +66,7 @@ def update_prefix(path, new_prefix, placeholder, mode='text'):
         original_data = fh.read()
         fh.seek(0)
 
-        data = replace_prefix(original_data, mode, placeholder, new_prefix)
+        data = replace_prefix(original_data, mode, placeholder, new_prefix, is_repacking)
 
         # If the before and after content is the same, skip writing
         if data != original_data:
@@ -74,19 +74,25 @@ def update_prefix(path, new_prefix, placeholder, mode='text'):
             fh.truncate()
 
 
-def replace_prefix(data, mode, placeholder, new_prefix):
+def replace_prefix(data, mode, placeholder, new_prefix, is_repacking=False):
     if mode == 'text':
         data2 = text_replace(data, placeholder, new_prefix)
     elif mode == 'binary':
         data2 = binary_replace(data,
                                placeholder.encode('utf-8'),
-                               new_prefix.encode('utf-8'))
+                               new_prefix.encode('utf-8'),
+                               is_repacking)
+        if (is_repacking):
+            print("length changed from {:d} to {:d} (diff {:d}). Removing padding...".format(len(data),
+                                len(data2), len(data2) - len(data)))
+            data3 = binary_remove_padding(data2, placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
+            data2 = data3
         if len(data2) != len(data):
             message = ("Found mismatched data length in binary file:\n"
-                       "original data length: {len_orig!d})\n"
-                       "new data length: {len_new!d}\n"
-                       ).format(len_orig=len(data),
-                                len_new=len(data2))
+                       "original data length: {:d})\n"
+                       "new data length: {:d}\n"
+                       ).format(len(data),
+                                len(data2))
             raise ValueError(message)
     else:
         raise ValueError("Invalid mode: %r" % mode)
@@ -104,7 +110,25 @@ if on_win:
         return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
 
 else:
-    def binary_replace(data, placeholder, new_prefix):
+    def binary_remove_padding(data, placeholder, new_prefix):
+        """ Remove the x00 padding from the binary file to make it generic again. 
+            Only used when repacking after replacing current absolue path with placeholder.
+        """
+
+        def replace(match):
+            occurences = match.group().count(new_prefix)
+            padding = (len(new_prefix) - len(placeholder)) * occurences
+            if padding < 0:
+                raise ValueError("negative padding while repacking")
+            ##  print("\tfound " + occurences.__str__() + " occurences, hence padding = " + padding.__str__())
+            return match.group()[:-padding] #.replace(b'\0' * (padding), b'' )
+        
+        neg_padding = (len(new_prefix) - len(placeholder)) - 1
+        neg_padding_str = neg_padding.__str__().encode('utf-8')
+        pat = re.compile(re.escape(new_prefix[:150]) + b'([^\0]*?)(\0+)') # {' + neg_padding_str + b',} # note : regex can't take more than 192 characters. FUCK YOU PYTHON.
+        return pat.sub(replace, data)
+
+    def binary_replace(data, placeholder, new_prefix, is_repacking=False):
         """Perform a binary replacement of `data`, where ``placeholder`` is
         replaced with ``new_prefix`` and the remaining string is padded with null
         characters.  All input arguments are expected to be bytes objects."""
@@ -112,9 +136,14 @@ else:
         def replace(match):
             occurances = match.group().count(placeholder)
             padding = (len(placeholder) - len(new_prefix)) * occurances
-            if padding < 0:
-                raise ValueError("negative padding")
-            return match.group().replace(placeholder, new_prefix) + b'\0' * padding
+            if is_repacking:
+                if padding > 0:
+                    raise ValueError("positive padding when repacking")
+                return match.group().replace(placeholder, new_prefix)
+            else:
+                if padding < 0:
+                    raise ValueError("negative padding")
+                return match.group().replace(placeholder, new_prefix) + b'\0' * padding
 
         pat = re.compile(re.escape(placeholder) + b'([^\0]*?)\0')
         return pat.sub(replace, data)

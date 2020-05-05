@@ -867,6 +867,9 @@ if __name__ == '__main__':
     parser.add_argument('--version',
                         action='store_true',
                         help='Show version then exit')
+    parser.add_argument('--repack', 
+                        action='store_true',
+                        help='restore relative paths for portability')
     args = parser.parse_args()
     # Manually handle version printing to output to stdout in python < 3.4
     if args.version:
