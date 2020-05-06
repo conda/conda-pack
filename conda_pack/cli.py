@@ -89,6 +89,9 @@ def build_parser():
     parser.add_argument("--ignore-editable-packages",
                         action="store_true",
                         help="Skips checks for editable packages.")
+    parser.add_argument("--ignore-missing-files",
+                        action="store_true",
+                        help="Skip checks for missing package files.")
     parser.add_argument("--exclude",
                         action=MultiAppendAction,
                         metavar="PATTERN",
@@ -145,7 +148,8 @@ def main(args=None, pack=pack):
                  dest_prefix=args.dest_prefix,
                  verbose=not args.quiet,
                  filters=args.filters,
-                 ignore_editable_packages=args.ignore_editable_packages)
+                 ignore_editable_packages=args.ignore_editable_packages,
+                 ignore_missing_files=args.ignore_missing_files)
     except CondaPackException as e:
         fail("CondaPackError: %s" % e)
     except KeyboardInterrupt:

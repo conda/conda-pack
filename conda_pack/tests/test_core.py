@@ -15,7 +15,7 @@ from conda_pack.core import name_to_prefix, File, BIN_DIR
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
-                       activate_scripts_path, env_dir)
+                       activate_scripts_path, env_dir, py36_missing_files_path)
 
 BIN_DIR_L = BIN_DIR.lower()
 SP_36 = 'Lib\\site-packages' if on_win else 'lib/python3.6/site-packages'
@@ -102,6 +102,19 @@ def test_errors_pip_overwrites():
     msg = str(exc.value)
     assert "pip" in msg
     assert "toolz" in msg
+
+
+def test_missing_files():
+    with pytest.raises(CondaPackException) as exc:
+        CondaEnv.from_prefix(py36_missing_files_path)
+
+    msg = str(exc.value)
+    assert "python" in msg
+    assert "setuptools" in msg
+
+
+def test_missing_files_ignored():
+    CondaEnv.from_prefix(py36_missing_files_path, ignore_missing_files=True)
 
 
 def test_errors_conda_missing(bad_conda_exe):
@@ -338,6 +351,7 @@ def test_pack_with_conda(tmpdir, fix_dest):
                         r"@conda deactivate")
         else:
             commands = (r"@set CONDA_PREFIX=",
+                        r"@set CONDA_SHVL=",
                         r"@call {path}\Scripts\activate".format(path=extract_path),
                         r"@conda info --json",
                         r"@deactivate")
@@ -346,6 +360,7 @@ def test_pack_with_conda(tmpdir, fix_dest):
 
     else:
         commands = ("unset CONDA_PREFIX",
+                    "unset CONDA_SHLVL",
                     ". {path}/bin/activate".format(path=extract_path),
                     "conda info --json",
                     ". deactivate >/dev/null 2>/dev/null")
