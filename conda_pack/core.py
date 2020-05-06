@@ -880,7 +880,7 @@ if __name__ == '__main__':
     patch_path_file = os.path.join(new_prefix, "current_path_patch.bak")
 
     if args.version:
-        print('conda-unpack 0.4.0')
+        print('conda-unpack {version}')
     elif args.repack:
         with open(patch_path_file, 'w+') as fh:
             fh.write('')
@@ -893,7 +893,7 @@ if __name__ == '__main__':
                 fh.write('')
         with open(patch_path_file, 'r+') as fh:
             backup_prefix = fh.read()
-            print("backup path: {:s}, current path: {:s}".format(backup_prefix, new_prefix))
+            print('backup path: ' + backup_prefix +', current path: ' + new_prefix)
             if (backup_prefix != new_prefix and len(backup_prefix) > 0):
                 for path, placeholder, mode in _prefix_records:
                     update_prefix(os.path.join(new_prefix, path), new_prefix, backup_prefix, mode=mode)
