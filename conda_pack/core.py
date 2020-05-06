@@ -869,22 +869,39 @@ if __name__ == '__main__':
                         help='Show version then exit')
     parser.add_argument('--repack', 
                         action='store_true',
-                        help='restore relative paths for portability')
+                        help=('Restore relative paths for portability.'
+                              'This must be run after conda-unpack has been run'))
+
     args = parser.parse_args()
     # Manually handle version printing to output to stdout in python < 3.4
+    
+    script_dir = os.path.dirname(__file__)
+    new_prefix = os.path.abspath(os.path.dirname(script_dir))
+    patch_path_file = os.path.join(new_prefix, "current_path_patch.bak")
+
     if args.version:
         print('conda-unpack 0.4.0')
     elif args.repack:
-        script_dir = os.path.dirname(__file__)
-        new_prefix = os.path.abspath(os.path.dirname(script_dir))
+        with open(patch_path_file, 'w+') as fh:
+            fh.write('')
+            fh.truncate()
         for path, placeholder, mode in _prefix_records:
-            update_prefix(os.path.join(new_prefix, path), placeholder, new_prefix, mode=mode, is_repacking=True)  
+            update_prefix(os.path.join(new_prefix, path), placeholder, new_prefix, mode=mode)
     else:
-        script_dir = os.path.dirname(__file__)
-        new_prefix = os.path.abspath(os.path.dirname(script_dir))
-        for path, placeholder, mode in _prefix_records:
-            update_prefix(os.path.join(new_prefix, path), new_prefix,
-                          placeholder, mode=mode)
+        if (not os.path.exists(patch_path_file)):
+            with open(patch_path_file, 'w') as fh:
+                fh.write('')
+        with open(patch_path_file, 'r+') as fh:
+            backup_prefix = fh.read()
+            print("backup path: {:s}, current path: {:s}".format(backup_prefix, new_prefix))
+            if (backup_prefix != new_prefix and len(backup_prefix) > 0):
+                for path, placeholder, mode in _prefix_records:
+                    update_prefix(os.path.join(new_prefix, path), new_prefix, backup_prefix, mode=mode)
+            elif  (backup_prefix != new_prefix and len(backup_prefix) == 0):
+                for path, placeholder, mode in _prefix_records:
+                    update_prefix(os.path.join(new_prefix, path), new_prefix, placeholder, mode=mode)
+        with open(patch_path_file, 'w') as fh:
+            fh.write(new_prefix)
 """
 
 
