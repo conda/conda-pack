@@ -81,8 +81,7 @@ def replace_prefix(data, mode, placeholder, new_prefix):
         data2 = binary_replace(data,
                                placeholder.encode('utf-8'),
                                new_prefix.encode('utf-8'))
-        print("length changed from {:d} to {:d} (diff {:d}).".format(len(data),
-                                len(data2), len(data2) - len(data)))
+        ## print("length changed from {:d} to {:d} (diff {:d}).".format(len(data), len(data2), len(data2) - len(data)))
 
         if len(data2) != len(data):
             message = ("Found mismatched data length in binary file:\n"
@@ -116,7 +115,7 @@ else:
             padding = (len(new_prefix) - len(placeholder)) * occurences
             if padding < 0:
                 raise ValueError("negative padding while repacking")
-            print("\tfound " + occurences.__str__() + " occurences, hence padding = " + padding.__str__())
+            ## print("\tfound " + occurences.__str__() + " occurences, hence padding = " + padding.__str__())
             return match.group()[:-padding]
         
         pat = re.compile(re.escape(new_prefix[:150]) + b'([^\0]*?)(\0+)') # note : regex can't take more than 192 characters.

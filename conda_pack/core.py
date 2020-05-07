@@ -893,13 +893,14 @@ if __name__ == '__main__':
                 fh.write('')
         with open(patch_path_file, 'r+') as fh:
             backup_prefix = fh.read()
-            print('backup path: ' + backup_prefix +', current path: ' + new_prefix)
-            if (backup_prefix != new_prefix and len(backup_prefix) > 0):
-                for path, placeholder, mode in _prefix_records:
-                    update_prefix(os.path.join(new_prefix, path), new_prefix, backup_prefix, mode=mode)
-            elif  (backup_prefix != new_prefix and len(backup_prefix) == 0):
-                for path, placeholder, mode in _prefix_records:
-                    update_prefix(os.path.join(new_prefix, path), new_prefix, placeholder, mode=mode)
+            if (backup_prefix != new_prefix):
+                print('backup path: ' + backup_prefix +'differs with current path: ' + new_prefix + ' --- patching files...')
+                if (len(backup_prefix) > 0):
+                    for path, placeholder, mode in _prefix_records:
+                        update_prefix(os.path.join(new_prefix, path), new_prefix, backup_prefix, mode=mode)
+                elif (len(backup_prefix) == 0):
+                    for path, placeholder, mode in _prefix_records:
+                        update_prefix(os.path.join(new_prefix, path), new_prefix, placeholder, mode=mode)
         with open(patch_path_file, 'w') as fh:
             fh.write(new_prefix)
 """
