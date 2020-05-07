@@ -46,7 +46,11 @@ conda env create -f "${current_dir}/env_yamls/py36_broken.yml" -p "${current_dir
 
 echo "Creating py36_missing_files environment"
 conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36_missing_files" $@
-rm "${current_dir}/environments/py36_missing_files/lib/python3.6/site-packages/toolz/__init__.py"
+if [[ "$OS" == "Windows_NT" ]]; then
+  rm "${current_dir}/environments/py36_missing_files/Lib/site-packages/toolz/__init__.py"
+else
+  rm "${current_dir}/environments/py36_missing_files/lib/python3.6/site-packages/toolz/__init__.py"
+fi
 
 echo "Creating nopython environment"
 conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/environments/nopython" $@
