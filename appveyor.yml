@@ -22,7 +22,7 @@ install:
     - cmd: set PYTHONUNBUFFERED=1
 
     # Install the required packages
-    - cmd: conda.exe install --yes flake8 pytest m2-findutils
+    - cmd: conda.exe install --yes flake8 pytest
     - cmd: pip.exe install .
 
     # Create the test environments. Do this after install

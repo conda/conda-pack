@@ -109,8 +109,7 @@ def test_missing_files():
         CondaEnv.from_prefix(py36_missing_files_path)
 
     msg = str(exc.value)
-    assert "python" in msg
-    assert "setuptools" in msg
+    assert "toolz" in msg
 
 
 def test_missing_files_ignored():
