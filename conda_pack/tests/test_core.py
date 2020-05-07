@@ -241,6 +241,7 @@ def test_roundtrip(tmpdir, py36_env):
     with tarfile.open(out_path) as fil:
         # Check all files are relative paths
         for member in fil.getnames():
+            print(member)
             assert not member.startswith(os.path.sep)
 
         extract_path = str(tmpdir.join('env'))
@@ -260,6 +261,10 @@ def test_roundtrip(tmpdir, py36_env):
         binary_name = script_name = 'conda-unpack'
     conda_unpack = os.path.join(extract_path, BIN_DIR, binary_name)
     conda_unpack_script = os.path.join(extract_path, BIN_DIR, script_name)
+    print(conda_unpack)
+    print(conda_unpack_script)
+    import glob
+    print(glob.glob(os.path.join(extract_path, BIN_DIR, '*')))
     out = subprocess.check_output([conda_unpack, '--help'],
                                   stderr=subprocess.STDOUT).decode()
     assert out.startswith('usage: conda-unpack')
