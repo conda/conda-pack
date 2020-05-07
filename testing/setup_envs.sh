@@ -46,7 +46,7 @@ conda env create -f "${current_dir}/env_yamls/py36_broken.yml" -p "${current_dir
 
 echo "Creating py36_missing_files environment"
 conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36_missing_files" $@
-find "${current_dir}/environments/py36_missing_files" -name '*.pyc' -delete
+find "${current_dir}/environments/py36_missing_files" -name "*.pyc" -delete
 
 echo "Creating nopython environment"
 conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/environments/nopython" $@
