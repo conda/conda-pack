@@ -993,7 +993,6 @@ class Packer(object):
 
         # No `conda-unpack` command if dest-prefix specified
         if self.has_dest:
-            print("HAS DEST")
             return
 
         if on_win:
@@ -1025,12 +1024,10 @@ class Packer(object):
             st = os.stat(fil.name)
             os.chmod(fil.name, st.st_mode | 0o111)  # make executable
             script_name = 'conda-unpack-script.py' if on_win else 'conda-unpack'
-            print(script_name)
             self.archive.add(fil.name, os.path.join(BIN_DIR, script_name))
         finally:
             os.unlink(fil.name)
 
         if on_win:
             cli_exe = pkg_resources.resource_filename('setuptools', 'cli-64.exe')
-            print(cli_exe)
             self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
