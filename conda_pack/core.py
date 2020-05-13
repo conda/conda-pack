@@ -378,7 +378,8 @@ class File(object):
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
          compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
-         filters=None, ignore_editable_packages=False):
+         filters=None, ignore_editable_packages=False,
+         ignore_missing_files=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -430,6 +431,9 @@ def pack(name=None, prefix=None, output=None, format='infer',
     ignore_editable_packages : bool, optional
         By default conda-pack will error in the presence of editable packages.
         Set to True to skip these checks.
+    ignore_missing_files : bool, optional
+        Ignore that files are missing that should be present in the conda
+        environment as specified by the conda metadata.
 
     Returns
     -------
@@ -444,11 +448,14 @@ def pack(name=None, prefix=None, output=None, format='infer',
 
     if prefix:
         env = CondaEnv.from_prefix(prefix,
-                                   ignore_editable_packages=ignore_editable_packages)
+                                   ignore_editable_packages=ignore_editable_packages,
+                                   ignore_missing_files=ignore_missing_files)
     elif name:
-        env = CondaEnv.from_name(name, ignore_editable_packages=ignore_editable_packages)
+        env = CondaEnv.from_name(name, ignore_editable_packages=ignore_editable_packages,
+                                 ignore_missing_files=ignore_missing_files)
     else:
-        env = CondaEnv.from_default(ignore_editable_packages=ignore_editable_packages)
+        env = CondaEnv.from_default(ignore_editable_packages=ignore_editable_packages,
+                                    ignore_missing_files=ignore_missing_files)
 
     if filters is not None:
         for kind, pattern in filters:
@@ -701,7 +708,8 @@ conda/pip conflicts using `conda list`, and fix the environment by ensuring
 only one version of each package is installed (conda preferred)."""
 
 
-def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=False):
+def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=False,
+                     ignore_missing_files=False):
     # Check if it's a conda environment
     if not os.path.exists(prefix):
         raise CondaPackException("Environment path %r doesn't exist" % prefix)
@@ -768,7 +776,7 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
                       prefix_placeholder=None,
                       file_mode=None))
 
-    if missing_files:
+    if missing_files and not ignore_missing_files:
         packages = '\n'.join('- %s=%r' % i for i in missing_files)
         raise CondaPackException(_missing_files_error.format(packages))
 

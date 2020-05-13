@@ -28,14 +28,29 @@ fi
 echo "Creating py36_editable environment"
 py36_editable="${current_dir}/environments/py36_editable"
 conda env create -f "${current_dir}/env_yamls/py36.yml" -p $py36_editable $@
-activation=`(type activate > /dev/null && echo 'source' ) || echo conda`
+activation=$((type activate > /dev/null && echo 'source' ) || echo conda)
+
+# If the activation is via conda, we sometimes need to load the hook first.
+# This is required if the default shell is not bash
+if [[ $activation == conda ]]; then
+  conda activate base || eval "$(conda shell.bash hook)"
+fi
+
 $activation activate $py36_editable
 pushd "${current_dir}/.." && python setup.py develop && popd
-deactivation=`(type deactivate > /dev/null && echo 'source' ) || echo conda`
+deactivation=$((type deactivate > /dev/null && echo 'source' ) || echo conda)
 $deactivation deactivate
 
 echo "Creating py36_broken environment"
 conda env create -f "${current_dir}/env_yamls/py36_broken.yml" -p "${current_dir}/environments/py36_broken" $@
+
+echo "Creating py36_missing_files environment"
+conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36_missing_files" $@
+if [[ "$OS" == "Windows_NT" ]]; then
+  rm "${current_dir}/environments/py36_missing_files/Lib/site-packages/toolz/__init__.py"
+else
+  rm "${current_dir}/environments/py36_missing_files/lib/python3.6/site-packages/toolz/__init__.py"
+fi
 
 echo "Creating nopython environment"
 conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/environments/nopython" $@
