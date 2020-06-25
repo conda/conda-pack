@@ -112,8 +112,9 @@ def test_missing_files():
     assert "toolz" in msg
 
 
-def test_missing_files_ignored():
-    CondaEnv.from_prefix(py36_missing_files_path, ignore_missing_files=True)
+def test_missing_files_ignored(tmpdir):
+    out_path = os.path.join(str(tmpdir), 'py36_missing.tar')
+    CondaEnv.from_prefix(py36_missing_files_path, ignore_missing_files=True).pack(out_path)
 
 
 def test_errors_conda_missing(bad_conda_exe):

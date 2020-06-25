@@ -753,10 +753,15 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
 
             targets = {os.path.normcase(f.target) for f in new_files}
 
-            if targets.difference(all_files):
+            new_missing_files = targets.difference(all_files)
+            if new_missing_files:
                 # Collect packages missing files as we progress to provide a
                 # complete error message on failure.
                 missing_files.append((info['name'], info['version']))
+
+                if ignore_missing_files:
+                    # Filter out missing files
+                    new_files = [f for f in new_files if os.path.normcase(f.target) not in new_missing_files]
 
             managed.update(targets)
             files.extend(new_files)

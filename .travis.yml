@@ -24,6 +24,8 @@ jobs:
 install:
   - source testing/ci/install_conda.sh
   - ./testing/setup_envs.sh
+  # Aggressively clean the cache to trigger more edge cases.
+  - conda clean -afpy
   - conda install -y flake8 pytest
   - |
     if [[ "$DOCS" == "true" ]]; then
