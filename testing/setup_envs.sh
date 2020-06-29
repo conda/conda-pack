@@ -4,7 +4,21 @@ set -eo pipefail
 
 echo "== Setting up environments for testing =="
 
+CONDA_CLEAN_P=$1
+
 current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+echo "Creating py36_missing_files environment"
+conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36_missing_files" $@
+if [[ "$OS" == "Windows_NT" ]]; then
+  rm "${current_dir}/environments/py36_missing_files/Lib/site-packages/toolz/__init__.py"
+else
+  rm "${current_dir}/environments/py36_missing_files/lib/python3.6/site-packages/toolz/__init__.py"
+fi
+# Only do this when the developer has agreed to it, this might otherwise break things in his system.
+if [[ "$CONDA_CLEAN_P" == "1" ]]; then
+  conda clean -apfy
+fi
 
 echo "Creating py27 environment"
 conda env create -f "${current_dir}/env_yamls/py27.yml" -p "${current_dir}/environments/py27" $@
@@ -43,14 +57,6 @@ $deactivation deactivate
 
 echo "Creating py36_broken environment"
 conda env create -f "${current_dir}/env_yamls/py36_broken.yml" -p "${current_dir}/environments/py36_broken" $@
-
-echo "Creating py36_missing_files environment"
-conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36_missing_files" $@
-if [[ "$OS" == "Windows_NT" ]]; then
-  rm "${current_dir}/environments/py36_missing_files/Lib/site-packages/toolz/__init__.py"
-else
-  rm "${current_dir}/environments/py36_missing_files/lib/python3.6/site-packages/toolz/__init__.py"
-fi
 
 echo "Creating nopython environment"
 conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/environments/nopython" $@
