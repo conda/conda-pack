@@ -27,9 +27,9 @@ jobs:
 install:
   - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe -O conda.exe
   - chmod +x conda.exe
-  - ./conda.exe create -y -p $HOME/conda conda-build conda-verify sphinx numpydoc
-  - source $HOME/conda/profile.d/etc/conda.sh
-  - pip install sphinxcontrib.autoprogram doctr
+  - ./conda.exe config --add channels conda-forge
+  - ./conda.exe create -y -p $HOME/conda conda-build conda-verify sphinx numpydoc doctr sphinxcontrib-autoprogram
+  - source $HOME/conda/etc/profile.d/conda.sh
 
 script:
   - flake8 conda_pack
