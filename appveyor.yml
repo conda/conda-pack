@@ -26,7 +26,6 @@ platform:
     - x64
 
 install:
-    - exit -1
     - mkdir C:\Users\appveyor\.conda
     - call %MINICONDA%\Scripts\activate.bat
     - conda config --set always_yes yes --set changeps1 no --set safety_checks disabled

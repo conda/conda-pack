@@ -15,6 +15,12 @@ jobs:
   fast_finish: true
   include:
     - env:
+      - PYTHON=2.7
+    - env:
+      - PYTHON=3.6
+    - env:
+      - PYTHON=3.7
+    - env:
       - PYTHON=3.8
       - DOCS=true
 
@@ -31,12 +37,12 @@ script:
     if [[ "$DOCS" = "true" ]]; then
         cd docs
         conda install -y --use-local sphinx numpydoc doctr sphinxcontrib-autoprogram make conda-pack
-        make html && touch html.done || exit -1
+        make html || exit -1
     fi
 
 after_success:
   - |
-    if [[ -x html.done && $TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
+    if [[ "$DOCS" = "true" && $TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
         doctr deploy . --built-docs build/html/
     fi
 
