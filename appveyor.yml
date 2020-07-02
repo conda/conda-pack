@@ -12,9 +12,7 @@ environment:
   PYTHONLEGACYWINDOWSSTDIO: 1
   MINICONDA: C:\\Miniconda3-x64
   matrix:
-    - PYTHON_VERSION: 3.8
     - PYTHON_VERSION: 3.7
-    - PYTHON_VERSION: 3.6
     - PYTHON_VERSION: 2.7
 
 matrix:
@@ -28,8 +26,7 @@ platform:
 install:
     - mkdir C:\Users\appveyor\.conda
     - call %MINICONDA%\Scripts\activate.bat
-    - conda config --set always_yes yes --set changeps1 no --set safety_checks disabled
-    - conda install conda conda-build conda-verify
+    - conda install -y conda conda-build conda-verify
     - conda info -a
 
 # Skip .NET project specific build phase.

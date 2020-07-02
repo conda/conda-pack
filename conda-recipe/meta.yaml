@@ -31,9 +31,11 @@ test:
   requires:
     - pytest
     - m2-bash # [win]
+    - m2-filesystem # [win]
+    - m2-coreutils # [win]
   commands:
     - bash testing/setup_envs.sh
-    - py.test -s -vv conda_pack/tests
+    - pytest --runslow -s -vv conda_pack/tests
 
 about:
   home: https://conda.github.io/conda-pack/
