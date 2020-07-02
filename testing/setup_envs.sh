@@ -1,6 +1,7 @@
 #/usr/bin/env bash
 
-set -eo pipefail
+source $(dirname $(dirname $CONDA_EXE))/etc/profile.d/conda.sh
+set -Eexo pipefail
 
 echo "== Setting up environments for testing =="
 
@@ -37,7 +38,7 @@ if [[ $activation == conda ]]; then
 fi
 
 $activation activate $py36_editable
-pushd "${current_dir}/.." && python setup.py develop && popd
+pushd "${current_dir}/test_packages/conda_pack_test_lib1" && python setup.py develop && popd
 deactivation=$((type deactivate > /dev/null && echo 'source' ) || echo conda)
 $deactivation deactivate
 

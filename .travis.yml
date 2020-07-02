@@ -16,34 +16,28 @@ jobs:
   include:
     - env:
       - PYTHON=2.7
-
     - env:
       - PYTHON=3.6
+    - env:
+      - PYTHON=3.7
+    - env:
+      - PYTHON=3.8
       - DOCS=true
 
 install:
-  - source testing/ci/install_conda.sh
-  - ./testing/setup_envs.sh
-  - conda install -y flake8 pytest
-  - |
-    if [[ "$DOCS" == "true" ]]; then
-        conda install -y sphinx numpydoc
-        pip install sphinxcontrib.autoprogram
-    fi
-  - pip install .
+  - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe
+  - ./conda-latest-linux-64.exe create -y -p $HOME/conda conda-build conda-verify sphinx numpydoc
+  - source $HOME/conda/profile.d/etc/conda.sh
+  - pip install sphinxcontrib.autoprogram doctr
 
 script:
-  - py.test conda_pack --runslow -s -vv
   - flake8 conda_pack
-  - |
-    if [[ "$DOCS" == "true" ]]; then
-        pushd docs && make html && popd
-    fi
+  - conda build conda-recipe
+  - pushd docs && make html && popd
 
 after_success:
   - |
     if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
-      pip install doctr
       doctr deploy . --built-docs docs/build/html/
     fi
 
