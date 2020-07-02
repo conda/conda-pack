@@ -15,12 +15,6 @@ jobs:
   fast_finish: true
   include:
     - env:
-      - PYTHON=2.7
-    - env:
-      - PYTHON=3.6
-    - env:
-      - PYTHON=3.7
-    - env:
       - PYTHON=3.8
       - DOCS=true
 
@@ -28,18 +22,22 @@ install:
   - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe -O conda.exe
   - chmod +x conda.exe
   - ./conda.exe config --add channels conda-forge
-  - ./conda.exe create -y -p $HOME/conda conda-build conda-verify sphinx numpydoc doctr sphinxcontrib-autoprogram
-  - source $HOME/conda/etc/profile.d/conda.sh
-
+  - ./conda.exe create -y -p $HOME/conda conda-build conda-verify flake8
+  - source $HOME/conda/bin/activate
+  
 script:
-  - flake8 conda_pack
   - conda build conda-recipe
-  - pushd docs && make html && popd
+  - |
+    if [[ "$DOCS" = "true" ]]; then
+        cd docs
+        conda install -y --use-local sphinx numpydoc doctr sphinxcontrib-autoprogram make conda-pack
+        make html && touch html.done || exit -1
+    fi
 
 after_success:
   - |
-    if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
-      doctr deploy . --built-docs docs/build/html/
+    if [[ -x html.done && $TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
+        doctr deploy . --built-docs build/html/
     fi
 
 notifications:

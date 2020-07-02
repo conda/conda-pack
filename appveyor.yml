@@ -17,12 +17,16 @@ environment:
     - PYTHON_VERSION: 3.6
     - PYTHON_VERSION: 2.7
 
+matrix:
+  fast_finish: true
+
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable.
 platform:
     - x64
 
 install:
+    - exit -1
     - mkdir C:\Users\appveyor\.conda
     - call %MINICONDA%\Scripts\activate.bat
     - conda config --set always_yes yes --set changeps1 no --set safety_checks disabled
