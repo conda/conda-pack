@@ -28,9 +28,9 @@ test:
   source_files:
     - testing
     - conda_pack/tests
-    - m2-bash # [win]
   requires:
     - pytest
+    - m2-bash # [win]
   commands:
     - bash testing/setup_envs.sh
     - py.test -s -vv conda_pack/tests

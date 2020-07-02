@@ -1,11 +1,21 @@
+# Build only the master branch, tagged commits, and pull requests
+branches:
+  only:
+    - master
+    - /\d+\.\d+.*/
+# Don't run the (redundant) branch build with a pull request
+skip_branch_with_pr: true
+
 environment:
+  PYTHONUNBUFFERED: 1
+  PYTHONIOENCODING: utf-8
+  PYTHONLEGACYWINDOWSSTDIO: 1
+  MINICONDA: C:\\Miniconda3-x64
   matrix:
-    - TARGET_ARCH: x64
-      CONDA_PY: 37
-      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
-    - TARGET_ARCH: x64
-      CONDA_PY: 38
-      CONDA_INSTALL_LOCN: C:\\Miniconda3-x64
+    - PYTHON_VERSION: 3.8
+    - PYTHON_VERSION: 3.7
+    - PYTHON_VERSION: 3.6
+    - PYTHON_VERSION: 2.7
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable.
@@ -13,13 +23,14 @@ platform:
     - x64
 
 install:
-    # Add path, activate `conda` and update conda.
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-    - cmd: conda.exe install --yes --quiet conda conda-build conda-verify
-    - cmd: set PYTHONUNBUFFERED=1
+    - mkdir C:\Users\appveyor\.conda
+    - call %MINICONDA%\Scripts\activate.bat
+    - conda config --set always_yes yes --set changeps1 no --set safety_checks disabled
+    - conda install conda conda-build conda-verify
+    - conda info -a
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    - conda build conda-recipe
+    - conda build conda-recipe --python=%PYTHON_VERSION%

@@ -25,8 +25,9 @@ jobs:
       - DOCS=true
 
 install:
-  - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe
-  - ./conda-latest-linux-64.exe create -y -p $HOME/conda conda-build conda-verify sphinx numpydoc
+  - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe -O conda.exe
+  - chmod +x conda.exe
+  - ./conda.exe create -y -p $HOME/conda conda-build conda-verify sphinx numpydoc
   - source $HOME/conda/profile.d/etc/conda.sh
   - pip install sphinxcontrib.autoprogram doctr
 
