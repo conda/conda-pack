@@ -16,25 +16,10 @@ py27_path = os.path.join(env_dir, 'py27')
 py36_path = os.path.join(env_dir, 'py36')
 py36_editable_path = os.path.join(env_dir, 'py36_editable')
 py36_broken_path = os.path.join(env_dir, 'py36_broken')
+py36_missing_files_path = os.path.join(env_dir, 'py36_missing_files')
 nopython_path = os.path.join(env_dir, 'nopython')
 has_conda_path = os.path.join(env_dir, 'has_conda')
 activate_scripts_path = os.path.join(env_dir, 'activate_scripts')
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--runslow", action="store_true", default=False, help="run slow tests"
-    )
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
 
 
 @pytest.fixture

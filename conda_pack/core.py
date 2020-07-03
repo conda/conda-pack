@@ -11,12 +11,10 @@ import subprocess
 import sys
 import tempfile
 import warnings
-import zipfile
 from contextlib import contextmanager
 from fnmatch import fnmatch
 
 from .compat import on_win, default_encoding, find_py_source
-from .formats import archive
 from .prefixes import SHEBANG_REGEX, replace_prefix
 from ._progress import progressbar
 
@@ -259,8 +257,8 @@ class CondaEnv(object):
         return output, format
 
     def pack(self, output=None, format='infer', arcroot='', dest_prefix=None,
-             verbose=False, force=False, compress_level=4, zip_symlinks=False,
-             zip_64=True, subenvirons=None):
+             verbose=False, force=False, compress_level=4, n_threads=1,
+             zip_symlinks=False, zip_64=True, subenvirons=None):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -287,6 +285,10 @@ class CondaEnv(object):
             The compression level to use, from 0 to 9. Higher numbers decrease
             output file size at the expense of compression time. Ignored for
             ``format='zip'``. Default is 4.
+        n_threads : int, optional
+            The number of threads to use. Set to -1 to use the number of cpus
+            on this machine. If a file format doesn't support threaded
+            packaging, this option will be ignored. Default is 1.
         zip_symlinks : bool, optional
             Symbolic links aren't supported by the Zip standard, but are
             supported by *many* common Zip implementations. If True, store
@@ -305,6 +307,7 @@ class CondaEnv(object):
         out_path : str
             The path to the archived environment.
         """
+        from .formats import archive
         # Ensure the prefix is a relative path
         arcroot = arcroot.strip(os.path.sep)
 
@@ -327,7 +330,8 @@ class CondaEnv(object):
                 with archive(temp_file, arcroot, format,
                              compress_level=compress_level,
                              zip_symlinks=zip_symlinks,
-                             zip_64=zip_64) as arc:
+                             zip_64=zip_64,
+                             n_threads=n_threads) as arc:
                     packer = Packer(self.prefix, arc, dest_prefix=dest_prefix)
                     data = [(packer, f) for f in self.files]
                     for subenv in subenvirons:
@@ -335,14 +339,9 @@ class CondaEnv(object):
                         p = NestedPacker(packer, relpath)
                         data.extend(((p, f) for f in subenv.files))
                     with progressbar(data, enabled=verbose) as files:
-                        try:
-                            for p, f in files:
-                                p.add(f)
-                            packer.finish()
-                        except zipfile.LargeZipFile:
-                            raise CondaPackException(
-                                    "Large Zip File: ZIP64 extensions required "
-                                    "but were disabled")
+                        for p, f in files:
+                            p.add(f)
+                        packer.finish()
 
         except Exception:
             # Writing failed, remove tempfile
@@ -388,8 +387,9 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None, verbose=False, force=False,
-         compress_level=4, zip_symlinks=False, zip_64=True,
-         filters=None, recursive=False):
+         compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
+         filters=None, ignore_editable_packages=False,
+         ignore_missing_files=False, recursive=False):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -427,6 +427,10 @@ def pack(name=None, prefix=None, output=None, format='infer',
         resulting archive may silently fail on decompression if the ``unzip``
         implementation doesn't support symlinks*. Default is False. Ignored if
         format isn't ``zip``.
+    n_threads : int, optional
+        The number of threads to use. Set to -1 to use the number of cpus on
+        this machine. If a file format doesn't support threaded packaging, this
+        option will be ignored. Default is 1.
     zip_64 : bool, optional
         Whether to enable ZIP64 extensions. Default is True.
     filters : list, optional
@@ -437,6 +441,12 @@ def pack(name=None, prefix=None, output=None, format='infer',
     recursive : bool, optional
         Whether to also archive nested environments, if archiving a root
         environment.  Default is False.
+    ignore_editable_packages : bool, optional
+        By default conda-pack will error in the presence of editable packages.
+        Set to True to skip these checks.
+    ignore_missing_files : bool, optional
+        Ignore that files are missing that should be present in the conda
+        environment as specified by the conda metadata.
 
     Returns
     -------
@@ -450,11 +460,15 @@ def pack(name=None, prefix=None, output=None, format='infer',
         print("Collecting packages...")
 
     if prefix:
-        env = CondaEnv.from_prefix(prefix)
+        env = CondaEnv.from_prefix(prefix,
+                                   ignore_editable_packages=ignore_editable_packages,
+                                   ignore_missing_files=ignore_missing_files)
     elif name:
-        env = CondaEnv.from_name(name)
+        env = CondaEnv.from_name(name, ignore_editable_packages=ignore_editable_packages,
+                                 ignore_missing_files=ignore_missing_files)
     else:
-        env = CondaEnv.from_default()
+        env = CondaEnv.from_default(ignore_editable_packages=ignore_editable_packages,
+                                    ignore_missing_files=ignore_missing_files)
 
     if filters is not None:
         for kind, pattern in filters:
@@ -479,7 +493,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
     return env.pack(output=output, format=format, arcroot=arcroot,
                     dest_prefix=dest_prefix,
                     verbose=verbose, force=force,
-                    compress_level=compress_level,
+                    compress_level=compress_level, n_threads=n_threads,
                     zip_symlinks=zip_symlinks, zip_64=zip_64,
                     subenvirons=subenvirons)
 
@@ -518,13 +532,16 @@ def check_no_editable_packages(prefix, site_packages):
         dirname = os.path.dirname(pth_fil)
         with open(pth_fil) as pth:
             for line in pth:
-                if line.startswith('#'):
-                    continue
                 line = line.rstrip()
-                if line:
-                    location = os.path.normpath(os.path.join(dirname, line))
-                    if not location.startswith(prefix):
-                        editable_packages.add(line)
+                # Blank lines are skipped
+                # Lines starting with "#" are skipped
+                # Lines starting with "import" are executed
+                if not line or line.startswith('#') or line.startswith('import'):
+                    continue
+                # All other lines are relative paths
+                location = os.path.normpath(os.path.join(dirname, line))
+                if not location.startswith(prefix):
+                    editable_packages.add(line)
     if editable_packages:
         msg = ("Cannot pack an environment with editable packages\n"
                "installed (e.g. from `python setup.py develop` or\n "
@@ -590,9 +607,9 @@ def read_has_prefix(path):
 def load_files(prefix):
     from os.path import relpath, join, isfile, islink
 
-    ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
-              'LICENSE.txt', 'info', 'conda-recipes', '.index', '.unionfs',
-              '.nonadmin', 'python.app', 'Launcher.app'}
+    ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users', 'info',
+              'conda-recipes', '.index', '.unionfs', '.nonadmin', 'python.app',
+              'Launcher.app'}
 
     res = set()
 
@@ -639,7 +656,7 @@ def managed_file(is_noarch, site_packages, pkg, _path, prefix_placeholder=None,
                 file_mode=file_mode)
 
 
-def load_managed_package(info, prefix, site_packages):
+def load_managed_package(info, prefix, site_packages, all_files):
     pkg = info['link']['source']
 
     noarch_type = read_noarch_type(pkg)
@@ -672,10 +689,16 @@ def load_managed_package(info, prefix, site_packages):
             files = [managed_file(is_noarch, site_packages, pkg, p)
                      for p in paths]
 
-    if noarch_type == 'python':
+    if is_noarch:
         seen = {os.path.normcase(i.target) for i in files}
         for fil in info['files']:
-            if os.path.normcase(fil) not in seen:
+            # If the path hasn't been added yet, *and* the path isn't a pyc
+            # file that failed to bytecode compile (e.g. a file that contains
+            # py3 only features in a py2 env), then add the path.
+            fil_normed = os.path.normcase(fil)
+            if (fil_normed not in seen and not
+                    ((fil_normed == ".nonadmin") or
+                     (fil_normed.endswith('.pyc') and fil_normed not in all_files))):
                 file_mode = 'unknown' if fil.startswith(BIN_DIR) else None
                 f = File(os.path.join(prefix, fil), fil, is_conda=True,
                          prefix_placeholder=None, file_mode=file_mode)
@@ -710,7 +733,8 @@ conda/pip conflicts using `conda list`, and fix the environment by ensuring
 only one version of each package is installed (conda preferred)."""
 
 
-def load_environment(prefix, on_missing_cache='warn'):
+def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=False,
+                     ignore_missing_files=False):
     # Check if it's a conda environment
     if not os.path.exists(prefix):
         raise CondaPackException("Environment path %r doesn't exist" % prefix)
@@ -721,11 +745,14 @@ def load_environment(prefix, on_missing_cache='warn'):
     # Find the environment site_packages (if any)
     site_packages = find_site_packages(prefix)
 
-    if site_packages is not None:
+    if site_packages is not None and not ignore_editable_packages:
         # Check that no editable packages are installed
         check_no_editable_packages(prefix, site_packages)
 
-    all_files = {os.path.normcase(p) for p in load_files(prefix)}
+    # Save the unnormalized filenames here so that we can preserve the
+    # case of unmanaged files. The case of managed files is dictated by
+    # the conda package itself.
+    all_files = {os.path.normcase(p): p for p in load_files(prefix)}
 
     files = []
     managed = set()
@@ -743,10 +770,11 @@ def load_environment(prefix, on_missing_cache='warn'):
                 # handle prefix replacement ourselves later.
                 new_files = [File(os.path.join(prefix, f), f, is_conda=True,
                                   prefix_placeholder=None, file_mode='unknown')
-                             for f in info['files']]
+                             for f in info['files'] if f != '.nonadmin']
                 uncached.append((info['name'], info['version'], info['url']))
             else:
-                new_files = load_managed_package(info, prefix, site_packages)
+                new_files = load_managed_package(info, prefix, site_packages,
+                                                 all_files)
 
             targets = {os.path.normcase(f.target) for f in new_files}
 
@@ -773,12 +801,19 @@ def load_environment(prefix, on_missing_cache='warn'):
                       prefix_placeholder=None,
                       file_mode=None))
 
-    if missing_files:
+    if missing_files and not ignore_missing_files:
         packages = '\n'.join('- %s=%r' % i for i in missing_files)
         raise CondaPackException(_missing_files_error.format(packages))
 
-    # Add unmanaged files
-    unmanaged = all_files - managed
+    # Add unmanaged files, preserving their original case
+    unmanaged = {fn for fn_l, fn in all_files.items() if fn_l not in managed}
+    # Older versions of conda insert unmanaged conda, activate, and deactivate
+    # scripts into child environments upon activation. Remove these
+    fnames = ('conda', 'activate', 'deactivate')
+    if on_win:
+        # Windows includes the POSIX and .bat versions of each
+        fnames = fnames + ('conda.bat', 'activate.bat', 'deactivate.bat')
+    unmanaged -= {os.path.join(BIN_DIR, f) for f in fnames}
 
     files.extend(File(os.path.join(prefix, p),
                       p,

@@ -56,12 +56,21 @@ def build_parser():
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension."))
     parser.add_argument("--compress-level",
+                        metavar="LEVEL",
                         type=int,
                         default=4,
                         help=("The compression level to use, from 0 to 9. "
                               "Higher numbers decrease output file size at "
                               "the expense of compression time. Ignored for "
                               "``format='zip'``. Default is 4."))
+    parser.add_argument("--n-threads", "-j",
+                        metavar="N",
+                        type=int,
+                        default=1,
+                        help=("The number of threads to use. Set to -1 to use "
+                              "the number of cpus on this machine. If a file "
+                              "format doesn't support threaded packaging, this "
+                              "option will be ignored. Default is 1."))
     parser.add_argument("--zip-symlinks",
                         action="store_true",
                         help=("Symbolic links aren't supported by the Zip "
@@ -77,6 +86,12 @@ def build_parser():
     parser.add_argument("--no-zip-64",
                         action="store_true",
                         help="Disable ZIP64 extensions.")
+    parser.add_argument("--ignore-editable-packages",
+                        action="store_true",
+                        help="Skips checks for editable packages.")
+    parser.add_argument("--ignore-missing-files",
+                        action="store_true",
+                        help="Skip checks for missing package files.")
     parser.add_argument("--exclude",
                         action=MultiAppendAction,
                         metavar="PATTERN",
@@ -130,13 +145,16 @@ def main(args=None, pack=pack):
                  format=args.format,
                  force=args.force,
                  compress_level=args.compress_level,
+                 n_threads=args.n_threads,
                  zip_symlinks=args.zip_symlinks,
                  zip_64=not args.no_zip_64,
                  arcroot=args.arcroot,
                  dest_prefix=args.dest_prefix,
                  verbose=not args.quiet,
                  filters=args.filters,
-                 recursive=args.recursive)
+                 recursive=args.recursive,
+                 ignore_editable_packages=args.ignore_editable_packages,
+                 ignore_missing_files=args.ignore_missing_files)
     except CondaPackException as e:
         fail("CondaPackError: %s" % e)
     except KeyboardInterrupt:

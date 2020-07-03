@@ -15,7 +15,7 @@ from conda_pack.core import name_to_prefix, File, BIN_DIR
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
                        py27_path, nopython_path, has_conda_path, rel_env_dir,
-                       activate_scripts_path, env_dir)
+                       activate_scripts_path, env_dir, py36_missing_files_path)
 
 BIN_DIR_L = BIN_DIR.lower()
 SP_36 = 'Lib\\site-packages' if on_win else 'lib/python3.6/site-packages'
@@ -91,6 +91,10 @@ def test_errors_editable_packages():
     assert "Editable packages found" in str(exc.value)
 
 
+def test_ignore_errors_editable_packages():
+    CondaEnv.from_prefix(py36_editable_path, ignore_editable_packages=True)
+
+
 def test_errors_pip_overwrites():
     with pytest.raises(CondaPackException) as exc:
         CondaEnv.from_prefix(py36_broken_path)
@@ -98,6 +102,18 @@ def test_errors_pip_overwrites():
     msg = str(exc.value)
     assert "pip" in msg
     assert "toolz" in msg
+
+
+def test_missing_files():
+    with pytest.raises(CondaPackException) as exc:
+        CondaEnv.from_prefix(py36_missing_files_path)
+
+    msg = str(exc.value)
+    assert "toolz" in msg
+
+
+def test_missing_files_ignored():
+    CondaEnv.from_prefix(py36_missing_files_path, ignore_missing_files=True)
 
 
 def test_errors_conda_missing(bad_conda_exe):
@@ -283,14 +299,16 @@ def test_pack_with_conda(tmpdir, fix_dest):
 
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
-    # Extract tarfile
-    with tarfile.open(out_path) as fil:
+    with tarfile.open(out_path, ignore_zeros=True) as fil:
         fil.extractall(extract_path)
 
     if on_win:
-        fnames = ('conda.exe', 'activate.bat', 'deactivate.bat')
+        fnames = ['conda.exe', 'activate.bat']
+        # New conda drops deactivate.bat files
+        if not fix_dest:
+            fnames.append("deactivate.bat")
     else:
-        fnames = ('conda', 'activate', 'deactivate')
+        fnames = ['conda', 'activate', 'deactivate']
     # Check conda/activate/deactivate all present
     for fname in fnames:
         fpath = os.path.join(extract_path, BIN_DIR, fname)
@@ -306,22 +324,45 @@ def test_pack_with_conda(tmpdir, fix_dest):
                 else:
                     assert 'CONDA_PACK' in data
 
-    # Check the packaged conda works, and the output is a conda environment
+    # Check the packaged conda works and recognizes its environment.
+    # We need to unset CONDA_PREFIX to simulate unpacking into an environment
+    # where conda is not already present.
     if on_win:
-        command = (r"@call {path}\Scripts\activate && "
-                   r"@conda.exe list --json -p {path} && "
-                   r"@call {path}\Scripts\deactivate").format(path=extract_path)
-        cmd = ['cmd', '/c', command]
+        if fix_dest:
+            # XXX: Conda windows activatation scripts now seem to assume a base
+            # conda install, rather than relative paths. Given that this tool
+            # is mostly for deploying code, and usually on servers (not
+            # windows), this failure isn't critical but isn't 100% correct.
+            # Ideally this test shouldn't need to special case `fix_dest`, and
+            # use the same batch commands in both cases.
+            commands = (r"@call {path}\condabin\conda activate".format(path=extract_path),
+                        r"@conda info --json",
+                        r"@conda deactivate")
+        else:
+            commands = (r"@set CONDA_PREFIX=",
+                        r"@set CONDA_SHVL=",
+                        r"@call {path}\Scripts\activate".format(path=extract_path),
+                        r"@conda info --json",
+                        r"@deactivate")
+        script_file = tmpdir.join('unpack.bat')
+        cmd = ['cmd', '/c', str(script_file)]
 
     else:
-        command = (". {path}/bin/activate && "
-                   "conda list --json -p {path} &&"
-                   ". {path}/bin/deactivate").format(path=extract_path)
-        cmd = ['/usr/bin/env', 'bash', '-c', command]
+        commands = ("unset CONDA_PREFIX",
+                    "unset CONDA_SHLVL",
+                    ". {path}/bin/activate".format(path=extract_path),
+                    "conda info --json",
+                    ". deactivate >/dev/null 2>/dev/null")
+        script_file = tmpdir.join('unpack.sh')
+        cmd = ['/usr/bin/env', 'bash', str(script_file)]
 
+    script_file.write('\n'.join(commands))
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
-    data = json.loads(out)
-    assert 'conda' in {i['name'] for i in data}
+    conda_info = json.loads(out)
+    extract_path_n = normpath(extract_path)
+    for var in ('conda_prefix', 'sys.prefix', 'default_prefix', 'root_prefix'):
+        assert normpath(conda_info[var]) == extract_path_n
+    assert extract_path_n in list(map(normpath, conda_info['envs']))
 
     # Check the conda-meta directory has been anonymized
     for path in glob(os.path.join(extract_path, 'conda-meta', '*.json')):
@@ -348,7 +389,6 @@ def test_pack_exceptions(py36_env):
                       ("foo", "*.pyc")])
 
 
-@pytest.mark.slow
 def test_zip64(tmpdir):
     # Create an environment that requires ZIP64 extensions, but doesn't use a
     # lot of disk/RAM
