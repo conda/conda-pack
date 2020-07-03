@@ -257,6 +257,7 @@ support this practice unless the --zip-symlinks option is engaged, or
 unless a tar-based archive format is used. See "conda-pack --help" for
 more information about the --zip-symlinks option."""
 
+
 class ZipArchive(ArchiveBase):
     def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
         self.fileobj = fileobj
