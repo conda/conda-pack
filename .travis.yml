@@ -23,6 +23,8 @@ jobs:
     - env:
       - PYTHON=3.8
       - DOCS=true
+  allow_failures:
+    - env: PYTHON=2.7
 
 install:
   - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe -O conda.exe

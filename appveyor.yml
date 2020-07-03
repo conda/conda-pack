@@ -17,6 +17,8 @@ environment:
 
 matrix:
   fast_finish: true
+  allow_failures:
+    - PYTHON_VERSION: 2.7
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable.
