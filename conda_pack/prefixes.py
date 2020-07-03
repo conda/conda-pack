@@ -39,7 +39,7 @@ import re
 import struct
 import sys
 
-on_win = sys.platform == 'win32'
+from .compat import on_win
 
 # three capture groups: whole_shebang, executable, options
 SHEBANG_REGEX = (
@@ -81,7 +81,7 @@ def replace_prefix(data, mode, placeholder, new_prefix):
         data2 = binary_replace(data,
                                placeholder.encode('utf-8'),
                                new_prefix.encode('utf-8'))
-        if len(data2) != len(data):
+        if not on_win and len(data2) != len(data):
             message = ("Found mismatched data length in binary file:\n"
                        "original data length: {len_orig!d})\n"
                        "new data length: {len_new!d}\n"
@@ -99,6 +99,8 @@ def text_replace(data, placeholder, new_prefix):
 
 if on_win:
     def binary_replace(data, placeholder, new_prefix):
+        placeholder = placeholder.lower()
+        new_prefix = new_prefix.lower()
         if placeholder not in data:
             return data
         return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
