@@ -9,5 +9,6 @@ dependencies:
     - conda_pack_test_lib1
     - conda_pack_test_lib2
     - toolz
+    - pip
     - pip:
         - pytest

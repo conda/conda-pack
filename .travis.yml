@@ -16,35 +16,36 @@ jobs:
   include:
     - env:
       - PYTHON=2.7
-
     - env:
       - PYTHON=3.6
+    - env:
+      - PYTHON=3.7
+    - env:
+      - PYTHON=3.8
       - DOCS=true
+  allow_failures:
+    - env: PYTHON=2.7
 
 install:
-  - source testing/ci/install_conda.sh
-  - ./testing/setup_envs.sh
-  - conda install -y flake8 pytest
-  - |
-    if [[ "$DOCS" == "true" ]]; then
-        conda install -y sphinx numpydoc
-        pip install sphinxcontrib.autoprogram
-    fi
-  - pip install .
-
+  - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-linux-64.exe -O conda.exe
+  - chmod +x conda.exe
+  - ./conda.exe config --add channels conda-forge
+  - ./conda.exe create -y -p $HOME/conda conda-build conda-verify flake8
+  - source $HOME/conda/bin/activate
+  
 script:
-  - py.test conda_pack --runslow -s -vv
-  - flake8 conda_pack
+  - conda build conda-recipe
   - |
-    if [[ "$DOCS" == "true" ]]; then
-        pushd docs && make html && popd
+    if [[ "$DOCS" = "true" ]]; then
+        cd docs
+        conda install -y --use-local sphinx numpydoc doctr sphinxcontrib-autoprogram make conda-pack
+        make html || exit -1
     fi
 
 after_success:
   - |
-    if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
-      pip install doctr
-      doctr deploy . --built-docs docs/build/html/
+    if [[ "$DOCS" = "true" && $TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then
+        doctr deploy . --built-docs build/html/
     fi
 
 notifications:
