@@ -30,11 +30,10 @@ test:
     - conda_pack/tests
   requires:
     - pytest
-    - m2-bash # [win]
-    - m2-filesystem # [win]
-    - m2-coreutils # [win]
+    - m2-tar # [win]
   commands:
-    - bash testing/setup_envs.sh
+    - bash testing/setup_envs.sh # [not win]
+    - testing/setup_envs.bat # [win]
     - pytest --runslow -s -vv conda_pack/tests
 
 about:
