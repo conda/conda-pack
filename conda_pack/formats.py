@@ -14,7 +14,7 @@ from contextlib import closing
 from io import BytesIO
 from multiprocessing.pool import ThreadPool
 
-from .compat import Queue
+from .compat import Queue, on_win
 from .core import CondaPackException
 
 
@@ -222,8 +222,10 @@ class TarArchive(ArchiveBase):
 
     def __enter__(self):
         kwargs = {'compresslevel': self.compresslevel} if self.mode != 'w' else {}
+        # Hard links seem to throw off the tar file format on windows.
+        # Revisit when libarchive is used.
         self.archive = tarfile.open(fileobj=self.fileobj,
-                                    dereference=False,
+                                    dereference=on_win,
                                     mode=self.mode,
                                     **kwargs)
         return self

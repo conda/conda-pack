@@ -1,13 +1,24 @@
+# Build only the master branch, tagged commits, and pull requests
+branches:
+  only:
+    - master
+    - /\d+\.\d+.*/
+# Don't run the (redundant) branch build with a pull request
+skip_branch_with_pr: true
+
 environment:
-
+  PYTHONUNBUFFERED: 1
+  PYTHONIOENCODING: utf-8
+  PYTHONLEGACYWINDOWSSTDIO: 1
+  MINICONDA: C:\\Miniconda3-x64
   matrix:
-    - TARGET_ARCH: x64
-      CONDA_PY: 37
-      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
-    - TARGET_ARCH: x64
-      CONDA_PY: 38
-      CONDA_INSTALL_LOCN: C:\\Miniconda3-x64
+    - PYTHON_VERSION: 3.7
+    - PYTHON_VERSION: 2.7
 
+matrix:
+  fast_finish: true
+  allow_failures:
+    - PYTHON_VERSION: 2.7
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable.
@@ -15,22 +26,13 @@ platform:
     - x64
 
 install:
-    # Add path, activate `conda` and update conda.
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-    - cmd: conda.exe update --yes --quiet conda
-
-    - cmd: set PYTHONUNBUFFERED=1
-
-    # Install the required packages
-    - cmd: conda.exe install --yes flake8 pytest
-    - cmd: pip.exe install .
-
-    # Create the test environments. Do this after install
-    # so pip doesn't copy them to the build directory
-    - cmd: bash.exe testing/setup_envs.sh
+    - mkdir C:\Users\appveyor\.conda
+    - call %MINICONDA%\Scripts\activate.bat
+    - conda install -y conda conda-build conda-verify
+    - conda info -a
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    - py.test.exe conda_pack --runslow -s -vv
+    - conda build conda-recipe --python=%PYTHON_VERSION%
