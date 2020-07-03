@@ -399,7 +399,6 @@ def test_pack_exceptions(py36_env):
                       ("foo", "*.pyc")])
 
 
-@pytest.mark.slow
 def test_zip64(tmpdir):
     # Create an environment that requires ZIP64 extensions, but doesn't use a
     # lot of disk/RAM

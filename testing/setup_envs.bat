@@ -25,9 +25,9 @@ echo hi > %env%\Scripts\conda.bat
 echo Creating py36_editable environment
 set env=%envs%\py36_editable
 call conda.bat env create -f %ymls%\py36.yml -p %env%
-cd %cwd%\test_packages\conda_pack_test_lib1
+pushd %cwd%\test_packages\conda_pack_test_lib1
 %env%\python.exe setup.py develop
-cd %cwd%
+popd
 
 echo Creating py36_broken environment
 set env=%envs%\py36_broken
