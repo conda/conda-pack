@@ -33,7 +33,7 @@ test:
     - m2-tar # [win]
   commands:
     - bash testing/setup_envs.sh # [not win]
-    - testing/setup_envs.bat # [win]
+    - call testing/setup_envs.bat # [win]
     - pytest --runslow -s -vv conda_pack/tests
 
 about:

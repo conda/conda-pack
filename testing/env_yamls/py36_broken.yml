@@ -6,5 +6,6 @@ channels:
 dependencies:
     - cytoolz
     - toolz
+    - pip
     - pip:
         - toolz==0.7.0
