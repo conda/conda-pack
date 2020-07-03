@@ -246,16 +246,16 @@ class TarArchive(ArchiveBase):
 
 
 _dangling_link_error = """
-The following conda package file is a symbolic link that cannot be resolved
-to another file inside the same package:
+The following conda package file is a symbolic link that does not match an
+existing file within the same package:
 
 {0}
 
-Some packages employ the practice of creating symbolic links to files known
-to exist in a dependency. Unfortunately, since symbolic links are not part
-of the zip standard, conda-pack does not support this practice unless the
---zip-symlinks option is engaged. Please read "conda-pack --help" for more
-information about this option, or use a tar-based archive format instead."""
+It is likely this symbolic link points instead to a file that is brought
+into the environment by a dependency. Unfortunately, conda-pack does not
+support this practice unless the --zip-symlinks option is engaged, or
+unless a tar-based archive format is used. See "conda-pack --help" for
+more information about the --zip-symlinks option."""
 
 class ZipArchive(ArchiveBase):
     def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
