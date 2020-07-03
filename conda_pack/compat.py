@@ -1,7 +1,9 @@
+import os
 import sys
 
 default_encoding = sys.getdefaultencoding()
 on_win = sys.platform == 'win32'
+is_32bit = sys.maxsize < 2**32 or os.environ.get('CONDA_FORCE_32BIT', '0') == '1'
 
 PY2 = sys.version_info.major == 2
 
