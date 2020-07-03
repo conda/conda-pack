@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import errno
 import os
 import stat
 import struct
@@ -244,6 +245,19 @@ class TarArchive(ArchiveBase):
         self.archive.addfile(info, BytesIO(sourcebytes))
 
 
+_dangling_link_error = """
+The following conda package file is a symbolic link that does not match an
+existing file within the same package:
+
+    {0}
+
+It is likely this link points to a file brought into the environment by
+a dependency. Unfortunately, conda-pack does not support this practice
+for zip files unless the --zip-symlinks option is engaged. Please see
+"conda-pack --help" for more information about this option, or use a
+tar-based archive format instead."""
+
+
 class ZipArchive(ArchiveBase):
     def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
         self.fileobj = fileobj
@@ -290,7 +304,19 @@ class ZipArchive(ArchiveBase):
                             # root is an empty directory, write it now
                             self.archive.write(root, root2)
                 else:
-                    self.archive.write(source, target)
+                    try:
+                        self.archive.write(source, target)
+                    except OSError as e:
+                        if e.errno == errno.ENOENT:
+                            if source[-len(target):] == target:
+                                # For managed packages, this will give us the package name
+                                # followed by the relative path within the environment, a
+                                # more readable result.
+                                source = os.path.basename(source[:-len(target)-1])
+                                source = '{}: {}'.format(source, target)
+                            msg = _dangling_link_error.format(source)
+                            raise CondaPackException(msg)
+                        raise
         else:
             self.archive.write(source, target)
 
