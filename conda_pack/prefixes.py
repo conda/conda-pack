@@ -37,7 +37,6 @@
 
 import re
 import struct
-import sys
 
 from .compat import on_win
 
