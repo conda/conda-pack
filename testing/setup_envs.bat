@@ -53,3 +53,6 @@ mkdir %env%\etc\conda\activate.d
 mkdir %env%\etc\conda\deactivate.d
 copy %cwd%\extra_scripts\conda_pack_test_activate.bat %env%\etc\conda\activate.d
 copy %cwd%\extra_scripts\conda_pack_test_deactivate.bat %env%\etc\conda\deactivate.d
+
+echo Creating nested environment
+call conda.bay env create -f %ymls%\nopython.yml" -p %envs%\py36\envs\nested
