@@ -37,8 +37,9 @@
 
 import re
 import struct
+import sys
 
-from .compat import on_win
+on_win = sys.platform == 'win32'
 
 # three capture groups: whole_shebang, executable, options
 SHEBANG_REGEX = (
