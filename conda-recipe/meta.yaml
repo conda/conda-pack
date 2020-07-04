@@ -11,7 +11,6 @@ build:
   number: 0
   noarch: python
   script:
-      - flake8 conda_pack
       - {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
   entry_points:
     - conda-pack = conda_pack.cli:main
@@ -29,11 +28,10 @@ test:
     - testing
     - conda_pack/tests
   requires:
+    - python
     - pytest
-    - m2-tar # [win]
   commands:
-    - bash testing/setup_envs.sh # [not win]
-    - call testing\setup_envs.bat # [win]
+    - bash testing/setup_envs.sh
     - pytest -s -vv conda_pack/tests
 
 about:
