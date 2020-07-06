@@ -1,9 +1,11 @@
-name: Build and test
+name: Build and test the package
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -22,7 +24,8 @@ jobs:
     - name: Build the docs as a test
       run: |
         source /usr/share/miniconda/bin/activate
-        cd docs && make html
+        cd docs
+        make html
     - name: Build the package
       run: conda build conda-recipe --no-test
     - name: Reduce the size of the build artifact

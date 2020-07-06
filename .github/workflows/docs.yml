@@ -1,0 +1,26 @@
+name: Deploy documentation
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Retrieve the source code
+      uses: actions/checkout@v2
+    - name: Install build dependencies
+      run: |
+        conda config --append channels conda-forge
+        conda install -y sphinx numpydoc sphinxcontrib-autoprogram make
+        /usr/share/miniconda/bin/python -m pip install -e .
+    - name: Build the docs
+      run: |
+        source /usr/share/miniconda/bin/activate
+        cd docs
+        make html
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/build/html
