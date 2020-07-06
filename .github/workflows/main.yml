@@ -10,11 +10,23 @@ jobs:
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v2
-    - name: Build the package
+    - name: Install build dependencies
       run: |
-        conda install -y conda-build conda-verify
-        conda build conda-recipe --no-test
-        rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
+        conda config --append channels conda-forge
+        conda install -y conda-build conda-verify flake8 sphinx numpydoc sphinxcontrib-autoprogram make
+        /usr/share/miniconda/bin/python -m pip install -e .
+    - name: Verify flake8 compliance
+      run: |
+        source /usr/share/miniconda/bin/activate
+        flake8 conda_pack
+    - name: Build the docs as a test
+      run: |
+        source /usr/share/miniconda/bin/activate
+        cd docs && make html
+    - name: Build the package
+      run: conda build conda-recipe --no-test
+    - name: Reduce the size of the build artifact
+      run: rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
     - name: Upload the build artifact
       uses: actions/upload-artifact@v2
       with:
