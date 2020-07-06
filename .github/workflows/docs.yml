@@ -9,6 +9,8 @@ jobs:
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - name: Install build dependencies
       run: |
         conda config --append channels conda-forge
