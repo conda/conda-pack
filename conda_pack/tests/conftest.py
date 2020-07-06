@@ -7,10 +7,15 @@ import shutil
 
 import pytest
 
-test_dir = os.path.dirname(os.path.abspath(__file__))
+from conda_pack.compat import on_win
 
-rel_env_dir = os.path.join(test_dir, '..', '..', 'testing', 'environments')
-env_dir = os.path.abspath(rel_env_dir)
+
+test_dir = os.path.dirname(os.path.abspath(__file__))
+env_dir = os.environ.get('CONDA_PACK_TEST_ENVS')
+if env_dir is None:
+    env_dir = os.path.abspath(os.path.join(test_dir, '..', '..', 'testing', 'environments'))
+elif on_win:
+    env_dir = os.path.abspath(env_dir).replace('/', '\\')
 
 py27_path = os.path.join(env_dir, 'py27')
 py36_path = os.path.join(env_dir, 'py36')

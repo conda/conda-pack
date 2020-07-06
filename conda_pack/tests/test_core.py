@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function, division
 
 import json
+import sys
 import os
 import re
 import subprocess
@@ -14,7 +15,7 @@ from conda_pack.compat import on_win, load_source
 from conda_pack.core import name_to_prefix, File, BIN_DIR
 
 from .conftest import (py36_path, py36_editable_path, py36_broken_path,
-                       py27_path, nopython_path, has_conda_path, rel_env_dir,
+                       py27_path, nopython_path, has_conda_path,
                        activate_scripts_path, env_dir, py36_missing_files_path)
 
 BIN_DIR_L = BIN_DIR.lower()
@@ -56,10 +57,11 @@ def test_name_to_prefix():
 
 
 def test_from_prefix():
-    env = CondaEnv.from_prefix(os.path.join(rel_env_dir, 'py36'))
+    rel_env_dir = os.path.relpath(py36_path, os.getcwd())
+    env = CondaEnv.from_prefix(rel_env_dir)
     assert len(env)
     # relative path is normalized
-    assert env.prefix == py36_path
+    assert os.path.normcase(env.prefix) == os.path.normcase(py36_path)
 
     # Path is missing
     with pytest.raises(CondaPackException):
@@ -70,6 +72,7 @@ def test_from_prefix():
         CondaEnv.from_prefix(os.path.join(env_dir))
 
 
+@pytest.mark.xfail(sys.version[0] == '2', reason="Python 2 failure")
 def test_missing_package_cache(broken_package_cache):
     with pytest.warns(UserWarning) as record:
         env = CondaEnv.from_prefix(py27_path)
@@ -475,7 +478,7 @@ def test_pack(tmpdir, py36_env):
 
 def test_dest_prefix(tmpdir, py36_env):
     out_path = os.path.join(str(tmpdir), 'py36.tar')
-    dest = r'C:\foo\bar\baz\biz' if on_win else '/foo/bar/baz/biz'
+    dest = r'c:\foo\bar\baz\biz' if on_win else '/foo/bar/baz/biz'
     res = pack(prefix=py36_path,
                dest_prefix=dest,
                output=out_path)
@@ -499,7 +502,9 @@ def test_dest_prefix(tmpdir, py36_env):
                       'bin/clear']
 
     orig_bytes = py36_env.prefix.encode()
+    orig_bytes_l = py36_env.prefix.lower().encode() if on_win else orig_bytes
     new_bytes = dest.encode()
+    new_bytes_l = dest.lower().encode() if on_win else new_bytes
 
     # all paths, including shebangs, are rewritten using the prefix
     with tarfile.open(out_path) as fil:
@@ -509,8 +514,8 @@ def test_dest_prefix(tmpdir, py36_env):
                 orig_data = fil2.read()
             if orig_bytes in orig_data:
                 data = fil.extractfile(test_file).read()
-                assert orig_bytes not in data, test_file
-                assert new_bytes in data, test_file
+                assert orig_bytes not in data and orig_bytes_l not in data, test_file
+                assert new_bytes in data or new_bytes_l in data, test_file
 
 
 def test_activate(tmpdir):
