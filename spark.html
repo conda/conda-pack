@@ -1,17 +1,18 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0.3.0+8.g52daedd documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0+untagged.1.gc0a20ac documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="CLI Docs" href="cli.html" />
@@ -71,7 +72,7 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
     <span class="c1"># Packages are imported and available from your bundled environment.</span>
     <span class="kn">import</span> <span class="nn">sklearn</span>
     <span class="kn">import</span> <span class="nn">pandas</span>
-    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
     <span class="c1"># Use the libraries to do work</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span>
@@ -80,7 +81,7 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
          <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">some_function</span><span class="p">)</span>
          <span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
-<span class="k">print</span><span class="p">(</span><span class="n">rdd</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">rdd</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Submit the job to Spark using <code class="docutils literal notranslate"><span class="pre">spark-submit</span></code>. In YARN cluster mode:</p>
@@ -244,7 +245,7 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
