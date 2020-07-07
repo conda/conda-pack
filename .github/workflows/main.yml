@@ -48,54 +48,40 @@ jobs:
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v2
-    - id: cache
-      name: Retrieve or create the conda cache
-      uses: actions/cache@v2
-      # In order to defeat the caching mechanism (for instance, to test
-      # because you change this job), bump that final number in the key.
-      with:
-        path: conda
-        key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-2
-    - name: Set CONDA_ROOT
-      if: steps.cache.outputs.cache-hit != 'true'
-      # Conda should be on the same filesystem as GITHUB_WORKSPACE. For Windows,
-      # this disqualifies HOME. On the other hand, for macOS, GITHUB_WORKSPACE is
-      # not the same from job to job for some reason. So the predictability of
-      # HOME is a better choice. So two solutions are needed, unfortunately.
+    - id: conda-root
+      name: Set CONDA_ROOT
       run: |
-        [ "$RUNNER_OS" == "Windows" ] && CONDA_ROOT="${GITHUB_WORKSPACE%\\*}\\conda"
-        [ "$RUNNER_OS" != "Windows" ] && CONDA_ROOT="$HOME/conda"
-        echo "::set-env name=CONDA_ROOT::${CONDA_ROOT}"
-        echo "CONDA_ROOT: $CONDA_ROOT"
+          CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
+          echo "::set-output name=value::$(dirname $GITHUB_WORKSPACE)/conda"
+          echo "::set-env name=CONDA_ROOT::$CONDA_ROOT"
+          echo "CONDA_ROOT: $CONDA_ROOT"
+    - id: cache
+      name: Retrieve or create the testbed cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.conda-root.outputs.value }}
+        key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Create the testbed
       if: steps.cache.outputs.cache-hit != 'true'
       # We use the built-in conda to create our own independent conda
       # root. So we can fully control the contents of its package cache
       run: |
         [ "$RUNNER_OS" == "Windows" ] && CONDA_E="$CONDA/Scripts/conda.exe"
-        [ "$RUNNER_OS" != "Windows" ] && CONDA_E=conda
+        [ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
         # We need to move the package cache to a writable location on the Mac
         # to work around an issue with GitHub's implementation. But we also
         # need to make sure to remove the workaround once our conda is in, so
         # that the cache is in $CONDA_PREFIX/pkgs where we expect it.
-        $CONDA_E config --add pkgs_dirs ~/.pkgs
-        $CONDA_E create -p $CONDA_ROOT conda
-        $CONDA_E config --remove-key pkgs_dirs
+        ${CONDA_E:-conda} create -p $CONDA_ROOT conda
+        unset CONDA_PKGS_DIRS
         source $CONDA_ROOT/etc/profile.d/conda.sh
         conda activate base
         export CONDA_PACK_TEST_ENVS=$CONDA_ROOT/envs
         bash testing/setup_envs.sh
-        conda info -a
-    - name: Move the conda testbed into cache position
-      if: steps.cache.outputs.cache-hit != 'true'
-      # Move the conda installation into GITHUB_WORKSPACE to be cached.
-      # Unfortunately actions/cache cannot yet be relied on to cache content
-      # outside of GITHUB_WORKSPACE, so we have to jump through this hoop
-      # here, and the reverse in the tests below.
+    - name: conda info -a
       run: |
-        rm -rf ./conda
-        mv $CONDA_ROOT ./conda
-        ls -l ./conda
+        source $CONDA_ROOT/etc/profile.d/conda.sh
+        conda info -a
   tests:
     defaults:
       run:
@@ -110,38 +96,29 @@ jobs:
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v2
-    - name: Retrieve the conda cache
+    - id: conda-root
+      name: Set CONDA_ROOT
+      run: |
+          CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
+          echo "::set-output name=value::$(dirname $GITHUB_WORKSPACE)/conda"
+          echo "::set-env name=CONDA_ROOT::$CONDA_ROOT"
+          echo "CONDA_ROOT: $CONDA_ROOT"
+    - name: Retrieve the testbed cache
       uses: actions/cache@v2
       with:
-        path: conda
-        key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}
-    - name: Set CONDA_ROOT
-      run: |
-        [ "$RUNNER_OS" == "Windows" ] && CONDA_ROOT="${GITHUB_WORKSPACE%\\*}\\conda"
-        [ "$RUNNER_OS" != "Windows" ] && CONDA_ROOT="$HOME/conda"
-        echo "::set-env name=CONDA_ROOT::${CONDA_ROOT}"
-        echo "CONDA_ROOT: $CONDA_ROOT"
-    - name: Move conda out of the cache and into position
-      run: |
-        mv ./conda $CONDA_ROOT
-        ls -l $CONDA_ROOT
+        path: ${{ steps.conda-root.outputs.value }}
+        key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Download the build artifact
       uses: actions/download-artifact@v2
       with:
         name: package-${{ github.sha }}
         path: conda-bld
-    - name: Move the build artifact into place
-      run: |
-        find conda-bld -print
-        mv conda-bld $CONDA_ROOT
-    - name: Create the test environment
+    - name: Create the test environment and run the tests
       run: |
         source $CONDA_ROOT/etc/profile.d/conda.sh
+        conda info -a
+        mv conda-bld $CONDA_ROOT/conda-bld
         conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
-        conda list -n cptest
-    - name: Run the tests
-      run: |
-        source $CONDA_ROOT/etc/profile.d/conda.sh
         conda activate cptest
         export CONDA_PACK_TEST_ENVS=$CONDA_ROOT/envs
         pytest -v -ss conda_pack/tests

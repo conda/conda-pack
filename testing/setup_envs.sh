@@ -7,7 +7,8 @@ echo Setting up environments for testing
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
 if [[ "$CONDA_PACK_TEST_ENVS" != "" ]]; then
-    envs=$CONDA_PACK_TEST_ENVS
+    mkdir -p $CONDA_PACK_TEST_ENVS
+    envs=$(cd $CONDA_PACK_TEST_ENVS && pwd)
 else
     envs=$cwd/environments
 fi
