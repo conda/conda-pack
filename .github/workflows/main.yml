@@ -55,33 +55,23 @@ jobs:
           echo "::set-output name=value::$(dirname $GITHUB_WORKSPACE)/conda"
           echo "::set-env name=CONDA_ROOT::$CONDA_ROOT"
           echo "CONDA_ROOT: $CONDA_ROOT"
-    - id: cache
-      name: Retrieve or create the testbed cache
+    # Use a smaller cache entry to enable a quicker exit if we
+    # have already built the testbed. Any small file will do
+    - id: cache-key
+      name: Retrieve cache key
+      uses: actions/cache@v2
+      with:
+        path: LICENSE.txt
+        key: key-${{ matrix.os }}-${{ hashFiles('testing') }}-5
+    - name: Retrieve or create the testbed cache
+      if: steps.cache-key.outputs.cache-hit != 'true'
       uses: actions/cache@v2
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
-    - name: Create the testbed
-      if: steps.cache.outputs.cache-hit != 'true'
-      # We use the built-in conda to create our own independent conda
-      # root. So we can fully control the contents of its package cache
-      run: |
-        [ "$RUNNER_OS" == "Windows" ] && CONDA_E="$CONDA/Scripts/conda.exe"
-        [ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
-        # We need to move the package cache to a writable location on the Mac
-        # to work around an issue with GitHub's implementation. But we also
-        # need to make sure to remove the workaround once our conda is in, so
-        # that the cache is in $CONDA_PREFIX/pkgs where we expect it.
-        ${CONDA_E:-conda} create -p $CONDA_ROOT conda
-        unset CONDA_PKGS_DIRS
-        source $CONDA_ROOT/etc/profile.d/conda.sh
-        conda activate base
-        export CONDA_PACK_TEST_ENVS=$CONDA_ROOT/envs
-        bash testing/setup_envs.sh
-    - name: conda info -a
-      run: |
-        source $CONDA_ROOT/etc/profile.d/conda.sh
-        conda info -a
+    - name: Verify or create the testbed
+      if: steps.cache-key.outputs.cache-hit != 'true'
+      run: testing/setup_envs.sh
   tests:
     defaults:
       run:
@@ -113,6 +103,8 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: conda-bld
+    - name: Verify or create the testbed
+      run: testing/setup_envs.sh
     - name: Create the test environment and run the tests
       run: |
         source $CONDA_ROOT/etc/profile.d/conda.sh
@@ -120,5 +112,4 @@ jobs:
         mv conda-bld $CONDA_ROOT/conda-bld
         conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
         conda activate cptest
-        export CONDA_PACK_TEST_ENVS=$CONDA_ROOT/envs
         pytest -v -ss conda_pack/tests

@@ -73,7 +73,7 @@ def test_from_prefix():
 
 
 @pytest.mark.xfail(sys.version[0] == '2', reason="Python 2 failure")
-def test_missing_package_cache(broken_package_cache):
+def test_missing_package_cache():
     with pytest.warns(UserWarning) as record:
         env = CondaEnv.from_prefix(py27_path)
 
