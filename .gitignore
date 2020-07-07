@@ -1,4 +1,4 @@
-testing/environments/*
+testing/conda/*
 build
 dist
 conda_pack.egg-info

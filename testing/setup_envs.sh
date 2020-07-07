@@ -6,12 +6,30 @@ echo Setting up environments for testing
 
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
-if [[ "$CONDA_PACK_TEST_ENVS" != "" ]]; then
-    mkdir -p $CONDA_PACK_TEST_ENVS
-    envs=$(cd $CONDA_PACK_TEST_ENVS && pwd)
+if [[ "$CONDA_ROOT" != "" ]]; then
+    mkdir -p $CONDA_ROOT
+    croot=$(cd $CONDA_ROOT && pwd)
 else
-    envs=$cwd/environments
+    croot=$cwd/conda
 fi
+envs=$croot/envs
+
+if [ ! -d $croot/conda-meta ]; then
+    ${CONDA_EXE:-conda} create -y -p $croot conda python=3.7
+fi
+
+source $croot/etc/profile.d/conda.sh
+export CONDA_PKGS_DIRS=$croot/pkgs
+
+if [ -d $croot/envs/activate_scripts/conda-meta ]; then
+    conda info
+    ls -l $croot/envs
+    exit 0
+fi
+
+mkdir -p $envs
+# Make sure the local package cache is used
+rm -rf $croot/pkgs
 
 echo Creating py27 environment
 env=$envs/py27
@@ -77,3 +95,7 @@ else
     cp $cwd/extra_scripts/conda_pack_test_activate.sh $env/etc/conda/activate.d
     cp $cwd/extra_scripts/conda_pack_test_deactivate.sh $env/etc/conda/deactivate.d
 fi
+
+rm -f $croot/pkgs/{*.tar.bz2,*.conda}
+conda info
+ls -l $croot/envs

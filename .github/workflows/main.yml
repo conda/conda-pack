@@ -66,17 +66,8 @@ jobs:
       # We use the built-in conda to create our own independent conda
       # root. So we can fully control the contents of its package cache
       run: |
-        [ "$RUNNER_OS" == "Windows" ] && CONDA_E="$CONDA/Scripts/conda.exe"
+        [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
         [ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
-        # We need to move the package cache to a writable location on the Mac
-        # to work around an issue with GitHub's implementation. But we also
-        # need to make sure to remove the workaround once our conda is in, so
-        # that the cache is in $CONDA_PREFIX/pkgs where we expect it.
-        ${CONDA_E:-conda} create -p $CONDA_ROOT conda
-        unset CONDA_PKGS_DIRS
-        source $CONDA_ROOT/etc/profile.d/conda.sh
-        conda activate base
-        export CONDA_PACK_TEST_ENVS=$CONDA_ROOT/envs
         bash testing/setup_envs.sh
     - name: conda info -a
       run: |
@@ -120,5 +111,4 @@ jobs:
         mv conda-bld $CONDA_ROOT/conda-bld
         conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
         conda activate cptest
-        export CONDA_PACK_TEST_ENVS=$CONDA_ROOT/envs
         pytest -v -ss conda_pack/tests

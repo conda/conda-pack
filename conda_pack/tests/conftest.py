@@ -9,10 +9,10 @@ import pytest
 
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
-env_dir = os.environ.get('CONDA_PACK_TEST_ENVS')
-if env_dir is None:
-    env_dir = os.path.join(test_dir, '..', '..', 'testing', 'environments')
-env_dir = os.path.abspath(env_dir)
+croot = os.environ.get('CONDA_ROOT')
+if croot is None:
+    croot = os.path.join(test_dir, '..', '..', 'testing', 'conda')
+env_dir = os.path.join(os.path.abspath(croot), 'envs')
 
 py27_path = os.path.join(env_dir, 'py27')
 py36_path = os.path.join(env_dir, 'py36')
