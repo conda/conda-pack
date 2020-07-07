@@ -117,7 +117,7 @@ def test_cli_exceptions(capsys):
 
 
 @pytest.mark.xfail(on_p2, reason='Relaxing python 2 tests on CI')
-def test_cli_warnings(capsys, broken_package_cache, tmpdir):
+def test_cli_warnings(capsys, tmpdir):
     out_path = os.path.join(str(tmpdir), 'py27.tar')
 
     with pytest.raises(SystemExit) as exc:

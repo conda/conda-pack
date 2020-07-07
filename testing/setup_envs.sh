@@ -34,6 +34,8 @@ rm -rf $croot/pkgs
 echo Creating py27 environment
 env=$envs/py27
 conda env create -f $ymls/py27.yml -p $env
+# Remove this package from the cache for testing
+rm -rf $croot/pkgs/conda_pack_test_lib2*py27*
 
 echo Creating py36 environment
 env=$envs/py36

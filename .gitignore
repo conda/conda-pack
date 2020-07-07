@@ -1,7 +1,8 @@
 testing/conda/*
 build
 dist
-conda_pack.egg-info
+*.egg-info
+.gitignore.swp
 .cache
 .coverage
 htmlcov/
