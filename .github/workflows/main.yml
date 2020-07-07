@@ -61,18 +61,8 @@ jobs:
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
-    - name: Create the testbed
-      if: steps.cache.outputs.cache-hit != 'true'
-      # We use the built-in conda to create our own independent conda
-      # root. So we can fully control the contents of its package cache
-      run: |
-        [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
-        [ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
-        bash testing/setup_envs.sh
-    - name: conda info -a
-      run: |
-        source $CONDA_ROOT/etc/profile.d/conda.sh
-        conda info -a
+    - name: Verify or create the testbed
+      run: testing/setup_envs.sh
   tests:
     defaults:
       run:
@@ -104,6 +94,8 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: conda-bld
+    - name: Verify or create the testbed
+      run: testing/setup_envs.sh
     - name: Create the test environment and run the tests
       run: |
         source $CONDA_ROOT/etc/profile.d/conda.sh

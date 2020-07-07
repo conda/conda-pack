@@ -4,6 +4,10 @@ set -Eeo pipefail
 
 echo Setting up environments for testing
 
+# GitHub action specific items. These are no-ops locally
+[ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
+[ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
+
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
 if [[ "$CONDA_ROOT" != "" ]]; then
