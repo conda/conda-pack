@@ -37,6 +37,11 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
+    - name: Clean up older artifacts
+      if: github.event_name == 'push'
+      uses: glassechidna/artifact-cleaner@master
+      with:
+        minimumAge: 86400
   testbed:
     defaults:
       run:
