@@ -23,7 +23,7 @@ jobs:
       run: |
         source /usr/share/miniconda/bin/activate
         flake8 conda_pack
-    - name: Build the docs as a test
+    - name: Build the documentation
       run: |
         source /usr/share/miniconda/bin/activate
         cd docs
@@ -37,6 +37,12 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
+    - name: Deploy the documentation
+      if: github.event_name == 'push'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/build/html
     - name: Clean up older artifacts
       if: github.event_name == 'push'
       uses: glassechidna/artifact-cleaner@master
