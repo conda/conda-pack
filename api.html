@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Docs &#8212; conda-pack 0.4.0+56.gcdd83ae documentation</title>
+    <title>API Docs &#8212; conda-pack 0.4.0+59.gea74ae1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -131,7 +131,7 @@ environment.</p>
 
 <dl class="py method">
 <dt id="conda_pack.CondaEnv.exclude">
-<code class="sig-name descname">exclude</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pattern</span></em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.exclude" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">exclude</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pattern</span></em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.exclude" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exclude all files that match <code class="docutils literal notranslate"><span class="pre">pattern</span></code> from being packaged.</p>
 <p>This can be useful to remove functionality that isn’t needed in the
 archive but is part of the original conda package.</p>
@@ -167,7 +167,7 @@ archive but is part of the original conda package.</p>
 
 <dl class="py method">
 <dt id="conda_pack.CondaEnv.include">
-<code class="sig-name descname">include</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pattern</span></em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.include" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">include</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pattern</span></em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.include" title="Permalink to this definition">¶</a></dt>
 <dd><p>Re-add all excluded files that match <code class="docutils literal notranslate"><span class="pre">pattern</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -194,7 +194,7 @@ re-included.</p>
 
 <dl class="py method">
 <dt id="conda_pack.CondaEnv.pack">
-<code class="sig-name descname">pack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">output</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">format</span><span class="o">=</span><span class="default_value">'infer'</span></em>, <em class="sig-param"><span class="n">arcroot</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">dest_prefix</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">compress_level</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">n_threads</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">zip_symlinks</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">zip_64</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.pack" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">pack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">format</span><span class="o">=</span><span class="default_value">'infer'</span></em>, <em class="sig-param"><span class="n">arcroot</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">dest_prefix</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">compress_level</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">n_threads</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">zip_symlinks</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">zip_64</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#conda_pack.CondaEnv.pack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package the conda environment into an archive file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
