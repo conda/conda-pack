@@ -404,7 +404,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
     output : str, optional
         The path of the output file. Defaults to the environment name with a
         ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
-    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}, optional
+    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
+              'tbz2', 'tar', 'parcel'}, optional
         The archival format to use. By default this is inferred by the output
         file extension.
     arcroot : str, optional
@@ -901,7 +902,7 @@ _parcel_json_template = """\
   "extraVersionInfo": {{
     "baseVersion": "{parcel_version}",
     "fullVersion": "{parcel_version}",
-    "patchCount": "p0",
+    "patchCount": "p0"
   }},
   "groups": [],
   "name": "{parcel_name}",
