@@ -38,7 +38,7 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
                           zip_64=zip_64)
 
     # Tar archives
-    if format in ('tar.gz', 'tgz'):
+    if format in ('tar.gz', 'tgz', 'parcel'):
         if n_threads == 1:
             mode = 'w:gz'
             close_file = False
