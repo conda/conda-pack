@@ -269,9 +269,21 @@ class CondaEnv(object):
 
         return output, format
 
+    def _parcel_output(self, parcel_root, parcel_name, parcel_version, parcel_distro):
+        parcel_root = parcel_root or '/opt/cloudera/parcels'
+        parcel_name = parcel_name or self.name
+        if '-' in parcel_name:
+            raise CondaPackException("Parcel names may not have dashes: %s" % parcel_name)
+        parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
+        arcroot = parcel_name + '-' + parcel_version
+        triple = arcroot + '-' + (parcel_distro or 'el7')
+        dest_prefix = os.path.join(parcel_root, arcroot)
+        return dest_prefix, arcroot, triple
+
     def pack(self, output=None, format='infer',
              arcroot='', dest_prefix=None,
-             parcel_root=None, parcel_name=None, parcel_version=None,
+             parcel_root=None, parcel_name=None,
+             parcel_version=None, parcel_distro=None,
              verbose=False, force=False,
              compress_level=4, n_threads=1,
              zip_symlinks=False, zip_64=True):
@@ -294,21 +306,22 @@ class CondaEnv(object):
             If present, prefixes will be rewritten to this path before
             packaging. In this case the ``conda-unpack`` script will not be
             generated.
-        parcel_root, parcel_name, parcel_version : str, optional
-            (Parcels only) the root directory, name, and version of the parcel. The
-            name and version will be embedded into parcel metadata. The default
-            values are:
+        parcel_root, parcel_name, parcel_version, parcel_distro : str, optional
+            (Parcels only) the root directory, name, version, and target distribution
+            of the parcel. The name and version will be embedded into parcel metadata.
+            The default values are:
 
             - ``parcel_root``: ``/opt/cloudera/parcels``
             - ``parcel_name``: the base name of the environment directory
             - ``parcel_version``: the current date in ``YYYY.MM.DD`` format.
+            - ``parcel_distro``: ``el7``
 
             It is important that ``parcel_root`` match the directory into which all
-            parcels are unpacked on your cluster. The final destination of the parcel
+            parcels are unpacked on your cluster. Neither ``parcel_name`` nor
+            ``parcel_version`` may contain dashes. The final destination of the parcel
             is assumed to be ``parcel_root/parcel_name-parcel_version``, and both
-            ``arcroot`` and ``dest_prefix`` are set accordingly. Parcel names are
-            not allowed to have dashes, so if the environment directory has a dash,
-            an alternative name must be provided.
+            ``arcroot`` and ``dest_prefix`` are set accordingly. The default filename
+            will be ``parcel_name-parcel_version-parcel_distro.parcel``.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         force : bool, optional
@@ -346,17 +359,12 @@ class CondaEnv(object):
         if format == 'parcel':
             if dest_prefix or arcroot:
                 raise CondaPackException("Cannot specify 'dest_prefix'/'arcroot' for parcels")
-            parcel_root = parcel_root or '/opt/cloudera/parcels'
-            parcel_name = parcel_name or os.path.basename(self.prefix)
-            if '-' in parcel_name:
-                raise CondaPackException("Parcel names may not have dashes: %s" % parcel_name)
-            parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
-            arcroot = parcel_name + '-' + parcel_version
-            dest_prefix = os.path.join(parcel_root, arcroot)
+            dest_prefix, arcroot, parcel = self._parcel_output(parcel_root, parcel_name,
+                                                               parcel_version, parcel_distro)
             if output is None:
-                output = arcroot + '.parcel'
+                output = parcel + '.parcel'
         else:
-            parcel_version = None
+            parcel = None
             # Ensure the prefix is a relative path
             arcroot = arcroot.strip(os.path.sep) if arcroot else ''
 
@@ -376,7 +384,7 @@ class CondaEnv(object):
                                  zip_symlinks=zip_symlinks,
                                  zip_64=zip_64,
                                  n_threads=n_threads) as arc:
-                        packer = Packer(self.prefix, arc, dest_prefix, format == 'parcel')
+                        packer = Packer(self.prefix, arc, dest_prefix, parcel)
                         for f in files:
                             packer.add(f)
                         packer.finish()
@@ -425,7 +433,8 @@ class File(object):
 
 def pack(name=None, prefix=None, output=None, format='infer',
          arcroot='', dest_prefix=None,
-         parcel_root=None, parcel_name=None, parcel_version=None,
+         parcel_root=None, parcel_name=None,
+         parcel_version=None, parcel_distro=None,
          verbose=False, force=False,
          compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
          filters=None, ignore_editable_packages=False,
@@ -451,19 +460,22 @@ def pack(name=None, prefix=None, output=None, format='infer',
     dest_prefix : str, optional
         If present, prefixes will be rewritten to this path before packaging.
         In this case the ``conda-unpack`` script will not be generated.
-    parcel_root, parcel_name, parcel_version : str, optional
-        (Parcels only) the root directory, name, and version of the parcel. The
-        name and version will be embedded into parcel metadata. The default
-        values are:
+    parcel_root, parcel_name, parcel_version, parcel_distro : str, optional
+        (Parcels only) the root directory, name, version, and target
+        distribution of the parcel. The name and version will be embedded
+        into parcel metadata. The default values are:
 
         - ``parcel_root``: ``/opt/cloudera/parcels``
         - ``parcel_name``: the base name of the environment directory
         - ``parcel_version``: the current date in ``YYYY.MM.DD`` format.
+        - ``parcel_distro``: ``el7``
 
         It is important that ``parcel_root`` match the directory into which all
-        parcels are unpacked on your cluster. The final destination of the parcel
+        parcels are unpacked on your cluster. Neither ``parcel_name`` nor
+        ``parcel_version`` may contain dashes. The final destination of the parcel
         is assumed to be ``parcel_root/parcel_name-parcel_version``, and both
-        ``arcroot`` and ``dest_prefix`` are set accordingly.
+        ``arcroot`` and ``dest_prefix`` are set accordingly. The default filename
+        will be ``parcel_name-parcel_version-parcel_distro.parcel``.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     force : bool, optional
@@ -534,7 +546,7 @@ def pack(name=None, prefix=None, output=None, format='infer',
     return env.pack(output=output, format=format,
                     arcroot=arcroot, dest_prefix=dest_prefix,
                     parcel_root=parcel_root, parcel_name=parcel_name,
-                    parcel_version=parcel_version,
+                    parcel_version=parcel_version, parcel_distro=parcel_distro,
                     verbose=verbose, force=force,
                     compress_level=compress_level, n_threads=n_threads,
                     zip_symlinks=zip_symlinks, zip_64=zip_64)
@@ -935,8 +947,8 @@ _parcel_json_template = """\
   ],
   "extraVersionInfo": {{
     "baseVersion": "{parcel_version}",
-    "fullVersion": "{parcel_version}",
-    "patchCount": "p0"
+    "fullVersion": "{parcel_version}-{parcel_distro}",
+    "patchCount": "0"
   }},
   "groups": [],
   "name": "{parcel_name}",
@@ -1003,7 +1015,7 @@ def is_binary_file(data):
 
 
 class Packer(object):
-    def __init__(self, prefix, archive, dest_prefix=None, parcel=False):
+    def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
         self.prefix = prefix
         self.archive = archive
         self.dest = dest_prefix
@@ -1106,12 +1118,14 @@ class Packer(object):
             src = os.path.join(_current_dir, 'scripts', 'posix', 'parcel')
             dst = os.path.join('meta', 'conda_env.sh')
             self.archive.add(src, dst)
-            parcel_name, parcel_version = os.path.basename(self.dest).split('-', 1)
+            parcel_name, parcel_vd = self.parcel.split('-', 1)
+            parcel_version, parcel_distro = parcel_vd.rsplit('-', 1)
             parcel_packages = ',\n'.join(_parcel_package_template.format(**p)
                                          for p in self.packages)
             parcel_json = _parcel_json_template.format(parcel_name=parcel_name,
                                                        parcel_version=parcel_version,
-                                                       parcel_packages=parcel_packages)
+                                                       parcel_packages=parcel_packages,
+                                                       parcel_distro=parcel_distro)
             dst = os.path.join('meta', 'parcel.json')
             self._write_text_file(dst, parcel_json, False)
             return

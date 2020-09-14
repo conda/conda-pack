@@ -24,11 +24,13 @@ Use Cases
 
 - Bundling an application with its environment for deployment
 
-- Packaging a conda environment for usage with Apache Spark when deploying on
+- Packaging a conda environment for use with Apache Spark when deploying on
   YARN (:doc:`see here <spark>` for more information).
 
 - Packaging a conda environment for deployment on Apache YARN. One way to do
   this is to use `Skein <https://jcrist.github.io/skein/>`_.
+
+- Packaging a conda environment as a standard Cloudera parcel.
 
 - Archiving an environment in a functioning state. Note that a more sustainable
   way to do this is to specify your environment as a `environment.yml

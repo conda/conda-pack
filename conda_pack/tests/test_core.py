@@ -529,7 +529,7 @@ def test_parcel(tmpdir, py36_env):
         pytest.skip("Not parcel tests on Windows")
     arcroot = 'py36-1234.56'
 
-    out_path = os.path.join(str(tmpdir), arcroot + '.parcel')
+    out_path = os.path.join(str(tmpdir), arcroot + '-el7.parcel')
 
     pdir = os.getcwd()
     try:

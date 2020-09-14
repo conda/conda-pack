@@ -64,6 +64,8 @@ def build_parser():
     parser.add_argument("--parcel-version", default=None,
                         help="The version number for the parcel. The default value "
                         "is the current date, using the format YYYY.MM.DD.")
+    parser.add_argument("--parcel-distro", default=None,
+                        help="The distribution for the parcel. The default value is 'el7'.")
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
                                  'tbz2', 'tar', 'parcel'],
@@ -135,12 +137,8 @@ def build_parser():
 PARSER = build_parser()
 
 
-def warn(msg):
-    print(msg, file=sys.stderr)
-
-
 def fail(msg):
-    warn(msg)
+    print(msg, file=sys.stderr)
     sys.exit(1)
 
 
@@ -168,6 +166,7 @@ def main(args=None, pack=pack):
                  parcel_root=args.parcel_root,
                  parcel_name=args.parcel_name,
                  parcel_version=args.parcel_version,
+                 parcel_distro=args.parcel_distro,
                  verbose=not args.quiet,
                  filters=args.filters,
                  ignore_editable_packages=args.ignore_editable_packages,
