@@ -71,28 +71,10 @@ context = _Context()
 
 
 class CondaEnv(object):
-    """A Conda Environment for packaging.
+    """A Conda environment for packaging.
 
     Use :func:`CondaEnv.from_prefix`, :func:`CondaEnv.from_name`, or
     :func:`CondaEnv.from_default` instead of the default constructor.
-
-    Examples
-    --------
-
-    Package the current environment, excluding all ``*.pyc`` and ``*.pyx``
-    files, into a ``tar.gz`` archive:
-
-    >>> (CondaEnv.from_default()
-    ...          .exclude("*.pyc")
-    ...          .exclude("*.pyx")
-    ...          .pack(output="output.tar.gz"))
-    "/full/path/to/output.tar.gz"
-
-    Package the environment ``foo`` into a zip archive:
-
-    >>> (CondaEnv.from_name("foo")
-    ...          .pack(output="foo.zip"))
-    "/full/path/to/foo.zip"
 
     Attributes
     ----------
@@ -101,8 +83,6 @@ class CondaEnv(object):
     files : list of File
         A list of :class:`File` objects representing all files in conda
         environment.
-    name : str
-        The name of the conda environment.
     """
     def __init__(self, prefix, files, excluded_files=None):
         self.prefix = prefix
@@ -118,10 +98,28 @@ class CondaEnv(object):
     def __iter__(self):
         return iter(self.files)
 
-    @property
-    def name(self):
-        """The name of the environment"""
-        return os.path.basename(self.prefix)
+    @classmethod
+    def from_name(cls, name, **kwargs):
+        """Create a ``CondaEnv`` from a named environment.
+
+        Parameters
+        ----------
+        name : str
+            The name of the conda environment.
+
+        Returns
+        -------
+        env : CondaEnv
+
+        Examples
+        --------
+        Package the environment ``foo`` into a zip archive:
+
+        >>> (CondaEnv.from_name("foo")
+        ...          .pack(output="foo.zip"))
+        "/full/path/to/foo.zip"
+        """
+        return cls.from_prefix(name_to_prefix(name), **kwargs)
 
     @classmethod
     def from_prefix(cls, prefix, **kwargs):
@@ -135,25 +133,18 @@ class CondaEnv(object):
         Returns
         -------
         env : CondaEnv
+
+        Examples
+        --------
+        Package the environment ``foo`` into a parcel:
+
+        >>> (CondaEnv.from_prefix("/path/to/envs/foo")
+        ...          .pack(format="parcel", parcel_version="2020.09.01"))
+        "/full/path/to/foo-2020.09.01.parcel"
         """
         prefix = os.path.abspath(prefix)
         files = load_environment(prefix, **kwargs)
         return cls(prefix, files)
-
-    @classmethod
-    def from_name(cls, name, **kwargs):
-        """Create a ``CondaEnv`` from a named environment.
-
-        Parameters
-        ----------
-        name : str
-            The name of the conda environment.
-
-        Returns
-        -------
-        env : CondaEnv
-        """
-        return cls.from_prefix(name_to_prefix(name), **kwargs)
 
     @classmethod
     def from_default(cls, **kwargs):
@@ -162,6 +153,15 @@ class CondaEnv(object):
         Returns
         -------
         env : CondaEnv
+
+        Examples
+        --------
+        Package the current environment into a ``tar.gz`` archive:
+
+        >>> (CondaEnv.from_default()
+        ...          .pack(output="output.tar.gz"))
+        "/full/path/to/output.tar.gz"
+
         """
         return cls.from_prefix(name_to_prefix(), **kwargs)
 
@@ -235,7 +235,12 @@ class CondaEnv(object):
                 exclude(f)
         return CondaEnv(self.prefix, files, excluded)
 
-    def _output_and_format(self, output=None, format='infer', parcel_info=None):
+    @property
+    def name(self):
+        """The name of the environment"""
+        return os.path.basename(self.prefix)
+
+    def _output_and_format(self, output=None, format='infer'):
         if output is None and format == 'infer':
             format = 'tar.gz'
         elif format == 'infer':
@@ -258,28 +263,30 @@ class CondaEnv(object):
                 raise CondaPackException("Invalid format for parcel %r" % format)
             format = 'parcel'
 
-        if output is None:
-            if parcel_info:
-                name = '{parcel_name}-{parcel_version}'.format(**parcel_info)
-            else:
-                name = self.name
-            output = os.extsep.join([name, format])
+        # Construct the parcel name outside of this function
+        if output is None and format != 'parcel':
+            output = os.extsep.join([self.name, format])
 
         return output, format
 
-    def pack(self, output=None, format='infer', arcroot='', dest_prefix=None,
-             parcel_info=None, verbose=False, force=False, compress_level=4,
-             n_threads=1, zip_symlinks=False, zip_64=True):
+    def pack(self, output=None, format='infer',
+             arcroot='', dest_prefix=None,
+             parcel_root=None, parcel_name=None, parcel_version=None,
+             verbose=False, force=False,
+             compress_level=4, n_threads=1,
+             zip_symlinks=False, zip_64=True):
         """Package the conda environment into an archive file.
 
         Parameters
         ----------
         output : str, optional
-            The path of the output file. Defaults to the environment name with a
-            ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
-        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar'}
-            The archival format to use. By default this is inferred by the
-            output file extension.
+            The path of the output file. The basename of the output file defaults
+            to the basename of the ``dest_prefix`` value, if supplied; otherwise to
+            the basename of the environment. The suffix will be determined by the
+            output format (e.g. ``my_env.tar.gz``).
+        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}
+            The archival format to use. By default this is inferred from the
+            output file extension, and defaults to ``tar.gz`` if this is not supplied.
         arcroot : str, optional
             The relative path in the archive to the conda environment.
             Defaults to ''.
@@ -287,6 +294,21 @@ class CondaEnv(object):
             If present, prefixes will be rewritten to this path before
             packaging. In this case the ``conda-unpack`` script will not be
             generated.
+        parcel_root, parcel_name, parcel_version : str, optional
+            (Parcels only) the root directory, name, and version of the parcel. The
+            name and version will be embedded into parcel metadata. The default
+            values are:
+
+            - ``parcel_root``: ``/opt/cloudera/parcels``
+            - ``parcel_name``: the base name of the environment directory
+            - ``parcel_version``: the current date in ``YYYY.MM.DD`` format.
+
+            It is important that ``parcel_root`` match the directory into which all
+            parcels are unpacked on your cluster. The final destination of the parcel
+            is assumed to be ``parcel_root/parcel_name-parcel_version``, and both
+            ``arcroot`` and ``dest_prefix`` are set accordingly. Parcel names are
+            not allowed to have dashes, so if the environment directory has a dash,
+            an alternative name must be provided.
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         force : bool, optional
@@ -301,15 +323,15 @@ class CondaEnv(object):
             on this machine. If a file format doesn't support threaded
             packaging, this option will be ignored. Default is 1.
         zip_symlinks : bool, optional
-            Symbolic links aren't supported by the Zip standard, but are
-            supported by *many* common Zip implementations. If True, store
-            symbolic links in the archive, instead of the file referred to
-            by the link. This can avoid storing multiple copies of the same
-            files. *Note that the resulting archive may silently fail on
-            decompression if the ``unzip`` implementation doesn't support
-            symlinks*. Default is False. Ignored if format isn't ``zip``.
+            (``zip`` format only) Symbolic links aren't supported by the Zip standard,
+            but are supported by *many* common Zip implementations. If ``True``, symbolic
+            links will be stored in the archive. If ``False``, a copy of the linked file
+            will be included instead. Choosing ``True`` can avoid storing multiple copies
+            of the same file, but the archive *may silently fail* on decompression if the
+            ``unzip`` implementation does not support symbolic links. For that reason,
+            the default is ``False``.
         zip_64 : bool, optional
-            Whether to enable ZIP64 extensions. Default is True.
+            (``zip`` format only) Whether to enable ZIP64 extensions. Default is True.
 
         Returns
         -------
@@ -317,11 +339,26 @@ class CondaEnv(object):
             The path to the archived environment.
         """
         from .formats import archive
-        # Ensure the prefix is a relative path
-        arcroot = arcroot.strip(os.path.sep)
 
         # The output path and archive format
-        output, format = self._output_and_format(output, format, parcel_info)
+        output, format = self._output_and_format(output, format)
+
+        if format == 'parcel':
+            if dest_prefix or arcroot:
+                raise CondaPackException("Cannot specify 'dest_prefix'/'arcroot' for parcels")
+            parcel_root = parcel_root or '/opt/cloudera/parcels'
+            parcel_name = parcel_name or os.path.basename(self.prefix)
+            if '-' in parcel_name:
+                raise CondaPackException("Parcel names may not have dashes: %s" % parcel_name)
+            parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
+            arcroot = parcel_name + '-' + parcel_version
+            dest_prefix = os.path.join(parcel_root, arcroot)
+            if output is None:
+                output = arcroot + '.parcel'
+        else:
+            parcel_version = None
+            # Ensure the prefix is a relative path
+            arcroot = arcroot.strip(os.path.sep) if arcroot else ''
 
         if os.path.exists(output) and not force:
             raise CondaPackException("File %r already exists" % output)
@@ -339,8 +376,7 @@ class CondaEnv(object):
                                  zip_symlinks=zip_symlinks,
                                  zip_64=zip_64,
                                  n_threads=n_threads) as arc:
-                        packer = Packer(self.prefix, arc,
-                                        parcel_info=parcel_info, dest_prefix=dest_prefix)
+                        packer = Packer(self.prefix, arc, dest_prefix, format == 'parcel')
                         for f in files:
                             packer.add(f)
                         packer.finish()
@@ -388,8 +424,9 @@ class File(object):
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot='', dest_prefix=None, parcel_root=None,
-         parcel_name=None, parcel_version=None, verbose=False, force=False,
+         arcroot='', dest_prefix=None,
+         parcel_root=None, parcel_name=None, parcel_version=None,
+         verbose=False, force=False,
          compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
          filters=None, ignore_editable_packages=False,
          ignore_missing_files=False):
@@ -401,25 +438,32 @@ def pack(name=None, prefix=None, output=None, format='infer',
         The name of the conda environment to pack.
     prefix : str, optional
         A path to a conda environment to pack.
+        Only one of ``name`` and ``prefix`` should be supplied.
     output : str, optional
         The path of the output file. Defaults to the environment name with a
-        ``.tar.gz`` suffix (e.g. ``my_env.tar.gz``).
-    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
-              'tbz2', 'tar', 'parcel'}, optional
-        The archival format to use. By default this is inferred by the output
-        file extension.
+        suffix determined by the format; e.g. ``my_env.tar.gz``.
+    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}, optional
+        The archival format to use. By default, this is inferred from the output
+        file extension, and defaults to ``tar.gz`` if ``output`` is not supplied.
     arcroot : str, optional
         The relative path in the archive to the conda environment.
         Defaults to ''.
     dest_prefix : str, optional
         If present, prefixes will be rewritten to this path before packaging.
         In this case the ``conda-unpack`` script will not be generated.
-    parcel_root: str, optional
-    parcel_name: str, optional
-    parcel_version: str, optional
-        If present and the parcel format is selected, these will be used to
-        construct a dest_prefix value. The dest_prefix must not be provided
-        in this case.
+    parcel_root, parcel_name, parcel_version : str, optional
+        (Parcels only) the root directory, name, and version of the parcel. The
+        name and version will be embedded into parcel metadata. The default
+        values are:
+
+        - ``parcel_root``: ``/opt/cloudera/parcels``
+        - ``parcel_name``: the base name of the environment directory
+        - ``parcel_version``: the current date in ``YYYY.MM.DD`` format.
+
+        It is important that ``parcel_root`` match the directory into which all
+        parcels are unpacked on your cluster. The final destination of the parcel
+        is assumed to be ``parcel_root/parcel_name-parcel_version``, and both
+        ``arcroot`` and ``dest_prefix`` are set accordingly.
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     force : bool, optional
@@ -430,19 +474,19 @@ def pack(name=None, prefix=None, output=None, format='infer',
         output file size at the expense of compression time. Ignored for
         ``format='zip'``. Default is 4.
     zip_symlinks : bool, optional
-        Symbolic links aren't supported by the Zip standard, but are supported
-        by *many* common Zip implementations. If True, store symbolic links in
-        the archive, instead of the file referred to by the link. This can
-        avoid storing multiple copies of the same files. *Note that the
-        resulting archive may silently fail on decompression if the ``unzip``
-        implementation doesn't support symlinks*. Default is False. Ignored if
-        format isn't ``zip``.
+        (``zip`` format only) Symbolic links aren't supported by the Zip standard,
+        but are supported by *many* common Zip implementations. If ``True``, symbolic
+        links will be stored in the archive. If ``False``, a copy of the linked file
+        will be included instead. Choosing ``True`` can avoid storing multiple copies
+        of the same file, but the archive *may silently fail* on decompression if the
+        ``unzip`` implementation does not support symbolic links. For that reason,
+        the default is ``False``.
     n_threads : int, optional
         The number of threads to use. Set to -1 to use the number of cpus on
         this machine. If a file format doesn't support threaded packaging, this
         option will be ignored. Default is 1.
     zip_64 : bool, optional
-        Whether to enable ZIP64 extensions. Default is True.
+        (``zip`` format only) Whether to enable ZIP64 extensions. Default is True.
     filters : list, optional
         A list of filters to apply to the files. Each filter is a tuple of
         ``(kind, pattern)``, where ``kind`` is either ``'exclude'`` or
@@ -460,12 +504,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
     out_path : str
         The path to the archived environment.
     """
-    # Simple argument validations
     if name and prefix:
         raise CondaPackException("Cannot specify both 'name' and 'prefix'")
-    is_parcel = format == 'parcel' or output and output.endswith('.parcel')
-    if is_parcel and (dest_prefix or arcroot):
-        raise CondaPackException("Cannot specify 'dest_prefix'/'arcroot' for parcels")
 
     if verbose:
         print("Collecting packages...")
@@ -475,7 +515,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
                                    ignore_editable_packages=ignore_editable_packages,
                                    ignore_missing_files=ignore_missing_files)
     elif name:
-        env = CondaEnv.from_name(name, ignore_editable_packages=ignore_editable_packages,
+        env = CondaEnv.from_name(name,
+                                 ignore_editable_packages=ignore_editable_packages,
                                  ignore_missing_files=ignore_missing_files)
     else:
         env = CondaEnv.from_default(ignore_editable_packages=ignore_editable_packages,
@@ -490,17 +531,10 @@ def pack(name=None, prefix=None, output=None, format='infer',
             else:
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
-    parcel_info = None
-    if format == 'parcel' or output and output.endswith('.parcel'):
-        parcel_root = parcel_root or '/opt/cloudera/parcels'
-        parcel_name = parcel_name or os.path.basename(env.prefix)
-        parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
-        arcroot = parcel_name + '-' + parcel_version
-        dest_prefix = os.path.join(parcel_root, arcroot)
-        parcel_info = dict(parcel_name=parcel_name, parcel_version=parcel_version)
-
-    return env.pack(output=output, format=format, arcroot=arcroot,
-                    dest_prefix=dest_prefix, parcel_info=parcel_info,
+    return env.pack(output=output, format=format,
+                    arcroot=arcroot, dest_prefix=dest_prefix,
+                    parcel_root=parcel_root, parcel_name=parcel_name,
+                    parcel_version=parcel_version,
                     verbose=verbose, force=force,
                     compress_level=compress_level, n_threads=n_threads,
                     zip_symlinks=zip_symlinks, zip_64=zip_64)
@@ -969,17 +1003,14 @@ def is_binary_file(data):
 
 
 class Packer(object):
-    def __init__(self, prefix, archive, parcel_info=None, dest_prefix=None):
+    def __init__(self, prefix, archive, dest_prefix=None, parcel=False):
         self.prefix = prefix
         self.archive = archive
         self.dest = dest_prefix
         self.has_dest = dest_prefix is not None
-        self.has_conda = False
+        self.parcel = parcel
         self.prefixes = []
-        self.parcel = bool(parcel_info)
-        if self.parcel:
-            self.parcel_info = parcel_info.copy()
-            self.parcel_info['parcel_packages'] = []
+        self.packages = []
 
     def add(self, file):
         # Windows note:
@@ -1003,11 +1034,7 @@ class Packer(object):
             if fnmatch(file.target, 'conda-meta/*.json'):
                 # Detect if conda is installed
                 out, data = rewrite_conda_meta(file.source)
-                if self.parcel:
-                    package_info = _parcel_package_template.format(**data)
-                    self.parcel_info['parcel_packages'].append(package_info)
-                if data['name'] == 'conda':
-                    self.has_conda = True
+                self.packages.append(data)
                 self.archive.add_bytes(file.source, out, file.target)
             else:
                 self.archive.add(file.source, file.target)
@@ -1074,20 +1101,24 @@ class Packer(object):
     def finish(self):
         from . import __version__  # local import to avoid circular imports
 
-        # Add parcel info
+        # Parcel mode
         if self.parcel:
             src = os.path.join(_current_dir, 'scripts', 'posix', 'parcel')
             dst = os.path.join('meta', 'conda_env.sh')
             self.archive.add(src, dst)
-            self.parcel_info['parcel_packages'] = ',\n'.join(
-                self.parcel_info['parcel_packages'])
-            parcel_json = _parcel_json_template.format(**self.parcel_info)
+            parcel_name, parcel_version = os.path.basename(self.dest).split('-', 1)
+            parcel_packages = ',\n'.join(_parcel_package_template.format(**p)
+                                         for p in self.packages)
+            parcel_json = _parcel_json_template.format(parcel_name=parcel_name,
+                                                       parcel_version=parcel_version,
+                                                       parcel_packages=parcel_packages)
             dst = os.path.join('meta', 'parcel.json')
             self._write_text_file(dst, parcel_json, False)
             return
 
         # Add conda-pack's activate/deactivate scripts
-        if not (self.has_dest and self.has_conda):
+        has_conda = any(d['name'] == 'conda' for d in self.packages)
+        if not (self.has_dest and has_conda):
             for source, target in _scripts:
                 self.archive.add(source, target)
 

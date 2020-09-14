@@ -218,7 +218,7 @@ def test_output_and_format(py36_env):
 
         o, f = py36_env._output_and_format(format=format)
         assert f == format
-        assert o == output
+        assert o == (None if f == 'parcel' else output)
 
         o, f = py36_env._output_and_format(output=output)
         assert o == output
