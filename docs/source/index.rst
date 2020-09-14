@@ -1,10 +1,16 @@
 Conda-Pack
 ==========
 
-``conda-pack`` is a command line tool for creating relocatable `conda
-environments <https://conda.io/docs/>`_. This is useful for deploying code in a
-consistent environment, potentially in a location where python/conda isn't
-already installed.
+``conda-pack`` is a command line tool for creating archives of `conda
+environments <https://conda.io/docs/>`_ that can be installed on other
+systems and locations. This is useful for deploying code in a consistent
+environment—potentially where python and/or conda isn't already installed.
+
+A tool like ``conda-pack`` is necessary because conda environments *are
+not relocatable*. Simply moving an environment to a different directory
+can render it partially or completely inoperable. ``conda-pack`` addresses
+this challenge by building archives from original conda package sources
+and reproducing conda's own relocation logic.
 
 .. raw:: html
 
@@ -36,12 +42,14 @@ Installation
 It's recommended to install in your root conda environment - the ``conda pack``
 command will then be available in all sub-environments as well.
 
-**Install from Conda-Forge:**
+**Install with conda:**
 
-``conda-pack`` is available on `conda-forge <https://conda-forge.org/>`_:
+``conda-pack`` is available from `Anaconda <https://anaconda.com>`_
+as well as from `conda-forge <https://conda-forge.org/>`_:
 
 .. code::
 
+    conda install conda-pack
     conda install -c conda-forge conda-pack
 
 
@@ -59,7 +67,6 @@ installed from PyPI:
 
 ``conda-pack`` is `available on github <https://github.com/conda/conda-pack>`_
 and can always be installed from source.
-
 
 .. code::
 
@@ -148,10 +155,16 @@ This tool has a few caveats.
 
 - Conda must be installed and be on your path.
 
-- The os *type* where the environment was built must match the os *type* of the
-  target. This means that environments built on windows can't be relocated to
-  linux.
+- The OS where the environment was built must match the OS of the target.
+  This means that environments built on Windows can't be relocated to Linux.
 
+- Once an environment is unpacked and ``conda-unpack`` has been executed,
+  it *cannot* be relocated. Re-applying ``conda-pack`` is unlikely to work.
+
+- ``conda-pack`` is not well-suited for archiving old environments, because it
+  requires that conda's package cache have all of the environment's packages
+  present. It is intended for building archives from actively maintained
+  conda environments.
 
 .. toctree::
     :hidden:
