@@ -28,7 +28,8 @@ def build_parser():
     if sys.version_info >= (3, 5):
         kwargs['allow_abbrev'] = False
     parser = argparse.ArgumentParser(**kwargs)
-    parser.add_argument("--name", "-n", metavar="ENV",
+    parser.add_argument("--name", "-n",
+                        metavar="ENV",
                         help="The name of the environment to pack. "
                         "If neither --name nor --prefix are supplied, "
                         "the current activated environment is packed.")
