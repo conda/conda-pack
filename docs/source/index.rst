@@ -24,7 +24,7 @@ Use Cases
 
 - Bundling an application with its environment for deployment
 
-- Packaging a conda environment for usage with Apache Spark when deploying on
+- Packaging a conda environment for use with Apache Spark when deploying on
   YARN (:doc:`see here <spark>` for more information).
 
 - Packaging a conda environment for deployment on Apache YARN. One way to do
@@ -35,6 +35,11 @@ Use Cases
   <https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment>`_,
   and recreate the environment when needed.
 
+- *BETA*: Packaging a conda environment as a standard Cloudera parcel. This is
+  a newly added capability. It has been tested on a live cluster, but different
+  cluster configurations may produce different results. We welcome users to
+  `file an issue <https://github.com/conda/conda-pack/issues>`_ if necessary.
+  :doc:`See here <parcel>` for more information).
 
 Installation
 ------------
@@ -169,6 +174,8 @@ This tool has a few caveats.
 .. toctree::
     :hidden:
 
-    api.rst
     cli.rst
+    api.rst
     spark.rst
+    parcel.rst
+

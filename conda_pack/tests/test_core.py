@@ -213,12 +213,12 @@ def test_output_and_format(py36_env):
     assert output == 'py36.tar.gz'
     assert format == 'tar.gz'
 
-    for format in ['tar.gz', 'tar.bz2', 'tar', 'zip']:
+    for format in ['tar.gz', 'tar.bz2', 'tar', 'zip', 'parcel']:
         output = os.extsep.join([py36_env.name, format])
 
         o, f = py36_env._output_and_format(format=format)
         assert f == format
-        assert o == output
+        assert o == (None if f == 'parcel' else output)
 
         o, f = py36_env._output_and_format(output=output)
         assert o == output
@@ -233,6 +233,9 @@ def test_output_and_format(py36_env):
 
     with pytest.raises(CondaPackException):
         py36_env._output_and_format(output='foo.bar')
+
+    with pytest.raises(CondaPackException):
+        py36_env._output_and_format(output='foo.parcel', format='zip')
 
 
 def test_roundtrip(tmpdir, py36_env):
@@ -476,6 +479,37 @@ def test_pack(tmpdir, py36_env):
     assert diff == set(os.path.join(BIN_DIR_L, f) for f in fnames)
 
 
+def _test_dest_prefix(src_prefix, dest_prefix, arcroot, out_path, format):
+    if on_win:
+        test_files = ['Scripts/conda-pack-test-lib1',
+                      'Scripts/pytest.exe']
+    else:
+        test_files = ['bin/conda-pack-test-lib1',
+                      'bin/pytest',
+                      'bin/clear']
+
+    orig_bytes = src_prefix.encode()
+    orig_bytes_l = src_prefix.lower().encode() if on_win else orig_bytes
+    new_bytes = dest_prefix.encode()
+    new_bytes_l = dest_prefix.lower().encode() if on_win else new_bytes
+
+    # all paths, including shebangs, are rewritten using the prefix
+    with tarfile.open(out_path) as fil:
+        for path in fil.getnames():
+            assert os.path.basename(path) != 'conda-unpack', path
+            if arcroot:
+                assert path.startswith(arcroot), path
+        for test_file in test_files:
+            orig_path = os.path.join(src_prefix, test_file)
+            dest_path = os.path.join(arcroot, test_file)
+            with open(orig_path, 'rb') as fil2:
+                orig_data = fil2.read()
+            if orig_bytes in orig_data:
+                data = fil.extractfile(dest_path).read()
+                assert orig_bytes not in data and orig_bytes_l not in data, test_file
+                assert new_bytes in data or new_bytes_l in data, test_file
+
+
 def test_dest_prefix(tmpdir, py36_env):
     out_path = os.path.join(str(tmpdir), 'py36.tar')
     dest = r'c:\foo\bar\baz\biz' if on_win else '/foo/bar/baz/biz'
@@ -487,35 +521,45 @@ def test_dest_prefix(tmpdir, py36_env):
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
 
-    with tarfile.open(out_path) as fil:
-        paths = fil.getnames()
+    _test_dest_prefix(py36_env.prefix, dest, '', out_path, 'r')
 
-    # No conda-unpack generated
-    assert 'conda-unpack' not in paths
 
+def test_parcel(tmpdir, py36_env):
     if on_win:
-        test_files = ['Scripts/conda-pack-test-lib1',
-                      'Scripts/pytest.exe']
-    else:
-        test_files = ['bin/conda-pack-test-lib1',
-                      'bin/pytest',
-                      'bin/clear']
+        pytest.skip("Not parcel tests on Windows")
+    arcroot = 'py36-1234.56'
 
-    orig_bytes = py36_env.prefix.encode()
-    orig_bytes_l = py36_env.prefix.lower().encode() if on_win else orig_bytes
-    new_bytes = dest.encode()
-    new_bytes_l = dest.lower().encode() if on_win else new_bytes
+    out_path = os.path.join(str(tmpdir), arcroot + '-el7.parcel')
 
-    # all paths, including shebangs, are rewritten using the prefix
+    pdir = os.getcwd()
+    try:
+        os.chdir(str(tmpdir))
+        res = pack(prefix=py36_path, format='parcel', parcel_version='1234.56')
+    finally:
+        os.chdir(pdir)
+
+    assert os.path.join(str(tmpdir), res) == out_path
+    assert os.path.exists(out_path)
+
+    # Verify that only the parcel files were added
+    with tarfile.open(out_path, 'r:gz') as fil:
+        paths = fil.getnames()
+    sol = set(os.path.join(arcroot, f.target) for f in py36_env.files)
+    diff = set(paths).difference(sol)
+    fnames = ('conda_env.sh', 'parcel.json')
+    assert diff == set(os.path.join(arcroot, 'meta', f) for f in fnames)
+
+    # Verify correct metadata in parcel.json
     with tarfile.open(out_path) as fil:
-        for test_file in test_files:
-            orig_path = os.path.join(py36_env.prefix, test_file)
-            with open(orig_path, 'rb') as fil2:
-                orig_data = fil2.read()
-            if orig_bytes in orig_data:
-                data = fil.extractfile(test_file).read()
-                assert orig_bytes not in data and orig_bytes_l not in data, test_file
-                assert new_bytes in data or new_bytes_l in data, test_file
+        fpath = os.path.join(arcroot, 'meta', 'parcel.json')
+        data = fil.extractfile(fpath).read()
+    data = json.loads(data)
+    assert data['name'] == 'py36' and data['components'][0]['name'] == 'py36'
+    assert data['version'] == '1234.56' and data['components'][0]['version'] == '1234.56'
+
+    # Verify the correct dest_prefix substitution
+    dest = os.path.join('/opt/cloudera/parcels', arcroot)
+    _test_dest_prefix(py36_env.prefix, dest, arcroot, out_path, 'r:gz')
 
 
 def test_activate(tmpdir):
