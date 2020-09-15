@@ -55,17 +55,18 @@ def build_parser():
                               "--parcel-root, --parcel-name, and "
                               "--parcel-version options."))
     parser.add_argument("--parcel-root", default=None,
-                        help="The location where all parcels are unpacked on the "
-                        "target Hadoop cluster (default: '/opt/cloudera/parcels'). "
-                        "Ignored if the format is not a parcel.")
+                        help="(Parcels only) The location where all parcels are unpacked "
+                        "on the target Hadoop cluster (default: '/opt/cloudera/parcels').")
     parser.add_argument("--parcel-name", default=None,
-                        help="The name of the parcel, without a version suffix. "
-                        "The default value is the local environment name.")
+                        help="(Parcels only) The name of the parcel, without a version "
+                        "suffix. The default value is the local environment name. The parcel "
+                        "name may not have any hyphens.")
     parser.add_argument("--parcel-version", default=None,
-                        help="The version number for the parcel. The default value "
-                        "is the current date, using the format YYYY.MM.DD.")
+                        help="(Parcels only) The version number for the parcel. The default "
+                        "value is the current date, using the format YYYY.MM.DD.")
     parser.add_argument("--parcel-distro", default=None,
-                        help="The distribution for the parcel. The default value is 'el7'.")
+                        help="(Parcels only) The distribution type for the parcel. The "
+                        "default value is 'el7'. This value cannot have any hyphens.")
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
                                  'tbz2', 'tar', 'parcel'],

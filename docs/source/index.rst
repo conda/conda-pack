@@ -171,6 +171,6 @@ This tool has a few caveats.
 .. toctree::
     :hidden:
 
-    api.rst
     cli.rst
+    api.rst
     spark.rst

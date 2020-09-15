@@ -83,6 +83,34 @@ class CondaEnv(object):
     files : list of File
         A list of :class:`File` objects representing all files in conda
         environment.
+
+    Examples
+    --------
+    Package the environment ``foo`` into a zip archive:
+
+    >>> (CondaEnv.from_name("foo")
+    ...          .pack(output="foo.zip"))
+    "/full/path/to/foo.zip"
+
+    Package the environment ``foo`` into a parcel:
+
+    >>> (CondaEnv.from_prefix("/path/to/envs/foo")
+    ...          .pack(format="parcel", parcel_version="2020.09.01"))
+    "/full/path/to/foo-2020.09.01.parcel"
+
+    Package the current environment into a ``tar.gz`` archive:
+
+    >>> (CondaEnv.from_default()
+    ...          .pack(output="output.tar.gz"))
+    "/full/path/to/output.tar.gz"
+
+    Create a CondaEnv object from the current environment, excluding all
+    ``*.pyx`` files, except those from ``cytoolz``.
+
+    >>> env = (CondaEnv.from_default()
+    ...                .exclude("*.pyx")
+    ...                .include("lib/python3.6/site-packages/cytoolz/*.pyx"))
+    CondaEnv<'~/miniconda/envs/example', 1234 files>
     """
     def __init__(self, prefix, files, excluded_files=None):
         self.prefix = prefix
@@ -98,6 +126,11 @@ class CondaEnv(object):
     def __iter__(self):
         return iter(self.files)
 
+    @property
+    def name(self):
+        """The name of the environment"""
+        return os.path.basename(self.prefix)
+
     @classmethod
     def from_name(cls, name, **kwargs):
         """Create a ``CondaEnv`` from a named environment.
@@ -110,14 +143,6 @@ class CondaEnv(object):
         Returns
         -------
         env : CondaEnv
-
-        Examples
-        --------
-        Package the environment ``foo`` into a zip archive:
-
-        >>> (CondaEnv.from_name("foo")
-        ...          .pack(output="foo.zip"))
-        "/full/path/to/foo.zip"
         """
         return cls.from_prefix(name_to_prefix(name), **kwargs)
 
@@ -133,14 +158,6 @@ class CondaEnv(object):
         Returns
         -------
         env : CondaEnv
-
-        Examples
-        --------
-        Package the environment ``foo`` into a parcel:
-
-        >>> (CondaEnv.from_prefix("/path/to/envs/foo")
-        ...          .pack(format="parcel", parcel_version="2020.09.01"))
-        "/full/path/to/foo-2020.09.01.parcel"
         """
         prefix = os.path.abspath(prefix)
         files = load_environment(prefix, **kwargs)
@@ -153,15 +170,6 @@ class CondaEnv(object):
         Returns
         -------
         env : CondaEnv
-
-        Examples
-        --------
-        Package the current environment into a ``tar.gz`` archive:
-
-        >>> (CondaEnv.from_default()
-        ...          .pack(output="output.tar.gz"))
-        "/full/path/to/output.tar.gz"
-
         """
         return cls.from_prefix(name_to_prefix(), **kwargs)
 
@@ -180,20 +188,6 @@ class CondaEnv(object):
         -------
         env : CondaEnv
             A new env with any matching files excluded.
-
-        Examples
-        --------
-
-        Exclude all ``*.pyx`` files, except those from ``cytoolz``.
-
-        >>> env = (CondaEnv.from_default()
-        ...                .exclude("*.pyx")
-        ...                .include("lib/python3.6/site-packages/cytoolz/*.pyx"))
-        CondaEnv<'~/miniconda/envs/example', 1234 files>
-
-        See Also
-        --------
-        include
         """
         files = []
         excluded = list(self._excluded_files)  # copy
@@ -219,10 +213,6 @@ class CondaEnv(object):
         env : CondaEnv
             A new env with any matching files that were previously excluded
             re-included.
-
-        See Also
-        --------
-        exclude
         """
         files = list(self.files)  # copy
         excluded = []
@@ -234,11 +224,6 @@ class CondaEnv(object):
             else:
                 exclude(f)
         return CondaEnv(self.prefix, files, excluded)
-
-    @property
-    def name(self):
-        """The name of the environment"""
-        return os.path.basename(self.prefix)
 
     def _output_and_format(self, output=None, format='infer'):
         if output is None and format == 'infer':
@@ -272,11 +257,14 @@ class CondaEnv(object):
     def _parcel_output(self, parcel_root, parcel_name, parcel_version, parcel_distro):
         parcel_root = parcel_root or '/opt/cloudera/parcels'
         parcel_name = parcel_name or self.name
+        parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
+        parcel_distro = parcel_distro or 'el7'
         if '-' in parcel_name:
             raise CondaPackException("Parcel names may not have dashes: %s" % parcel_name)
-        parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
+        if '-' in parcel_distro:
+            raise CondaPackException("Parcel distributions may not have dashes: %s" % parcel_distro)
         arcroot = parcel_name + '-' + parcel_version
-        triple = arcroot + '-' + (parcel_distro or 'el7')
+        triple = arcroot + '-' + parcel_distro
         dest_prefix = os.path.join(parcel_root, arcroot)
         return dest_prefix, arcroot, triple
 
