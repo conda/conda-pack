@@ -40,7 +40,7 @@ jobs:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
     - name: Deploy the documentation
-      if: github.event_name == 'push'
+      if: startsWith(github.ref, 'refs/tags/')
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
