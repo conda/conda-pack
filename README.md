@@ -2,15 +2,13 @@
 
 `conda-pack` is a command line tool for creating relocatable conda
 environments. This is useful for deploying code in a consistent environment,
-potentially in a location where python/conda isn't already installed.
+potentially in locations where python or conda isn't already installed.
 
 See the <a href="https://conda.github.io/conda-pack/">documentation</a>
 for more information.
 
-## Description
-
-New BSD. See the
-<a href="https://github.com/conda/conda-pack/blob/master/LICENSE.txt">license file.</a>
+Conda-pack is offered under a New BSD license; see the
+<a href="https://github.com/conda/conda-pack/blob/master/LICENSE.txt">license file</a>.
 
 ## Build status
 
