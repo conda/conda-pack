@@ -20,7 +20,7 @@ setup(name='conda-pack',
                    "Topic :: Software Development :: Build Tools"],
       license='BSD',
       description='Package conda environments for redistribution',
-      long_description=open('README.rst').read(),
+      long_description=open('README.md').read(),
       packages=['conda_pack'],
       package_data={'conda_pack': ['scripts/windows/*', 'scripts/posix/*']},
       entry_points='''
