@@ -12,6 +12,11 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
+    - name: Print github context
+      run: |
+        echo GITHUB_REF: "$GITHUB_REF"
+        echo GITHUB_HEAD_REF: "$GITHUB_HEAD_REF"
+        echo GITHUB_BASE_REF: "$GITHUB_BASE_REF"
     - name: Retrieve the source code
       uses: actions/checkout@v2
       with:
@@ -25,7 +30,7 @@ jobs:
       run: |
         source /usr/share/miniconda/bin/activate
         flake8 conda_pack
-    - name: Build the documentation
+    - name: Build the documentation as a test
       run: |
         source /usr/share/miniconda/bin/activate
         cd docs
@@ -39,12 +44,6 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
-    - name: Deploy the documentation
-      if: github.event_name == 'push'
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/build/html
     - name: Clean up older artifacts
       if: github.event_name == 'push'
       uses: glassechidna/artifact-cleaner@master
@@ -126,3 +125,43 @@ jobs:
         conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
         conda activate cptest
         pytest -v -ss conda_pack/tests
+  upload:
+    needs: tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Retrieve the source code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Download the build artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: package-${{ github.sha }}
+        path: conda-bld
+    - name: Build the documentation for deployment
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        source /usr/share/miniconda/bin/activate
+        cd docs
+        make html
+    - name: Deploy the documentation
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/build/html
+    - name: Upload to anaconda.org
+      env:
+        ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        GITHUB_REF: ${{ github.ref }}
+      run: |
+        source $CONDA/bin/activate
+        conda install -y anaconda-client
+        [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
+        git tag describe --exact-match --tags HEAD || export LABEL="--label dev"
+        anaconda --verbose --token $ANACONDA_TOKEN upload --user jupycon $LABEL conda-bld/*/*.tar.bz2 --force
+    - name: Clean up older artifacts
+      uses: glassechidna/artifact-cleaner@master
+      with:
+        minimumAge: 86400
