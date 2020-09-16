@@ -14,9 +14,11 @@ jobs:
     steps:
     - name: Print github context
       run: |
-        echo GITHUB_REF: "$GITHUB_REF"
-        echo GITHUB_HEAD_REF: "$GITHUB_HEAD_REF"
-        echo GITHUB_BASE_REF: "$GITHUB_BASE_REF"
+        echo "EVENT_NAME:" "$GITHUB_EVENT_NAME"
+        echo "       REF:" "$GITHUB_REF"
+        echo "  HEAD_REF:" "$GITHUB_HEAD_REF"
+        echo "  BASE_REF:" "$GITHUB_BASE_REF"
+        echo "       SHA:" "$GITHUB_SHA"
     - name: Retrieve the source code
       uses: actions/checkout@v2
       with:
@@ -44,11 +46,6 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
-    - name: Clean up older artifacts
-      if: github.event_name == 'push'
-      uses: glassechidna/artifact-cleaner@master
-      with:
-        minimumAge: 86400
   testbed:
     defaults:
       run:
@@ -159,8 +156,7 @@ jobs:
         source $CONDA/bin/activate
         conda install -y anaconda-client
         [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
-        git tag describe --exact-match --tags HEAD || export LABEL="--label dev"
-        anaconda --verbose --token $ANACONDA_TOKEN upload --user jupycon $LABEL conda-bld/*/*.tar.bz2 --force
+        anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.tar.bz2 --force
     - name: Clean up older artifacts
       uses: glassechidna/artifact-cleaner@master
       with:
