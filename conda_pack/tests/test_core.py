@@ -112,7 +112,8 @@ def test_missing_files():
         CondaEnv.from_prefix(py36_missing_files_path)
 
     msg = str(exc.value)
-    assert "toolz" in msg
+    assert "{}toolz{}__init__.py".format(os.sep, os.sep) in msg, msg
+    assert "{}toolz{}_signatures.py".format(os.sep, os.sep) in msg, msg
 
 
 def test_missing_files_ignored():

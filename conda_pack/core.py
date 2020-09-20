@@ -799,7 +799,7 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
     files = []
     managed = set()
     uncached = []
-    missing_files = []
+    missing_files = {}
     for path in os.listdir(conda_meta):
         if path.endswith('.json'):
             with open(os.path.join(conda_meta, path)) as fil:
@@ -819,11 +819,12 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
                                                  all_files)
 
             targets = {os.path.normcase(f.target) for f in new_files}
+            new_missing = targets.difference(all_files)
 
-            if targets.difference(all_files):
+            if new_missing:
                 # Collect packages missing files as we progress to provide a
                 # complete error message on failure.
-                missing_files.append((info['name'], info['version']))
+                missing_files[(info['name'], info['version'])] = new_missing
 
             managed.update(targets)
             files.extend(new_files)
@@ -844,7 +845,14 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
                       file_mode=None))
 
     if missing_files and not ignore_missing_files:
-        packages = '\n'.join('- %s=%r' % i for i in missing_files)
+        packages = []
+        for key, value in missing_files.items():
+            packages.append('- %s %s:' % key)
+            value = sorted(value)
+            if len(value) > 4:
+                value = value[:3] + ['+ %d others' % (len(value) - 3)]
+            packages.extend('    ' + p for p in value)
+        packages = '\n'.join(packages)
         raise CondaPackException(_missing_files_error.format(packages))
 
     # Add unmanaged files, preserving their original case
