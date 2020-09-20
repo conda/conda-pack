@@ -649,7 +649,7 @@ def read_has_prefix(path):
 def load_files(prefix):
     from os.path import relpath, join, isfile, islink
 
-    ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users', 'info',
+    ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
               'conda-recipes', '.index', '.unionfs', '.nonadmin', 'python.app',
               'Launcher.app'}
 

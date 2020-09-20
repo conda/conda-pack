@@ -3,4 +3,3 @@ name: has_conda
 dependencies:
     - conda
     - toolz
-    - python=3.7
