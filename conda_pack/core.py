@@ -849,10 +849,9 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
         for key, value in missing_files.items():
             packages.append('- %s %s:' % key)
             value = sorted(value)
-            if len(value) > 3:
+            if len(value) > 4:
                 value = value[:3] + ['+ %d others' % (len(value) - 3)]
-            for p in value:
-                packages.append('    %s' % p)
+            packages.extend('    ' + p for p in value)
         packages = '\n'.join(packages)
         raise CondaPackException(_missing_files_error.format(packages))
 
