@@ -77,9 +77,9 @@ echo Creating py36_missing_files environment
 env=$envs/py36_missing_files
 conda env create -f $ymls/py36.yml -p $env
 if [ -f $env/python.exe ]; then
-    rm $env/lib/site-packages/toolz/__init__.py
+    rm $env/lib/site-packages/toolz/*.py
 else
-    rm $env/lib/python3.6/site-packages/toolz/__init__.py
+    rm $env/lib/python3.6/site-packages/toolz/*.py
 fi
 
 echo Creating nopython environment
