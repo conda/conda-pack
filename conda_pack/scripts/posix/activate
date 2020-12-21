@@ -1,5 +1,5 @@
 _conda_pack_activate() {
-    local _CONDA_SHELL_FLAVOR
+    typeset _CONDA_SHELL_FLAVOR
     if [ -n "${BASH_VERSION:+x}" ]; then
         _CONDA_SHELL_FLAVOR=bash
     elif [ -n "${ZSH_VERSION:+x}" ]; then
@@ -10,7 +10,7 @@ _conda_pack_activate() {
         _CONDA_SHELL_FLAVOR=posh
     else
         # https://unix.stackexchange.com/a/120138/92065
-        local _q="$(ps -p$$ -o cmd="",comm="",fname="" 2>/dev/null | sed 's/^-//' | grep -oE '\w+' | head -n1)"
+        typeset _q="$(ps -p$$ -o cmd="",comm="",fname="" 2>/dev/null | sed 's/^-//' | grep -oE '\w+' | head -n1)"
         if [ "$_q" = dash ]; then
             _CONDA_SHELL_FLAVOR=dash
         else
@@ -20,7 +20,7 @@ _conda_pack_activate() {
     fi
 
     # https://unix.stackexchange.com/questions/4650/determining-path-to-sourced-shell-script/
-    local script_dir
+    typeset script_dir
     case "$_CONDA_SHELL_FLAVOR" in
         bash) script_dir="$(dirname "${BASH_SOURCE[0]}")";;
         zsh) script_dir="$(dirname "${(%):-%x}")";;  # http://stackoverflow.com/a/28336473/2127762
@@ -28,9 +28,9 @@ _conda_pack_activate() {
         *) script_dir="$(cd "$(dirname "$_")" && echo "$PWD")";;
     esac
 
-    local full_path_script_dir="$(cd "${script_dir}" && pwd)"
-    local full_path_env="$(dirname "$full_path_script_dir")"
-    local env_name="$(basename "$full_path_env")"
+    typeset full_path_script_dir="$(cd "${script_dir}" && pwd)"
+    typeset full_path_env="$(dirname "$full_path_script_dir")"
+    typeset env_name="$(basename "$full_path_env")"
 
     # If there's already a source env
     if [ -n "$CONDA_PREFIX" ]; then
@@ -57,9 +57,9 @@ _conda_pack_activate() {
     esac
 
     # Run the activate scripts
-    local _script_dir="${full_path_env}/etc/conda/activate.d"
+    typeset _script_dir="${full_path_env}/etc/conda/activate.d"
     if [ -d "$_script_dir" ] && [ -n "$(ls -A "$_script_dir")" ]; then
-        local _path
+        typeset _path
         for _path in "$_script_dir"/*.sh; do
             . "$_path"
         done
