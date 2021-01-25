@@ -35,6 +35,11 @@ Use Cases
   <https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment>`_,
   and recreate the environment when needed.
 
+- Packaging an environment as a single executable for those users who struggle
+  with installers and just want to double-click somewhere. (See our
+  instructions for :doc:`Linux and macOS <unix-binary>` or :doc:`Windows
+  <windows-binary>` for details.)
+
 - *BETA*: Packaging a conda environment as a standard Cloudera parcel. This is
   a newly added capability. It has been tested on a live cluster, but different
   cluster configurations may produce different results. We welcome users to
