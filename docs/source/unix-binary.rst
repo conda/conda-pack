@@ -24,7 +24,7 @@ Add an entrypoint that activates the environment and starts normaliz:
 
     $ mkdir pack
     $ tar -zxf normaliz.tar.gz -C pack
-    $ cat > pack/entrypoint.sh <<- EOF
+    $ cat > pack/entrypoint.sh <<- 'EOF'
       #!/bin/sh
       source bin/activate
       conda-unpack
@@ -68,7 +68,7 @@ Jupyter notebook interface:
     $ conda pack -n sagemath
     $ mkdir pack
     $ tar -zxf sagemath.tar.gz -C pack
-    $ cat > pack/entrypoint.sh <<- EOF
+    $ cat > pack/entrypoint.sh <<- 'EOF'
       #!/bin/sh
       source bin/activate
       conda-unpack
@@ -85,13 +85,14 @@ permanently:
 
 .. code-block:: bash
 
-    $ cat > pack/unpack.sh <<- EOF
+    $ cat > pack/unpack.sh <<- 'EOF'
       #!/bin/sh
       source bin/activate
       conda-unpack
       EOF
     $ chmod +x pack/unpack.sh
-    $ cat > pack/sagemath.run <<- EOF
+    $ cat > pack/sagemath.run <<- 'EOF'
+      #!/bin/sh
       dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
       cd "$dir"
       ./bin/sage --notebook=jupyter $@
