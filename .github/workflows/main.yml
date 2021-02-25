@@ -141,6 +141,7 @@ jobs:
         source $CONDA/bin/activate
         conda config --append channels conda-forge
         conda install -y sphinx numpydoc sphinxcontrib-autoprogram make anaconda-client
+        python -m pip install -e .
         cd docs
         make html
     - name: Deploy the documentation
