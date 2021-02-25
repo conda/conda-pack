@@ -89,6 +89,9 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ matrix.os }}
+    # Need to allow the ::set-env command until we get it replaced
+    env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     needs: [package,testbed]
     strategy:
       fail-fast: false
