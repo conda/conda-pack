@@ -12,29 +12,23 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-    - name: Print github context
-      run: |
-        echo "EVENT_NAME:" "$GITHUB_EVENT_NAME"
-        echo "       REF:" "$GITHUB_REF"
-        echo "  HEAD_REF:" "$GITHUB_HEAD_REF"
-        echo "  BASE_REF:" "$GITHUB_BASE_REF"
-        echo "       SHA:" "$GITHUB_SHA"
     - name: Retrieve the source code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - name: Install build dependencies
       run: |
+        source $CONDA/bin/activate
         conda config --append channels conda-forge
         conda install -y conda-build conda-verify flake8 sphinx numpydoc sphinxcontrib-autoprogram make
-        /usr/share/miniconda/bin/python -m pip install -e .
+        python -m pip install -e .
     - name: Verify flake8 compliance
       run: |
-        source /usr/share/miniconda/bin/activate
+        source $CONDA/bin/activate
         flake8 conda_pack
     - name: Build the documentation as a test
       run: |
-        source /usr/share/miniconda/bin/activate
+        source $CONDA/bin/activate
         cd docs
         make html
     - name: Build the package
@@ -142,10 +136,11 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: conda-bld
-    - name: Build the documentation for deployment
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Install deployment dependencies and build the docs
       run: |
-        source /usr/share/miniconda/bin/activate
+        source $CONDA/bin/activate
+        conda config --append channels conda-forge
+        conda install -y sphinx numpydoc sphinxcontrib-autoprogram make anaconda-client
         cd docs
         make html
     - name: Deploy the documentation
@@ -160,7 +155,6 @@ jobs:
         GITHUB_REF: ${{ github.ref }}
       run: |
         source $CONDA/bin/activate
-        conda install -y anaconda-client
         [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
         anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.tar.bz2 --force
     - name: Clean up older artifacts
