@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parcels &#8212; conda-pack 0.6.0 documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Usage with Apache Spark on YARN" href="spark.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="parcels">
+<h1>Parcels<a class="headerlink" href="#parcels" title="Permalink to this headline">¶</a></h1>
+<p>Conda-pack has recently been enhanced with the ability to generate
+<a class="reference external" href="https://docs.cloudera.com/documentation/enterprise/latest/topics/cm_ig_parcels.html">parcels</a>
+for use on Cloudera Hadoop clusters. The file formats for parcels and
+conda-packs are nearly identical. In fact, it was possible even with
+older versions of conda-pack to build parcels as follows:</p>
+<ol class="arabic simple">
+<li><p>Add two unmanaged files to the environment:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">meta/parcel.json</span></code>:, a file of parcel-specific metadata</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">meta/conda_env.sh</span></code>: a simple activation script. The filename
+is flexible, and is recorded in the metadata file.</p></li>
+</ul>
+</li>
+<li><p>Pack the environment with specifically chosen values of
+<code class="docutils literal notranslate"><span class="pre">--arcroot</span></code>, <code class="docutils literal notranslate"><span class="pre">--dest-prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">--output</span></code>.</p></li>
+</ol>
+<p>The latest version of conda-pack has been enhanced to eliminate the manual
+aspects of this work. The key is the introduction of a <code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">parcel</span></code>
+option and four parcel-specific options:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">--parcel-name</span></code>: the base name of the parcel</p>
+<p>By default, this value will be taken from the basename of the selected environment
+directory. Parcel names may not have dashes <code class="docutils literal notranslate"><span class="pre">-</span></code>, however, so if the name of the
+environment contains a dash, use this option to provide a compliant alternative.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--parcel-version</span></code>: the version of the parcel</p>
+<p>This is generally expected to follow a standard <a class="reference external" href="https://semver.org/">semver</a>
+format. If not supplied, conda-pack will autogenerate one from today’s date in
+<code class="docutils literal notranslate"><span class="pre">YYYY.MM.DD</span></code> format.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--parcel-distribution</span></code>: the target distribution for the parcel.</p>
+<p>This is an abbreviation describing the specific operating system on which
+your Cloudera clsuter runs. Its default value is <code class="docutils literal notranslate"><span class="pre">el7</span></code>, corresponding
+to RHEL7/CentOS7. Other common values include <code class="docutils literal notranslate"><span class="pre">el6</span></code>, <code class="docutils literal notranslate"><span class="pre">sles12</span></code>, <code class="docutils literal notranslate"><span class="pre">bionic</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">xenial</span></code>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--parcel-root</span></code>: the location where parcels are unpacked on the cluster</p>
+<p>The default value of this location is <code class="docutils literal notranslate"><span class="pre">/opt/cloudera/parcels</span></code>. Unless your
+cluster manager has modified this default, there should be no need to change
+this, but it is essential that this matches your configuration.</p>
+</li>
+</ul>
+<p>In many cases, it will not be necessary to override any of these options,
+because conda-pack provides sensible defaults. Given these values, conda-pack
+generates values for the following internal options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">arcroot</span></code>: <code class="docutils literal notranslate"><span class="pre">{parcel_name}-{parcel_version}</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dest_prefix</span></code>: <code class="docutils literal notranslate"><span class="pre">{parcel_root}/{parcel_name}-{parcel_version}</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code> (filename): <code class="docutils literal notranslate"><span class="pre">{parcel_name}-{parcel_version}-{parcel_distro}.parcel</span></code></p></li>
+</ul>
+<p>Conda-pack will exit with an error if you attempt to override the <code class="docutils literal notranslate"><span class="pre">dest-prefix</span></code>
+or <code class="docutils literal notranslate"><span class="pre">arcroot</span></code> options. We recommend against overriding the <code class="docutils literal notranslate"><span class="pre">output</span></code> option,
+but conda-pack does not prevent this.</p>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Create an environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda create -y -n example <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.5 numpy pandas scikit-learn
+</pre></div>
+</div>
+<p>Package the environment into a parcel:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda pack -n example --format parcel --parcel-name<span class="o">=</span>sklearn
+Collecting packages...
+Packing environment at <span class="s1">&#39;/Users/mgrant/miniconda3/envs/example&#39;</span> to <span class="s1">&#39;sklearn-2020.09.15-el7.parcel&#39;</span>
+<span class="o">[</span><span class="c1">########################################] | 100% Completed |  9.8s</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">conda-pack</a></h1>
+
+
+
+<p class="blurb">A tool for packaging and distributing conda environments.</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=conda&repo=conda-pack&type=watch&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a class="badge" href="https://travis-ci.org/conda/conda-pack">
+    <img
+        alt="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+        src="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spark.html">Usage with Apache Spark on YARN</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parcels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+
+<h3>Need help?</h3>
+
+<p>
+  Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
+</p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jim Crist.
+      
+      |
+      <a href="_sources/parcel.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

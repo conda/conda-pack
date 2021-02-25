@@ -4,18 +4,17 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conda-Pack &#8212; conda-pack 0.4.0+59.gea74ae1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conda-Pack &#8212; conda-pack 0.6.0 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API Docs" href="api.html" />
+    <link rel="next" title="CLI Docs" href="cli.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -34,32 +33,44 @@
             
   <div class="section" id="conda-pack">
 <h1>Conda-Pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is a command line tool for creating relocatable <a class="reference external" href="https://conda.io/docs/">conda
-environments</a>. This is useful for deploying code in a
-consistent environment, potentially in a location where python/conda isn’t
-already installed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is a command line tool for creating archives of <a class="reference external" href="https://conda.io/docs/">conda
+environments</a> that can be installed on other
+systems and locations. This is useful for deploying code in a consistent
+environment—potentially where python and/or conda isn’t already installed.</p>
+<p>A tool like <code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is necessary because conda environments <em>are
+not relocatable</em>. Simply moving an environment to a different directory
+can render it partially or completely inoperable. <code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> addresses
+this challenge by building archives from original conda package sources
+and reproducing conda’s own relocation logic.</p>
 <div align="center">
   <script src="https://asciinema.org/a/186862.js" id="asciicast-186862" async data-speed="2"></script>
 </div><div class="section" id="use-cases">
 <h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>Bundling an application with its environment for deployment</p></li>
-<li><p>Packaging a conda environment for usage with Apache Spark when deploying on
+<li><p>Packaging a conda environment for use with Apache Spark when deploying on
 YARN (<a class="reference internal" href="spark.html"><span class="doc">see here</span></a> for more information).</p></li>
 <li><p>Packaging a conda environment for deployment on Apache YARN. One way to do
 this is to use <a class="reference external" href="https://jcrist.github.io/skein/">Skein</a>.</p></li>
 <li><p>Archiving an environment in a functioning state. Note that a more sustainable
 way to do this is to specify your environment as a <a class="reference external" href="https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment">environment.yml</a>,
 and recreate the environment when needed.</p></li>
+<li><p><em>BETA</em>: Packaging a conda environment as a standard Cloudera parcel. This is
+a newly added capability. It has been tested on a live cluster, but different
+cluster configurations may produce different results. We welcome users to
+<a class="reference external" href="https://github.com/conda/conda-pack/issues">file an issue</a> if necessary.
+<a class="reference internal" href="parcel.html"><span class="doc">See here</span></a> for more information).</p></li>
 </ul>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>It’s recommended to install in your root conda environment - the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
 command will then be available in all sub-environments as well.</p>
-<p><strong>Install from Conda-Forge:</strong></p>
-<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is available on <a class="reference external" href="https://conda-forge.org/">conda-forge</a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
+<p><strong>Install with conda:</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is available from <a class="reference external" href="https://anaconda.com">Anaconda</a>
+as well as from <a class="reference external" href="https://conda-forge.org/">conda-forge</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">conda</span><span class="o">-</span><span class="n">pack</span>
 </pre></div>
 </div>
 <p><strong>Install from PyPI:</strong></p>
@@ -145,9 +156,14 @@ commandline. Repeating the examples from above:</p>
 <p>This tool has a few caveats.</p>
 <ul class="simple">
 <li><p>Conda must be installed and be on your path.</p></li>
-<li><p>The os <em>type</em> where the environment was built must match the os <em>type</em> of the
-target. This means that environments built on windows can’t be relocated to
-linux.</p></li>
+<li><p>The OS where the environment was built must match the OS of the target.
+This means that environments built on Windows can’t be relocated to Linux.</p></li>
+<li><p>Once an environment is unpacked and <code class="docutils literal notranslate"><span class="pre">conda-unpack</span></code> has been executed,
+it <em>cannot</em> be relocated. Re-applying <code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is unlikely to work.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is not well-suited for archiving old environments, because it
+requires that conda’s package cache have all of the environment’s packages
+present. It is intended for building archives from actively maintained
+conda environments.</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
@@ -193,9 +209,10 @@ linux.</p></li>
 
 <h3>Navigation</h3>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Usage with Apache Spark on YARN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parcel.html">Parcels</a></li>
 </ul>
 
 <h3>Need help?</h3>
