@@ -4,8 +4,11 @@ import errno
 import os
 import stat
 import struct
+import subprocess
 import sys
+import shutil
 import tarfile
+import tempfile
 import threading
 import time
 import zipfile
@@ -56,6 +59,8 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
             close_file = True
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
+    elif format == "squashfs":
+        return SquashFSArchive(fileobj, arcroot)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -351,3 +356,52 @@ else:  # pragma: no cover
             zinfo.file_size = st.st_size
 
         return zinfo
+
+
+class SquashFSArchive(ArchiveBase):
+    def __init__(self, fileobj, arcroot):
+        self.fileobj = fileobj
+        self.arcroot = arcroot
+
+    def __enter__(self):
+        # create a staging directory where we collect
+        # hardlinks to files and tmpfiles for bytes
+        self._staging = os.path.normpath(tempfile.mkdtemp())
+        return self
+
+    def __exit__(self, *args):
+        # actually run the squashing
+        # TODO how to ensure we don't run mksquashfs if exit trigger by ERR?
+        cmd = [
+            "mksquashfs",
+            self._staging,
+            self.fileobj.name,
+            "-noappend",
+        ]
+        subprocess.check_call(cmd)
+        shutil.rmtree(self._staging)
+
+    def _absolute_path(self, path):
+        return os.path.normpath(os.path.join(self._staging, path))
+
+    def _ensure_parent(self, path):
+        dir_path = os.path.dirname(path)
+        os.makedirs(dir_path, exist_ok=True)
+
+    def _add(self, source, target):
+        target_abspath = self._absolute_path(target)
+        # TODO make these hardlinks instead
+        if os.path.isdir(source) and not os.path.islink(source):
+            shutil.copytree(source,
+                            target_abspath,
+                            symlinks=True,
+                            copy_function=shutil.copy2)
+        else:
+            self._ensure_parent(target_abspath)
+            shutil.copy2(source, target_abspath, follow_symlinks=False)
+
+    def _add_bytes(self, source, sourcebytes, target):
+        target_abspath = self._absolute_path(target)
+        with open(target_abspath, "wb") as f:
+            shutil.copystat(source, target_abspath)
+            f.write(sourcebytes)

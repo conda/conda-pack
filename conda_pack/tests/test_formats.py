@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 import tarfile
 import threading
 import time
@@ -135,7 +136,8 @@ def has_tar_cli():
 
 @pytest.mark.parametrize('format, zip_symlinks', [
     ('zip', True), ('zip', False),
-    ('tar.gz', False), ('tar.bz2', False), ('tar', False)
+    ('tar.gz', False), ('tar.bz2', False), ('tar', False),
+    ('squashfs', False)
 ])
 def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     if format == 'zip':
@@ -165,6 +167,13 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         else:
             with zipfile.ZipFile(out_path) as out:
                 out.extractall(out_dir)
+    elif format == "squashfs":
+        # unsquashfs makes its own directories
+        # TODO cleanup, remove shell=True
+        os.rmdir(out_dir)
+        cmd = ["unsquashfs", " ".join(["-d", out_dir, out_path])]
+        cmdd = ' '.join(cmd)
+        output = subprocess.run(cmdd, shell=True)
     else:
         with tarfile.open(out_path) as out:
             out.extractall(out_dir)
