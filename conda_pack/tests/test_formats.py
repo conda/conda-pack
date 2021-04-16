@@ -7,6 +7,7 @@ import time
 import zipfile
 from multiprocessing import cpu_count
 from os.path import isdir, isfile, islink, join, exists
+from pathlib import Path
 from subprocess import check_output, STDOUT
 
 import pytest
@@ -149,11 +150,11 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
 
     root, paths = root_and_paths
 
-    out_path = join(str(tmpdir), 'test.' + format)
-    out_dir = join(str(tmpdir), 'test')
-    os.mkdir(out_dir)
+    packed_env_path = join(str(tmpdir), 'test.' + format)
+    spill_dir = join(str(tmpdir), 'test')
+    os.mkdir(spill_dir)
 
-    with open(out_path, mode='wb') as fil:
+    with open(packed_env_path, mode='wb') as fil:
         with archive(fil, '', format, zip_symlinks=zip_symlinks) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
@@ -163,24 +164,27 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
 
     if format == 'zip':
         if test_symlinks:
-            check_output(['unzip', out_path, '-d', out_dir])
+            check_output(['unzip', packed_env_path, '-d', spill_dir])
         else:
-            with zipfile.ZipFile(out_path) as out:
-                out.extractall(out_dir)
+            with zipfile.ZipFile(packed_env_path) as out:
+                out.extractall(spill_dir)
     elif format == "squashfs":
-        # unsquashfs makes its own directories
-        # TODO cleanup, remove shell=True
-        os.rmdir(out_dir)
-        cmd = ["unsquashfs", " ".join(["-d", out_dir, out_path])]
-        cmdd = ' '.join(cmd)
-        output = subprocess.run(cmdd, shell=True)
+        if on_win:
+            # TODO make sure this runs on Mac as well
+            pytest.skip("Cannot test SquashFS on Windows, Linux only")
+        # 'mount' needs CAP_SYS_ADMIN
+        cmd = ["mount", "-t", "squashfs", packed_env_path, spill_dir]
+        # allow for local testing in root containers
+        if "docker" not in Path("/proc/1/cgroup").read_text():
+            cmd = ["sudo"] + cmd
+        subprocess.check_output(cmd)
     else:
-        with tarfile.open(out_path) as out:
-            out.extractall(out_dir)
+        with tarfile.open(packed_env_path) as out:
+            out.extractall(spill_dir)
 
-    check(out_dir, links=test_symlinks, root=root)
-    assert isfile(join(out_dir, "dir", "from_bytes"))
-    with open(join(out_dir, "dir", "from_bytes"), 'rb') as fil:
+    check(spill_dir, links=test_symlinks, root=root)
+    assert isfile(join(spill_dir, "dir", "from_bytes"))
+    with open(join(spill_dir, "dir", "from_bytes"), 'rb') as fil:
         assert fil.read() == b"foo bar"
 
 
