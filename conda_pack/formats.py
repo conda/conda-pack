@@ -364,14 +364,18 @@ class SquashFSArchive(ArchiveBase):
         self.arcroot = arcroot
 
     def __enter__(self):
-        # create a staging directory where we collect
-        # hardlinks to files and tmpfiles for bytes
+        # create a staging directory where we will collect
+        # hardlinks to files and make tmpfiles for bytes
         self._staging = os.path.normpath(tempfile.mkdtemp())
         return self
 
-    def __exit__(self, *args):
-        # actually run the squashing
-        # TODO how to ensure we don't run mksquashfs if exit trigger by ERR?
+    def __exit__(self, exc_type, exc_value, traceback):
+        shutil.rmtree(self._staging)
+
+    def mksquashfs_from_staging(self):
+        """
+        After build the staging directory, squash it into the file
+        """
         cmd = [
             "mksquashfs",
             self._staging,
@@ -379,7 +383,6 @@ class SquashFSArchive(ArchiveBase):
             "-noappend",
         ]
         subprocess.check_call(cmd)
-        shutil.rmtree(self._staging)
 
     def _absolute_path(self, path):
         return os.path.normpath(os.path.join(self._staging, path))
@@ -390,15 +393,16 @@ class SquashFSArchive(ArchiveBase):
 
     def _add(self, source, target):
         target_abspath = self._absolute_path(target)
-        # TODO make these hardlinks instead
         if os.path.isdir(source) and not os.path.islink(source):
+            # directories we add through hardlinking the tree
             shutil.copytree(source,
                             target_abspath,
                             symlinks=True,
-                            copy_function=shutil.copy2)
+                            copy_function=os.link)
         else:
+            # files & links to directories we hardlink directly
             self._ensure_parent(target_abspath)
-            shutil.copy2(source, target_abspath, follow_symlinks=False)
+            os.link(source, target_abspath)
 
     def _add_bytes(self, source, sourcebytes, target):
         target_abspath = self._absolute_path(target)

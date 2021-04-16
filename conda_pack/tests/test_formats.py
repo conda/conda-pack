@@ -161,6 +161,8 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             arc.add_bytes(join(root, "file"),
                           b"foo bar",
                           join("dir", "from_bytes"))
+            if format == "squashfs":
+                arc.mksquashfs_from_staging()
 
     if format == 'zip':
         if test_symlinks:
@@ -173,10 +175,10 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             # TODO make sure this runs on Mac as well
             pytest.skip("Cannot test SquashFS on Windows, Linux only")
         # 'mount' needs CAP_SYS_ADMIN
-        cmd = ["mount", "-t", "squashfs", packed_env_path, spill_dir]
-        # allow for local testing in root containers
-        if "docker" not in Path("/proc/1/cgroup").read_text():
-            cmd = ["sudo"] + cmd
+        cmd = ["sudo", "mount", "-t", "squashfs", packed_env_path, spill_dir]
+        # allow for local testing in root Docker containers
+        if "docker" in Path("/proc/1/cgroup").read_text():
+            cmd = cmd[1:]
         subprocess.check_output(cmd)
     else:
         with tarfile.open(packed_env_path) as out:
