@@ -172,7 +172,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
                 out.extractall(spill_dir)
     elif format == "squashfs":
         if on_win:
-            # TODO make sure this runs on Mac as well
+            # TODO make sure this runs on Mac as well (fusermount / unsquashfs?)
             pytest.skip("Cannot test SquashFS on Windows, Linux only")
         # 'mount' needs CAP_SYS_ADMIN
         cmd = ["sudo", "mount", "-t", "squashfs", packed_env_path, spill_dir]

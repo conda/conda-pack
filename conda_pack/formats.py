@@ -60,7 +60,7 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
     elif format == "squashfs":
-        return SquashFSArchive(fileobj, arcroot)
+        return SquashFSArchive(fileobj, arcroot, n_threads)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -359,9 +359,10 @@ else:  # pragma: no cover
 
 
 class SquashFSArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot):
+    def __init__(self, fileobj, arcroot, n_threads):
         self.fileobj = fileobj
         self.arcroot = arcroot
+        self.n_threads = n_threads
 
     def __enter__(self):
         # create a staging directory where we will collect
@@ -381,6 +382,10 @@ class SquashFSArchive(ArchiveBase):
             self._staging,
             self.fileobj.name,
             "-noappend",
+            "-b",
+            str(256 * 1024),
+            "-processors",
+            str(self.n_threads)
         ]
         subprocess.check_call(cmd)
 
