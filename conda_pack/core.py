@@ -372,7 +372,8 @@ class CondaEnv(object):
                              compress_level=compress_level,
                              zip_symlinks=zip_symlinks,
                              zip_64=zip_64,
-                             n_threads=n_threads) as arc:
+                             n_threads=n_threads,
+                             verbose=verbose) as arc:
                     packer = Packer(self.prefix, arc, dest_prefix, parcel)
 
                     with progressbar(self.files, enabled=verbose) as files:

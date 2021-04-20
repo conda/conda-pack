@@ -33,7 +33,7 @@ def _parse_n_threads(n_threads=1):
 
 
 def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
-            zip_64=True, n_threads=1):
+            zip_64=True, n_threads=1, verbose=False):
 
     n_threads = _parse_n_threads(n_threads)
 
@@ -61,7 +61,7 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
     elif format == "squashfs":
-        return SquashFSArchive(fileobj, path, arcroot, n_threads)
+        return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -360,10 +360,11 @@ else:  # pragma: no cover
 
 
 class SquashFSArchive(ArchiveBase):
-    def __init__(self, fileobj, target_path, arcroot, n_threads):
+    def __init__(self, fileobj, target_path, arcroot, n_threads, verbose=False):
         self.target_path = target_path
         self.arcroot = arcroot
         self.n_threads = n_threads
+        self.verbose = verbose
 
     def __enter__(self):
         # create a staging directory where we will collect
@@ -383,11 +384,16 @@ class SquashFSArchive(ArchiveBase):
             self._staging_dir,
             self.target_path,
             "-noappend",
-            "-b",
+            "-b",  # block size
             str(256 * 1024),
             "-processors",
-            str(self.n_threads)
+            str(self.n_threads),
+            "-quiet"  # will still display native progressbar
         ]
+        if self.verbose:
+            print("Running mksquashfs ({} processors)".format(self.n_threads))
+        else:
+            cmd.append("-no-progress")
         subprocess.check_call(cmd)
 
     def _absolute_path(self, path):
