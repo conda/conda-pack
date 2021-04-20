@@ -15,6 +15,7 @@ import zipfile
 import zlib
 
 from contextlib import closing
+from functools import partial
 from io import BytesIO
 from multiprocessing.pool import ThreadPool
 
@@ -31,7 +32,7 @@ def _parse_n_threads(n_threads=1):
     return n_threads
 
 
-def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
+def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
             zip_64=True, n_threads=1):
 
     n_threads = _parse_n_threads(n_threads)
@@ -60,7 +61,7 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
     elif format == "squashfs":
-        return SquashFSArchive(fileobj, arcroot, n_threads)
+        return SquashFSArchive(fileobj, path, arcroot, n_threads)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -359,15 +360,15 @@ else:  # pragma: no cover
 
 
 class SquashFSArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, n_threads):
-        self.fileobj = fileobj
+    def __init__(self, fileobj, target_path, arcroot, n_threads):
+        self.target_path = target_path
         self.arcroot = arcroot
         self.n_threads = n_threads
 
     def __enter__(self):
         # create a staging directory where we will collect
         # hardlinks to files and make tmpfiles for bytes
-        self._staging = os.path.normpath(tempfile.mkdtemp())
+        self._staging_dir = os.path.normpath(tempfile.mkdtemp())
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -379,8 +380,8 @@ class SquashFSArchive(ArchiveBase):
         """
         cmd = [
             "mksquashfs",
-            self._staging,
-            self.fileobj.name,
+            self._staging_dir,
+            self.target_path,
             "-noappend",
             "-b",
             str(256 * 1024),
@@ -390,7 +391,7 @@ class SquashFSArchive(ArchiveBase):
         subprocess.check_call(cmd)
 
     def _absolute_path(self, path):
-        return os.path.normpath(os.path.join(self._staging, path))
+        return os.path.normpath(os.path.join(self._staging_dir, path))
 
     def _ensure_parent(self, path):
         dir_path = os.path.dirname(path)
@@ -398,16 +399,22 @@ class SquashFSArchive(ArchiveBase):
 
     def _add(self, source, target):
         target_abspath = self._absolute_path(target)
+        self._ensure_parent(target_abspath)
+
+        # hardlinking instead of copying is faster
+        # however it doesn't work across devices
+        same_device = os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev
+        copy_func = os.link if same_device else partial(shutil.copy2, follow_symlinks=False)
+
         if os.path.isdir(source) and not os.path.islink(source):
-            # directories we add through hardlinking the tree
+            # directories we add through copying the tree
             shutil.copytree(source,
                             target_abspath,
                             symlinks=True,
-                            copy_function=os.link)
+                            copy_function=copy_func)
         else:
-            # files & links to directories we hardlink directly
-            self._ensure_parent(target_abspath)
-            os.link(source, target_abspath)
+            # files & links to directories we copy directly
+            copy_func(source, target_abspath)
 
     def _add_bytes(self, source, sourcebytes, target):
         target_abspath = self._absolute_path(target)

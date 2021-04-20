@@ -156,7 +156,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     os.mkdir(spill_dir)
 
     with open(packed_env_path, mode='wb') as fil:
-        with archive(fil, '', format, zip_symlinks=zip_symlinks) as arc:
+        with archive(fil, packed_env_path, '', format, zip_symlinks=zip_symlinks) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
             arc.add_bytes(join(root, "file"),
@@ -224,7 +224,7 @@ def test_format_parallel(tmpdir, format, root_and_paths):
 
     baseline = threading.active_count()
     with open(out_path, mode='wb') as fil:
-        with archive(fil, '', format, n_threads=2) as arc:
+        with archive(fil, out_path, '', format, n_threads=2) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
     timeout = 5
