@@ -411,6 +411,7 @@ class SquashFSArchive(ArchiveBase):
 
     def _add_bytes(self, source, sourcebytes, target):
         target_abspath = self._absolute_path(target)
+        self._ensure_parent(target_abspath)
         with open(target_abspath, "wb") as f:
             shutil.copystat(source, target_abspath)
             f.write(sourcebytes)

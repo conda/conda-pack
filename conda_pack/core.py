@@ -243,7 +243,7 @@ class CondaEnv(object):
                 format = 'squashfs'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs'}:
             raise CondaPackException("Unknown format %r" % format)
         elif output is not None and output.endswith('.parcel'):
             if format not in ('tar.gz', 'tgz'):

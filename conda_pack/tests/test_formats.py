@@ -12,6 +12,7 @@ from subprocess import check_output, STDOUT
 
 import pytest
 
+import conda_pack
 from conda_pack.core import CondaPackException
 from conda_pack.formats import archive, _parse_n_threads
 from conda_pack.compat import on_win, PY2
@@ -161,6 +162,9 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             arc.add_bytes(join(root, "file"),
                           b"foo bar",
                           join("dir", "from_bytes"))
+            arc.add_bytes(join(root, "file"),
+                          b"foo bar",
+                          join("somedir/nested dir", "from_bytes"))
             if format == "squashfs":
                 arc.mksquashfs_from_staging()
 
@@ -185,10 +189,13 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             out.extractall(spill_dir)
 
     check(spill_dir, links=test_symlinks, root=root)
-    assert isfile(join(spill_dir, "dir", "from_bytes"))
-    with open(join(spill_dir, "dir", "from_bytes"), 'rb') as fil:
-        assert fil.read() == b"foo bar"
+    for dir in ["dir", "somedir/nested dir"]:
+        assert isfile(join(spill_dir, dir, "from_bytes"))
+        with open(join(spill_dir, dir, "from_bytes"), 'rb') as fil:
+            assert fil.read() == b"foo bar"
 
+def test_squashfs():
+    conda_pack.CondaEnv.from_prefix("/home/conda-pack/testing/conda/envs/py36").pack(format="squashfs")
 
 def test_n_threads():
     assert _parse_n_threads(-1) == cpu_count()
