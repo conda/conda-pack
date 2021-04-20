@@ -368,16 +368,18 @@ class CondaEnv(object):
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with progressbar(self.files, enabled=verbose) as files:
-                    with archive(temp_file, arcroot, format,
-                                 compress_level=compress_level,
-                                 zip_symlinks=zip_symlinks,
-                                 zip_64=zip_64,
-                                 n_threads=n_threads) as arc:
-                        packer = Packer(self.prefix, arc, dest_prefix, parcel)
+                with archive(temp_file, temp_path, arcroot, format,
+                             compress_level=compress_level,
+                             zip_symlinks=zip_symlinks,
+                             zip_64=zip_64,
+                             n_threads=n_threads) as arc:
+                    packer = Packer(self.prefix, arc, dest_prefix, parcel)
+
+                    with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
                             packer.add(f)
-                        packer.finish()
+
+                    packer.finish()
 
         except Exception:
             # Writing failed, remove tempfile

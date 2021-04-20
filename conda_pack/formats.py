@@ -372,7 +372,7 @@ class SquashFSArchive(ArchiveBase):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        shutil.rmtree(self._staging)
+        shutil.rmtree(self._staging_dir)
 
     def mksquashfs_from_staging(self):
         """
