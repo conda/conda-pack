@@ -194,9 +194,6 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         with open(join(spill_dir, dir, "from_bytes"), 'rb') as fil:
             assert fil.read() == b"foo bar"
 
-def test_squashfs():
-    conda_pack.CondaEnv.from_prefix("/home/conda-pack/testing/conda/envs/py36").pack(format="squashfs")
-
 def test_n_threads():
     assert _parse_n_threads(-1) == cpu_count()
     assert _parse_n_threads(40) == 40
