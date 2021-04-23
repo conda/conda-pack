@@ -412,6 +412,11 @@ class SquashFSArchive(ArchiveBase):
         same_device = os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev
         copy_func = os.link if same_device else partial(shutil.copy2, follow_symlinks=False)
 
+        # we overwrite if the same `target` is added twice
+        # to be consistent with the tar-archive implementation
+        if os.path.lexists(target_abspath):
+            os.remove(target_abspath)
+
         if os.path.isdir(source) and not os.path.islink(source):
             # directories we add through copying the tree
             shutil.copytree(source,
