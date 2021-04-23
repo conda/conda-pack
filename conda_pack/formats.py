@@ -368,11 +368,8 @@ class SquashFSArchive(ArchiveBase):
         self.arcroot = arcroot
         self.n_threads = n_threads
         self.verbose = verbose
+        self.compress_level = compress_level
 
-        if compress_level > 6:
-            self.compression = "xz"
-        else:
-            self.compression = "gzip"
 
     def __enter__(self):
         # create a staging directory where we will collect
@@ -395,12 +392,25 @@ class SquashFSArchive(ArchiveBase):
             "-processors",
             str(self.n_threads),
             "-quiet",  # will still display native progressbar
-            "-comp",
-            self.compression
         ]
+
+        if self.compress_level == 0:
+            # No compression
+            comp_algo_str = "None"
+            cmd += ["-noI", "-noD", "-noF", "-noX"]
+        else:
+            if self.compress_level < 3:
+                comp_algo_str = "lzo"
+            elif self.compress_level > 7:
+                comp_algo_str = "xz"
+            else:
+                # default compression of SquashFS
+                comp_algo_str = "gzip"
+            cmd += ["-comp", comp_algo_str]
+
         if self.verbose:
-            print("Running mksquashfs ({} processors, {} compression)".format(
-                self.n_threads, self.compression))
+            print("Running mksquashfs (processors: {}, compression: {})".format(
+                self.n_threads, comp_algo_str))
         else:
             cmd.append("-no-progress")
         subprocess.check_call(cmd)
