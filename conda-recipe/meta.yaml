@@ -30,6 +30,8 @@ test:
   requires:
     - python
     - pytest
+    - squashfs-tools
+    - squashfuse
   commands:
     - bash testing/setup_envs.sh
     - pytest -s -vv conda_pack/tests
