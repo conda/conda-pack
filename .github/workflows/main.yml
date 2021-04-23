@@ -119,7 +119,7 @@ jobs:
         source $CONDA_ROOT/etc/profile.d/conda.sh
         conda info -a
         mv conda-bld $CONDA_ROOT/conda-bld
-        conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
+        conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }} squashfs-tools squashfuse
         conda activate cptest
         pytest -v -ss conda_pack/tests
   upload:
