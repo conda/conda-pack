@@ -370,7 +370,6 @@ class SquashFSArchive(ArchiveBase):
         self.verbose = verbose
         self.compress_level = compress_level
 
-
     def __enter__(self):
         # create a staging directory where we will collect
         # hardlinks to files and make tmpfiles for bytes
@@ -382,7 +381,7 @@ class SquashFSArchive(ArchiveBase):
 
     def mksquashfs_from_staging(self):
         """
-        After build the staging directory, squash it into the file
+        After building the staging directory, squash it into file
         """
         cmd = [
             "mksquashfs",
