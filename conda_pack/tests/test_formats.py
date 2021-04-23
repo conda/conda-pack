@@ -7,12 +7,10 @@ import time
 import zipfile
 from multiprocessing import cpu_count
 from os.path import isdir, isfile, islink, join, exists
-from pathlib import Path
 from subprocess import check_output, STDOUT
 
 import pytest
 
-import conda_pack
 from conda_pack.core import CondaPackException
 from conda_pack.formats import archive, _parse_n_threads
 from conda_pack.compat import on_win, on_mac, PY2
