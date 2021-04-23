@@ -178,4 +178,5 @@ This tool has a few caveats.
     api.rst
     spark.rst
     parcel.rst
+    squashfs.rst
 
