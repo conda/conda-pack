@@ -61,7 +61,8 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
     elif format == "squashfs":
-        return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose)
+        return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose,
+                               compress_level=compress_level)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -360,11 +361,19 @@ else:  # pragma: no cover
 
 
 class SquashFSArchive(ArchiveBase):
-    def __init__(self, fileobj, target_path, arcroot, n_threads, verbose=False):
+    def __init__(self, fileobj, target_path, arcroot, n_threads, verbose=False,
+                 compress_level=4):
+        # we don't need fileobj, just the name of the file
         self.target_path = target_path
         self.arcroot = arcroot
         self.n_threads = n_threads
         self.verbose = verbose
+
+        if compress_level > 6:
+            self.compression = "xz"
+        else:
+            self.compression = "gzip"
+
 
     def __enter__(self):
         # create a staging directory where we will collect
@@ -384,14 +393,15 @@ class SquashFSArchive(ArchiveBase):
             self._staging_dir,
             self.target_path,
             "-noappend",
-            "-b",  # block size
-            str(256 * 1024),
             "-processors",
             str(self.n_threads),
-            "-quiet"  # will still display native progressbar
+            "-quiet",  # will still display native progressbar
+            "-comp",
+            self.compression
         ]
         if self.verbose:
-            print("Running mksquashfs ({} processors)".format(self.n_threads))
+            print("Running mksquashfs ({} processors, {} compression)".format(
+                self.n_threads, self.compression))
         else:
             cmd.append("-no-progress")
         subprocess.check_call(cmd)
