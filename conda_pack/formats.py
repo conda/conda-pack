@@ -374,7 +374,6 @@ class SquashFSArchive(ArchiveBase):
         else:
             self.compression = "gzip"
 
-
     def __enter__(self):
         # create a staging directory where we will collect
         # hardlinks to files and make tmpfiles for bytes

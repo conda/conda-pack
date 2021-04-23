@@ -15,7 +15,7 @@ import pytest
 import conda_pack
 from conda_pack.core import CondaPackException
 from conda_pack.formats import archive, _parse_n_threads
-from conda_pack.compat import on_win, PY2
+from conda_pack.compat import on_win, on_mac, PY2
 
 
 @pytest.fixture(scope="module")
@@ -148,6 +148,10 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         test_symlinks = zip_symlinks
     else:
         test_symlinks = not on_win
+    if format == 'squashfs' and on_win:
+        # mksquashfs should work on win, but we don't support moving envs
+        # between OSs anyway, so we don't test it either
+        pytest.skip("Cannot mount squashfs on windows")
 
     root, paths = root_and_paths
 
@@ -175,14 +179,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             with zipfile.ZipFile(packed_env_path) as out:
                 out.extractall(spill_dir)
     elif format == "squashfs":
-        if on_win:
-            # TODO make sure this runs on Mac as well (fusermount / unsquashfs?)
-            pytest.skip("Cannot test SquashFS on Windows, Linux only")
-        # 'mount' needs CAP_SYS_ADMIN
-        cmd = ["sudo", "mount", "-t", "squashfs", packed_env_path, spill_dir]
-        # allow for local testing in root Docker containers
-        if "docker" in Path("/proc/1/cgroup").read_text():
-            cmd = cmd[1:]
+        cmd = ["squashfuse", packed_env_path, spill_dir]
         subprocess.check_output(cmd)
     else:
         with tarfile.open(packed_env_path) as out:
@@ -193,6 +190,14 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         assert isfile(join(spill_dir, dir, "from_bytes"))
         with open(join(spill_dir, dir, "from_bytes"), 'rb') as fil:
             assert fil.read() == b"foo bar"
+
+    if format == "squashfs":
+        if on_mac:
+            cmd = ["umount", spill_dir]
+        else:
+            cmd = ["fusermount", "-u", spill_dir]
+        subprocess.check_output(cmd)
+
 
 def test_n_threads():
     assert _parse_n_threads(-1) == cpu_count()
