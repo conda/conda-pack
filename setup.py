@@ -21,6 +21,7 @@ setup(name='conda-pack',
       license='BSD',
       description='Package conda environments for redistribution',
       long_description=open('README.md').read(),
+      long_description_content_type="text/markdown",
       packages=['conda_pack'],
       package_data={'conda_pack': ['scripts/windows/*', 'scripts/posix/*']},
       entry_points='''
