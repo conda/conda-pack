@@ -19,7 +19,7 @@ from functools import partial
 from io import BytesIO
 from multiprocessing.pool import ThreadPool
 
-from .compat import Queue, on_win
+from .compat import Queue, on_win, on_mac
 from .core import CondaPackException
 
 
@@ -427,8 +427,12 @@ class SquashFSArchive(ArchiveBase):
 
         # hardlinking instead of copying is faster
         # however it doesn't work across devices
+        # TODO why do hardlinks on MacOS trigger Permission errors?
         same_device = os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev
-        copy_func = os.link if same_device else partial(shutil.copy2, follow_symlinks=False)
+        if not on_mac and same_device:
+            copy_func = os.link
+        else:
+            copy_func = partial(shutil.copy2, follow_symlinks=False)
 
         # we overwrite if the same `target` is added twice
         # to be consistent with the tar-archive implementation

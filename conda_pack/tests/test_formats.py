@@ -147,7 +147,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     else:
         test_symlinks = not on_win
     if format == 'squashfs' and on_win:
-        # mksquashfs should work on win, but we don't support moving envs
+        # mksquashfs can work on win, but we don't support moving envs
         # between OSs anyway, so we don't test it either
         pytest.skip("Cannot mount squashfs on windows")
 
@@ -177,8 +177,14 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             with zipfile.ZipFile(packed_env_path) as out:
                 out.extractall(spill_dir)
     elif format == "squashfs":
-        cmd = ["squashfuse", packed_env_path, spill_dir]
-        subprocess.check_output(cmd)
+        if on_mac:
+            # TODO is there a good way to install squashfuse on CI on MacOS?
+            # for now we just extract the archive and check the contents that way
+            cmd = ["unsquashfs", packed_env_path, "-d", spill_dir]
+            subprocess.check_output(cmd)
+        else:
+            cmd = ["squashfuse", packed_env_path, spill_dir]
+            subprocess.check_output(cmd)
     else:
         with tarfile.open(packed_env_path) as out:
             out.extractall(spill_dir)
@@ -189,11 +195,9 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         with open(join(spill_dir, dir, "from_bytes"), 'rb') as fil:
             assert fil.read() == b"foo bar"
 
-    if format == "squashfs":
-        if on_mac:
-            cmd = ["umount", spill_dir]
-        else:
-            cmd = ["fusermount", "-u", spill_dir]
+    if format == "squashfs" and not on_mac:
+        # unmount
+        cmd = ["fusermount", "-u", spill_dir]
         subprocess.check_output(cmd)
 
 
