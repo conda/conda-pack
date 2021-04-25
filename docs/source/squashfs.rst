@@ -76,3 +76,12 @@ Default is level 4, which will use ``gzip`` compression.
 - <3: ``lzo``
 - 4-7: ``gzip``
 - >7: ``xz``
+
+Making the unpacked environment writeable
+-----------------------------------------
+
+SquashFS is a read-only filesystem.
+Sometimes the unpacked environment needs to be writeable on the target machine, for example to install
+more packages.
+A good way to do this is to use `Union mounting <https://en.wikipedia.org/wiki/Union_mount>`_ to
+add a writeable layer on top of the Read-only SquashFS.
