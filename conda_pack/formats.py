@@ -425,12 +425,10 @@ class SquashFSArchive(ArchiveBase):
         target_abspath = self._absolute_path(target)
         self._ensure_parent(target_abspath)
 
-        # hardlinking instead of copying is faster
-        # however it doesn't work across devices
-        # TODO why do hardlinks on MacOS trigger Permission errors?
+        # hardlink instead of copy is faster, but it doesn't work across devices
         same_device = os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev
-        if not on_mac and same_device:
-            copy_func = os.link
+        if same_device:
+            copy_func = partial(os.link, follow_symlinks=False)
         else:
             copy_func = partial(shutil.copy2, follow_symlinks=False)
 

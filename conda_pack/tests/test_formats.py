@@ -178,8 +178,8 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
                 out.extractall(spill_dir)
     elif format == "squashfs":
         if on_mac:
-            # TODO is there a good way to install squashfuse on CI on MacOS?
-            # for now we just extract the archive and check the contents that way
+            # There is no simple way to install MacFUSE + squashfuse on the macOS CI runners.
+            # So instead of mounting we extract the archive and check the contents that way.
 
             # unsquashfs creates its own directories
             os.rmdir(spill_dir)
