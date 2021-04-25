@@ -13,7 +13,7 @@ import pytest
 
 from conda_pack.core import CondaPackException
 from conda_pack.formats import archive, _parse_n_threads
-from conda_pack.compat import on_win, on_mac, PY2
+from conda_pack.compat import on_win, on_mac, on_linux, PY2
 
 
 @pytest.fixture(scope="module")
@@ -180,7 +180,10 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         if on_mac:
             # TODO is there a good way to install squashfuse on CI on MacOS?
             # for now we just extract the archive and check the contents that way
-            cmd = ["unsquashfs", packed_env_path, "-d", spill_dir]
+
+            # unsquashfs creates its own directories
+            os.rmdir(spill_dir)
+            cmd = ["unsquashfs", "-dest", spill_dir, packed_env_path]
             subprocess.check_output(cmd)
         else:
             cmd = ["squashfuse", packed_env_path, spill_dir]
@@ -195,8 +198,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         with open(join(spill_dir, dir, "from_bytes"), 'rb') as fil:
             assert fil.read() == b"foo bar"
 
-    if format == "squashfs" and not on_mac:
-        # unmount
+    if format == "squashfs" and on_linux:
         cmd = ["fusermount", "-u", spill_dir]
         subprocess.check_output(cmd)
 
