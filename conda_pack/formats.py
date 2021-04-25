@@ -19,7 +19,7 @@ from functools import partial
 from io import BytesIO
 from multiprocessing.pool import ThreadPool
 
-from .compat import Queue, on_win, on_mac
+from .compat import Queue, on_win
 from .core import CondaPackException
 
 
