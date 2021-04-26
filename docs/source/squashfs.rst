@@ -10,9 +10,11 @@ This allows benefiting from compressed storage, without the decompression step n
 Packing
 -------
 Packing environments into SquashFS works on MacOS and Linux.
-You will need `squashfs-tools <https://github.com/plougher/squashfs-tools>`_, more specifically
+You will need to install `squashfs-tools <https://github.com/plougher/squashfs-tools>`_, more specifically
 the ``mksquashfs`` command.
-``squashfs-tools`` can be installed via ``conda install -c conda-forge squashfs-tools``.
+On Ubuntu run ``apt-get install squashfs-tools``,
+on MacOS ``brew install squashfs`` or alternatively (Linux+MacOS) install from conda-forge through
+``conda install -c conda-forge squashfs-tools``.
 
 Mounting
 --------
@@ -24,13 +26,13 @@ On Linux there are two ways:
   ``mount -t squashfs <filename> <mountpoint>``. This will require root or ``CAP_SYS_ADMIN``.
 - Mounting as `Filesystem in Userspace (FUSE) <https://en.wikipedia.org/wiki/Filesystem_in_Userspace>`_:
   This can be done by installing `squashfuse <https://github.com/vasi/squashfuse>`_, for example through
-  ``conda install -c conda-forge squashfuse``.
-  It doesn't require root permissions.
+  ``apt-get install squashfuse`` (Ubuntu), ``conda install -c conda-forge squashfuse`` or from source.
+  Contrary to the Kernel-version of SquashFS, ``squashfuse`` doesn't require root permissions to run.
 
 On Mac only the FUSE option is available:
 
 - First install `macFUSE <https://macfuse.io/>`_, eg via ``brew install --cask macfuse``.
-- Then install `squashfuse <https://github.com/vasi/squashfuse>`_.
+- Then install ``squashfuse``, ideally from `source <https://github.com/vasi/squashfuse>`_.
 
 Python Example
 --------------
@@ -84,4 +86,31 @@ SquashFS is a read-only filesystem.
 Sometimes the unpacked environment needs to be writeable on the target machine, for example to install
 more packages.
 A good way to do this is to use `Union mounting <https://en.wikipedia.org/wiki/Union_mount>`_ to
-add a writeable layer on top of the Read-only SquashFS.
+add a writeable layer on top of the read-only SquashFS.
+
+On Linux the most used option is `OverlayFS <https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html>`_.
+
+To show how to set this up, we create three layers:
+1. The SquashFS-packed conda env as a read-only lower layer
+2. A writeable working directory, necessary for OverlayFS
+3. A writeable upper directory, where all new and changed files will go
+
+.. code-block:: bash
+
+    $ # 1. Create read-only lower layer, consisting of squashFS-packed conda env
+    $ mkdir squashFS_mountpoint
+    $ sudo mount -t squashfs example.squashfs squashFS_mountpoint
+    $ # 2. Create workdir & 3. Create upperdir
+    $ mkdir workdir upperdir
+
+Now we combine them into a single directory ``writeable_env``, which will contain our environment but
+which will be writeable.
+
+.. code-block:: bash
+
+    $ mkdir writeable_env
+    $ sudo mount -t overlay overlay \
+        -o lowerdir=squashFS_mountpoint,upperdir=upperdir,workdir=workdir writeable_env
+
+Any files created in the ``writeable_env`` directory will also show up in ``upperdir``.
+After unmounting, delete ``upperdir`` and ``workdir`` and all changes made to the environment will be gone.
