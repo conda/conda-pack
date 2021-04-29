@@ -239,9 +239,11 @@ class CondaEnv(object):
                 format = 'tar.bz2'
             elif output.endswith('.tar'):
                 format = 'tar'
+            elif output.endswith('.squashfs'):
+                format = 'squashfs'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs'}:
             raise CondaPackException("Unknown format %r" % format)
         elif output is not None and output.endswith('.parcel'):
             if format not in ('tar.gz', 'tgz'):
@@ -284,7 +286,7 @@ class CondaEnv(object):
             to the basename of the ``dest_prefix`` value, if supplied; otherwise to
             the basename of the environment. The suffix will be determined by the
             output format (e.g. ``my_env.tar.gz``).
-        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}
+        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs'}
             The archival format to use. By default this is inferred from the
             output file extension, and defaults to ``tar.gz`` if this is not supplied.
         arcroot : str, optional
@@ -366,16 +368,19 @@ class CondaEnv(object):
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with progressbar(self.files, enabled=verbose) as files:
-                    with archive(temp_file, arcroot, format,
-                                 compress_level=compress_level,
-                                 zip_symlinks=zip_symlinks,
-                                 zip_64=zip_64,
-                                 n_threads=n_threads) as arc:
-                        packer = Packer(self.prefix, arc, dest_prefix, parcel)
+                with archive(temp_file, temp_path, arcroot, format,
+                             compress_level=compress_level,
+                             zip_symlinks=zip_symlinks,
+                             zip_64=zip_64,
+                             n_threads=n_threads,
+                             verbose=verbose) as arc:
+                    packer = Packer(self.prefix, arc, dest_prefix, parcel)
+
+                    with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
                             packer.add(f)
-                        packer.finish()
+
+                    packer.finish()
 
         except Exception:
             # Writing failed, remove tempfile
@@ -1108,6 +1113,7 @@ class Packer(object):
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
+        from .formats import SquashFSArchive
 
         # Parcel mode
         if self.parcel:
@@ -1165,3 +1171,8 @@ class Packer(object):
             exe = 'cli-32.exe' if is_32bit else 'cli-64.exe'
             cli_exe = pkg_resources.resource_filename('setuptools', exe)
             self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
+
+        # mksquashfs has no (fast) iterative mode, only batch mode
+        # therefore can do the actual squashing only once we've added all the files
+        if isinstance(self.archive, SquashFSArchive):
+            self.archive.mksquashfs_from_staging()

@@ -92,6 +92,14 @@ jobs:
       matrix:
         os: [macos-latest,ubuntu-latest,windows-latest]
         pyver: [3.6,3.7,3.8,3.9]
+        include:
+          # include the appropriate dependencies for testing SquashFS on each OS
+          - os: macos-latest
+            squashfs_deps: "conda-forge::squashfs-tools"
+          - os: ubuntu-latest
+            squashfs_deps: "conda-forge::squashfs-tools conda-forge::squashfuse"
+          - os: windows-latest
+            squashfs_deps: ""
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v2
@@ -119,7 +127,7 @@ jobs:
         source $CONDA_ROOT/etc/profile.d/conda.sh
         conda info -a
         mv conda-bld $CONDA_ROOT/conda-bld
-        conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
+        conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
         conda activate cptest
         pytest -v -ss conda_pack/tests
   upload:

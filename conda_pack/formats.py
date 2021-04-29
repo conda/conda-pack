@@ -4,14 +4,18 @@ import errno
 import os
 import stat
 import struct
+import subprocess
 import sys
+import shutil
 import tarfile
+import tempfile
 import threading
 import time
 import zipfile
 import zlib
 
 from contextlib import closing
+from functools import partial
 from io import BytesIO
 from multiprocessing.pool import ThreadPool
 
@@ -28,8 +32,8 @@ def _parse_n_threads(n_threads=1):
     return n_threads
 
 
-def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
-            zip_64=True, n_threads=1):
+def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
+            zip_64=True, n_threads=1, verbose=False):
 
     n_threads = _parse_n_threads(n_threads)
 
@@ -56,6 +60,9 @@ def archive(fileobj, arcroot, format, compress_level=4, zip_symlinks=False,
             close_file = True
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
+    elif format == "squashfs":
+        return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose,
+                               compress_level=compress_level)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -351,3 +358,98 @@ else:  # pragma: no cover
             zinfo.file_size = st.st_size
 
         return zinfo
+
+
+class SquashFSArchive(ArchiveBase):
+    def __init__(self, fileobj, target_path, arcroot, n_threads, verbose=False,
+                 compress_level=4):
+        # we don't need fileobj, just the name of the file
+        self.target_path = target_path
+        self.arcroot = arcroot
+        self.n_threads = n_threads
+        self.verbose = verbose
+        self.compress_level = compress_level
+
+    def __enter__(self):
+        # create a staging directory where we will collect
+        # hardlinks to files and make tmpfiles for bytes
+        self._staging_dir = os.path.normpath(tempfile.mkdtemp())
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        shutil.rmtree(self._staging_dir)
+
+    def mksquashfs_from_staging(self):
+        """
+        After building the staging directory, squash it into file
+        """
+        cmd = [
+            "mksquashfs",
+            self._staging_dir,
+            self.target_path,
+            "-noappend",
+            "-processors",
+            str(self.n_threads),
+            "-quiet",  # will still display native progressbar
+        ]
+
+        if self.compress_level == 0:
+            # No compression
+            comp_algo_str = "None"
+            cmd += ["-noI", "-noD", "-noF", "-noX"]
+        else:
+            if self.compress_level < 3:
+                comp_algo_str = "lzo"
+            elif self.compress_level > 7:
+                comp_algo_str = "xz"
+            else:
+                # default compression of SquashFS
+                comp_algo_str = "gzip"
+            cmd += ["-comp", comp_algo_str]
+
+        if self.verbose:
+            print("Running mksquashfs (processors: {}, compression: {})".format(
+                self.n_threads, comp_algo_str))
+        else:
+            cmd.append("-no-progress")
+        subprocess.check_call(cmd)
+
+    def _absolute_path(self, path):
+        return os.path.normpath(os.path.join(self._staging_dir, path))
+
+    def _ensure_parent(self, path):
+        dir_path = os.path.dirname(path)
+        os.makedirs(dir_path, exist_ok=True)
+
+    def _add(self, source, target):
+        target_abspath = self._absolute_path(target)
+        self._ensure_parent(target_abspath)
+
+        # hardlink instead of copy is faster, but it doesn't work across devices
+        same_device = os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev
+        if same_device:
+            copy_func = partial(os.link, follow_symlinks=False)
+        else:
+            copy_func = partial(shutil.copy2, follow_symlinks=False)
+
+        # we overwrite if the same `target` is added twice
+        # to be consistent with the tar-archive implementation
+        if os.path.lexists(target_abspath):
+            os.remove(target_abspath)
+
+        if os.path.isdir(source) and not os.path.islink(source):
+            # directories we add through copying the tree
+            shutil.copytree(source,
+                            target_abspath,
+                            symlinks=True,
+                            copy_function=copy_func)
+        else:
+            # files & links to directories we copy directly
+            copy_func(source, target_abspath)
+
+    def _add_bytes(self, source, sourcebytes, target):
+        target_abspath = self._absolute_path(target)
+        self._ensure_parent(target_abspath)
+        with open(target_abspath, "wb") as f:
+            shutil.copystat(source, target_abspath)
+            f.write(sourcebytes)
