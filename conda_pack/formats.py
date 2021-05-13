@@ -397,15 +397,14 @@ class SquashFSArchive(ArchiveBase):
             # No compression
             comp_algo_str = "None"
             cmd += ["-noI", "-noD", "-noF", "-noX"]
-        else:
-            if self.compress_level < 3:
-                comp_algo_str = "lzo"
-            elif self.compress_level > 7:
-                comp_algo_str = "xz"
-            else:
-                # default compression of SquashFS
-                comp_algo_str = "gzip"
+        elif self.compress_level == 9:
+            comp_algo_str = "xz"
             cmd += ["-comp", comp_algo_str]
+        else:
+            comp_level = int(self.compress_level / 8 * 20)
+            comp_algo_str = "zstd level {}".format(comp_level)
+            # 256KB block size instead of the default 128KB for slightly smaller archive sizes
+            cmd += ["-comp", "zstd", "-Xcompression-level", str(comp_level), "-b", str(256*1024)]
 
         if self.verbose:
             print("Running mksquashfs (processors: {}, compression: {})".format(

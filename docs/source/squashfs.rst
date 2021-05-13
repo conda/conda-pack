@@ -27,7 +27,8 @@ On Linux there are two ways:
 - Mounting as `Filesystem in Userspace (FUSE) <https://en.wikipedia.org/wiki/Filesystem_in_Userspace>`_:
   This can be done by installing `squashfuse <https://github.com/vasi/squashfuse>`_, for example through
   ``apt-get install squashfuse`` (Ubuntu), ``conda install -c conda-forge squashfuse`` or from source.
-  Contrary to the Kernel-version of SquashFS, ``squashfuse`` doesn't require root permissions to run.
+  Contrary to the Kernel-version of SquashFS, ``squashfuse`` doesn't require root permissions to run. ``squashfuse_ll``
+  comes packaged with ``squashfuse`` and is often faster.
 
 On Mac only the FUSE option is available:
 
@@ -72,12 +73,11 @@ Compression options
 -------------------
 
 Compression can be specified through ``--compress-level``.
-Default is level 4, which will use ``gzip`` compression.
+Default is level 4.
 
 - 0: no compression
-- <3: ``lzo``
-- 4-7: ``gzip``
-- >7: ``xz``
+- 1-8: ``zstd`` with increasing compression level
+- 9: ``xz``
 
 Making the unpacked environment writeable
 -----------------------------------------
