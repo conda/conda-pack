@@ -402,13 +402,18 @@ class SquashFSArchive(ArchiveBase):
             cmd += ["-comp", comp_algo_str]
         else:
             comp_level = int(self.compress_level / 8 * 20)
-            comp_algo_str = "zstd level {}".format(comp_level)
+            comp_algo_str = "zstd (level {})".format(comp_level)
             # 256KB block size instead of the default 128KB for slightly smaller archive sizes
             cmd += ["-comp", "zstd", "-Xcompression-level", str(comp_level), "-b", str(256*1024)]
 
         if self.verbose:
-            print("Running mksquashfs (processors: {}, compression: {})".format(
-                self.n_threads, comp_algo_str))
+            s = "Running mksquashfs with {} compression (processors: {}).".format(
+                comp_algo_str, self.n_threads)
+            if self.compress_level != 9:
+                s += "\nWill require kernel>=4.14 or squashfuse>=0.1.101 (compiled with zstd) " \
+                     "for mounting.\nTo support older systems, compress with " \
+                     "`xz` (--compress-level 9) instead."
+            print(s)
         else:
             cmd.append("-no-progress")
         subprocess.check_call(cmd)
