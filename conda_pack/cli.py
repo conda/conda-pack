@@ -70,7 +70,7 @@ def build_parser():
                         "default value is 'el7'. This value cannot have any hyphens.")
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
-                                 'tbz2', 'tar', 'parcel', 'squashfs'],
+                                 'tbz2', 'tar.xz', 'txz', 'tar', 'parcel', 'squashfs'],
                         default='infer',
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension."))

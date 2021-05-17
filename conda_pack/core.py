@@ -237,13 +237,16 @@ class CondaEnv(object):
                 format = 'tar.gz'
             elif output.endswith('.tar.bz2') or output.endswith('.tbz2'):
                 format = 'tar.bz2'
+            elif output.endswith('.tar.xz') or output.endswith('.txz'):
+                format = 'tar.xz'
             elif output.endswith('.tar'):
                 format = 'tar'
             elif output.endswith('.squashfs'):
                 format = 'squashfs'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2',
+                            'tar.xz', 'txz', 'tar', 'parcel', 'squashfs'}:
             raise CondaPackException("Unknown format %r" % format)
         elif output is not None and output.endswith('.parcel'):
             if format not in ('tar.gz', 'tgz'):
