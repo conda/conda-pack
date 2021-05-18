@@ -363,6 +363,10 @@ else:  # pragma: no cover
 class SquashFSArchive(ArchiveBase):
     def __init__(self, fileobj, target_path, arcroot, n_threads, verbose=False,
                  compress_level=4):
+        if shutil.which("mksquashfs") is None:
+            print("Command 'mksquashfs' not found. Please install it, "
+                  "e.g. 'conda install squashfs-tools'.")
+            sys.exit(127)
         # we don't need fileobj, just the name of the file
         self.target_path = target_path
         self.arcroot = arcroot
