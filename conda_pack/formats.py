@@ -60,6 +60,15 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
             close_file = True
             fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
                                             n_threads=n_threads)
+    elif format in ('tar.xz', 'txz'):
+        if n_threads == 1:
+            mode = 'w:xz'
+            close_file = False
+        else:
+            mode = 'w'
+            close_file = True
+            fileobj = ParallelXZFileWriter(fileobj, compresslevel=compress_level,
+                                           n_threads=n_threads)
     elif format == "squashfs":
         return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose,
                                compress_level=compress_level)
@@ -209,6 +218,29 @@ class ParallelBZ2FileWriter(ParallelFileWriter):
         return compressor.flush()
 
 
+class ParallelXZFileWriter(ParallelFileWriter):
+    def _init_state(self):
+        # from `man lzma`: uses dict sizes between 64 kb and 32 MB for the level presets.
+        # 2-4 times the size (minimum 1 MB) is best for the block size.
+        self._block_size = 4 * max(1, (2**(self.compresslevel - 4))) * 2**10 * 2**10
+
+    def _new_compressor(self):
+        import lzma
+        return lzma.LZMACompressor(preset=self.compresslevel)
+
+    def _per_buffer_op(self, buffer):
+        pass
+
+    def _write_header(self):
+        pass
+
+    def _write_footer(self):
+        pass
+
+    def _flush_compressor(self, compressor):
+        return compressor.flush()
+
+
 class ArchiveBase(object):
     def add(self, source, target):
         target = os.path.join(self.arcroot, target)
@@ -229,7 +261,7 @@ class TarArchive(ArchiveBase):
         self.compresslevel = compresslevel
 
     def __enter__(self):
-        kwargs = {'compresslevel': self.compresslevel} if self.mode != 'w' else {}
+        kwargs = {'compresslevel': self.compresslevel} if self.mode not in {'w', 'w:xz'} else {}
         # Hard links seem to throw off the tar file format on windows.
         # Revisit when libarchive is used.
         self.archive = tarfile.open(fileobj=self.fileobj,
