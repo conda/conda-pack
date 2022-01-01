@@ -570,7 +570,7 @@ def find_site_packages(prefix):
         return 'Lib/site-packages'
 
     python_version = pythons[0]['version']
-    major_minor = python_version[:3]  # e.g. '3.5.1'[:3]
+    major_minor = ".".join(python_version.split(".")[:2])
 
     return 'lib/python%s/site-packages' % major_minor
 
