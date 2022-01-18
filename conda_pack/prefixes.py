@@ -99,11 +99,12 @@ def text_replace(data, placeholder, new_prefix):
 
 if on_win:
     def binary_replace(data, placeholder, new_prefix):
-        placeholder = placeholder.lower()
         new_prefix = new_prefix.lower()
-        if placeholder not in data:
-            return data
-        return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
+        if placeholder in data:
+            return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
+        elif placeholder.lower() in data:
+            return replace_pyzzer_entry_point_shebang(data, placeholder.lower(), new_prefix)
+        return data
 
 else:
     def binary_replace(data, placeholder, new_prefix):
