@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0.6.0 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Usage with Apache Spark on YARN &#8212; conda-pack 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -32,7 +33,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="usage-with-apache-spark-on-yarn">
+  <section id="usage-with-apache-spark-on-yarn">
 <h1>Usage with Apache Spark on YARN<a class="headerlink" href="#usage-with-apache-spark-on-yarn" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> can be used to distribute conda environments to be used with
 <a class="reference external" href="http://spark.apache.org/">Apache Spark</a> jobs when <a class="reference external" href="http://spark.apache.org/docs/latest/running-on-yarn.html">deploying on Apache YARN</a>. By bundling your
@@ -42,7 +43,7 @@ makes use of <a class="reference external" href="https://hadoop.apache.org/docs/
 resource localization by distributing environments as archives, which are then
 automatically unarchived on every node. In this case either the <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> or
 <code class="docutils literal notranslate"><span class="pre">zip</span></code> formats must be used.</p>
-<div class="section" id="python-example">
+<section id="python-example">
 <h2>Python Example<a class="headerlink" href="#python-example" title="Permalink to this headline">¶</a></h2>
 <p>Create an environment:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda create -y -n example <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.5 numpy pandas scikit-learn
@@ -115,8 +116,8 @@ pyspark <span class="se">\</span>
 --archives environment.tar.gz#environment
 </pre></div>
 </div>
-</div>
-<div class="section" id="r-example">
+</section>
+<section id="r-example">
 <h2>R Example<a class="headerlink" href="#r-example" title="Permalink to this headline">¶</a></h2>
 <p>Conda also supports R environments. Here we’ll demonstrate creating and
 packaging an environment for use with <a class="reference external" href="http://spark.rstudio.com/">Sparklyr</a>.
@@ -180,8 +181,8 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
 <span class="m">2</span> Petal_Width         <span class="m">2</span>.23       <span class="m">0</span>.0514        <span class="m">43</span>.4 <span class="m">4</span>.68e-86
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -230,6 +231,7 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="parcel.html">Parcels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="squashfs.html">SquashFS</a></li>
 </ul>
 
 <h3>Need help?</h3>
@@ -241,7 +243,7 @@ Packing environment at <span class="s1">&#39;/Users/jcrist/anaconda/envs/example
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

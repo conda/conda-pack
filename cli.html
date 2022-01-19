@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CLI Docs &#8212; conda-pack 0.6.0 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CLI Docs &#8212; conda-pack 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -32,9 +33,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="cli-docs">
+  <section id="cli-docs">
 <h1>CLI Docs<a class="headerlink" href="#cli-docs" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="conda-pack">
+<section id="conda-pack">
 <h2>conda-pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h2>
 <p>Package an existing conda environment into an archive file.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">usage: conda-pack [--name ENV] [--prefix PATH] [--output PATH]</span>
@@ -42,7 +43,7 @@
 <span class="go">                  [--parcel-root PARCEL_ROOT] [--parcel-name PARCEL_NAME]</span>
 <span class="go">                  [--parcel-version PARCEL_VERSION]</span>
 <span class="go">                  [--parcel-distro PARCEL_DISTRO]</span>
-<span class="go">                  [--format {infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar,parcel}]</span>
+<span class="go">                  [--format {infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar.xz,txz,tar,parcel,squashfs}]</span>
 <span class="go">                  [--compress-level LEVEL] [--n-threads N] [--zip-symlinks]</span>
 <span class="go">                  [--no-zip-64] [--ignore-editable-packages]</span>
 <span class="go">                  [--ignore-missing-files] [--exclude PATTERN]</span>
@@ -50,139 +51,139 @@
 </pre></div>
 </div>
 <dl class="std option">
-<dt id="cmdoption-conda-pack-name">
-<span id="cmdoption-conda-pack-n"></span><code class="sig-name descname"><span class="pre">--name</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;env&gt;</span></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-n</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;env&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-name" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-name">
+<span id="cmdoption-conda-pack-n"></span><span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;env&gt;</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;env&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-name" title="Permalink to this definition">¶</a></dt>
 <dd><p>The name of the environment to pack. If neither –name nor –prefix are supplied, the current activated environment is packed.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-prefix">
-<span id="cmdoption-conda-pack-p"></span><code class="sig-name descname"><span class="pre">--prefix</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-p</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-prefix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-prefix">
+<span id="cmdoption-conda-pack-p"></span><span class="sig-name descname"><span class="pre">--prefix</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-prefix" title="Permalink to this definition">¶</a></dt>
 <dd><p>The path to the environment to pack. Only one of –name/–prefix should be supplied.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-output">
-<span id="cmdoption-conda-pack-o"></span><code class="sig-name descname"><span class="pre">--output</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-o</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-output" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-output">
+<span id="cmdoption-conda-pack-o"></span><span class="sig-name descname"><span class="pre">--output</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-output" title="Permalink to this definition">¶</a></dt>
 <dd><p>The path of the output file. Defaults to the environment name with a <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> suffix (e.g.  <code class="docutils literal notranslate"><span class="pre">my_env.tar.gz</span></code>).</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-arcroot">
-<code class="sig-name descname"><span class="pre">--arcroot</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-arcroot" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-arcroot">
+<span class="sig-name descname"><span class="pre">--arcroot</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-arcroot" title="Permalink to this definition">¶</a></dt>
 <dd><p>The relative path in the archive to the conda environment. Defaults to ‘’.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-dest-prefix">
-<span id="cmdoption-conda-pack-d"></span><code class="sig-name descname"><span class="pre">--dest-prefix</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-d</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-dest-prefix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-dest-prefix">
+<span id="cmdoption-conda-pack-d"></span><span class="sig-name descname"><span class="pre">--dest-prefix</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;path&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-dest-prefix" title="Permalink to this definition">¶</a></dt>
 <dd><p>If present, prefixes will be rewritten to this path before packaging. In this case the <cite>conda-unpack</cite> script will not be generated. This option should not be used with parcels, which instead generate their destination prefix from the –parcel-root, –parcel-name, and –parcel-version options.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-parcel-root">
-<code class="sig-name descname"><span class="pre">--parcel-root</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;parcel_root&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-parcel-root" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-parcel-root">
+<span class="sig-name descname"><span class="pre">--parcel-root</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parcel_root&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-parcel-root" title="Permalink to this definition">¶</a></dt>
 <dd><p>(Parcels only) The location where all parcels are unpacked on the target Hadoop cluster (default: ‘/opt/cloudera/parcels’).</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-parcel-name">
-<code class="sig-name descname"><span class="pre">--parcel-name</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;parcel_name&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-parcel-name" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-parcel-name">
+<span class="sig-name descname"><span class="pre">--parcel-name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parcel_name&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-parcel-name" title="Permalink to this definition">¶</a></dt>
 <dd><p>(Parcels only) The name of the parcel, without a version suffix. The default value is the local environment name. The parcel name may not have any hyphens.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-parcel-version">
-<code class="sig-name descname"><span class="pre">--parcel-version</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;parcel_version&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-parcel-version" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-parcel-version">
+<span class="sig-name descname"><span class="pre">--parcel-version</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parcel_version&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-parcel-version" title="Permalink to this definition">¶</a></dt>
 <dd><p>(Parcels only) The version number for the parcel. The default value is the current date, using the format YYYY.MM.DD.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-parcel-distro">
-<code class="sig-name descname"><span class="pre">--parcel-distro</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;parcel_distro&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-parcel-distro" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-parcel-distro">
+<span class="sig-name descname"><span class="pre">--parcel-distro</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parcel_distro&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-parcel-distro" title="Permalink to this definition">¶</a></dt>
 <dd><p>(Parcels only) The distribution type for the parcel. The default value is ‘el7’. This value cannot have any hyphens.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-format">
-<code class="sig-name descname"><span class="pre">--format</span></code><code class="sig-prename descclassname"> <span class="pre">{infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar,parcel}</span></code><a class="headerlink" href="#cmdoption-conda-pack-format" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-format">
+<span class="sig-name descname"><span class="pre">--format</span></span><span class="sig-prename descclassname"> <span class="pre">{infer,zip,tar.gz,tgz,tar.bz2,tbz2,tar.xz,txz,tar,parcel,squashfs}</span></span><a class="headerlink" href="#cmdoption-conda-pack-format" title="Permalink to this definition">¶</a></dt>
 <dd><p>The archival format to use. By default this is inferred by the output file extension.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-compress-level">
-<code class="sig-name descname"><span class="pre">--compress-level</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;level&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-compress-level" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-compress-level">
+<span class="sig-name descname"><span class="pre">--compress-level</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;level&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-compress-level" title="Permalink to this definition">¶</a></dt>
 <dd><p>The compression level to use, from 0 to 9. Higher numbers decrease output file size at the expense of compression time. Ignored for <code class="docutils literal notranslate"><span class="pre">format='zip'</span></code>. Default is 4.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-n-threads">
-<span id="cmdoption-conda-pack-j"></span><code class="sig-name descname"><span class="pre">--n-threads</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;n&gt;</span></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-j</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;n&gt;</span></code><a class="headerlink" href="#cmdoption-conda-pack-n-threads" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-n-threads">
+<span id="cmdoption-conda-pack-j"></span><span class="sig-name descname"><span class="pre">--n-threads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;n&gt;</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-j</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;n&gt;</span></span><a class="headerlink" href="#cmdoption-conda-pack-n-threads" title="Permalink to this definition">¶</a></dt>
 <dd><p>The number of threads to use. Set to -1 to use the number of cpus on this machine. If a file format doesn’t support threaded packaging, this option will be ignored. Default is 1.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-zip-symlinks">
-<code class="sig-name descname"><span class="pre">--zip-symlinks</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-zip-symlinks" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-zip-symlinks">
+<span class="sig-name descname"><span class="pre">--zip-symlinks</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-zip-symlinks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Symbolic links aren’t supported by the Zip standard, but are supported by <em>many</em> common Zip implementations. If set, store symbolic links in the archive, instead of the file referred to by the link. This can avoid storing multiple copies of the same files. <em>Note that the resulting archive may silently fail on decompression if the ``unzip`` implementation doesn’t support symlinks</em>. Ignored if format isn’t <code class="docutils literal notranslate"><span class="pre">zip</span></code>.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-no-zip-64">
-<code class="sig-name descname"><span class="pre">--no-zip-64</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-no-zip-64" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-no-zip-64">
+<span class="sig-name descname"><span class="pre">--no-zip-64</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-no-zip-64" title="Permalink to this definition">¶</a></dt>
 <dd><p>Disable ZIP64 extensions.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-ignore-editable-packages">
-<code class="sig-name descname"><span class="pre">--ignore-editable-packages</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-ignore-editable-packages" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-ignore-editable-packages">
+<span class="sig-name descname"><span class="pre">--ignore-editable-packages</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-ignore-editable-packages" title="Permalink to this definition">¶</a></dt>
 <dd><p>Skips checks for editable packages.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-ignore-missing-files">
-<code class="sig-name descname"><span class="pre">--ignore-missing-files</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-ignore-missing-files" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-ignore-missing-files">
+<span class="sig-name descname"><span class="pre">--ignore-missing-files</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-ignore-missing-files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Skip checks for missing package files.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-exclude">
-<code class="sig-name descname"><span class="pre">--exclude</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-exclude" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-exclude">
+<span class="sig-name descname"><span class="pre">--exclude</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-exclude" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exclude files matching this pattern</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-include">
-<code class="sig-name descname"><span class="pre">--include</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-include" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-include">
+<span class="sig-name descname"><span class="pre">--include</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-include" title="Permalink to this definition">¶</a></dt>
 <dd><p>Re-add excluded files matching this pattern</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-force">
-<span id="cmdoption-conda-pack-f"></span><code class="sig-name descname"><span class="pre">--force</span></code><code class="sig-prename descclassname"></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-f</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-force" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-force">
+<span id="cmdoption-conda-pack-f"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-force" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overwrite any existing archive at the output path.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-quiet">
-<span id="cmdoption-conda-pack-q"></span><code class="sig-name descname"><span class="pre">--quiet</span></code><code class="sig-prename descclassname"></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-q</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-quiet" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-quiet">
+<span id="cmdoption-conda-pack-q"></span><span class="sig-name descname"><span class="pre">--quiet</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-quiet" title="Permalink to this definition">¶</a></dt>
 <dd><p>Do not report progress</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-help">
-<span id="cmdoption-conda-pack-h"></span><code class="sig-name descname"><span class="pre">--help</span></code><code class="sig-prename descclassname"></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">-h</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-help" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-help">
+<span id="cmdoption-conda-pack-h"></span><span class="sig-name descname"><span class="pre">--help</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">-h</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-help" title="Permalink to this definition">¶</a></dt>
 <dd><p>Show this help message then exit</p>
 </dd></dl>
 
 <dl class="std option">
-<dt id="cmdoption-conda-pack-version">
-<code class="sig-name descname"><span class="pre">--version</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-conda-pack-version" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="cmdoption-conda-pack-version">
+<span class="sig-name descname"><span class="pre">--version</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-conda-pack-version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Show version then exit</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -230,6 +231,7 @@
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Usage with Apache Spark on YARN</a></li>
 <li class="toctree-l1"><a class="reference internal" href="parcel.html">Parcels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="squashfs.html">SquashFS</a></li>
 </ul>
 
 <h3>Need help?</h3>
@@ -241,7 +243,7 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

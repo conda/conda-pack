@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Conda-Pack &#8212; conda-pack 0.6.0 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Conda-Pack &#8212; conda-pack 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -31,7 +32,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="conda-pack">
+  <section id="conda-pack">
 <h1>Conda-Pack<a class="headerlink" href="#conda-pack" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is a command line tool for creating archives of <a class="reference external" href="https://conda.io/docs/">conda
 environments</a> that can be installed on other
@@ -44,7 +45,7 @@ this challenge by building archives from original conda package sources
 and reproducing conda’s own relocation logic.</p>
 <div align="center">
   <script src="https://asciinema.org/a/186862.js" id="asciicast-186862" async data-speed="2"></script>
-</div><div class="section" id="use-cases">
+</div><section id="use-cases">
 <h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>Bundling an application with its environment for deployment</p></li>
@@ -61,8 +62,8 @@ cluster configurations may produce different results. We welcome users to
 <a class="reference external" href="https://github.com/conda/conda-pack/issues">file an issue</a> if necessary.
 <a class="reference internal" href="parcel.html"><span class="doc">See here</span></a> for more information).</p></li>
 </ul>
-</div>
-<div class="section" id="installation">
+</section>
+<section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>It’s recommended to install in your root conda environment - the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
 command will then be available in all sub-environments as well.</p>
@@ -85,8 +86,8 @@ and can always be installed from source.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">conda</span><span class="o">/</span><span class="n">conda</span><span class="o">-</span><span class="n">pack</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="commandline-usage">
+</section>
+<section id="commandline-usage">
 <h2>Commandline Usage<a class="headerlink" href="#commandline-usage" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> is primarily a commandline tool. Full CLI docs can be found
 <a class="reference internal" href="cli.html"><span class="doc">here</span></a>.</p>
@@ -132,8 +133,8 @@ $ <span class="nb">source</span> my_env/bin/activate
 <span class="o">(</span>my_env<span class="o">)</span> $ <span class="nb">source</span> my_env/bin/deactivate
 </pre></div>
 </div>
-</div>
-<div class="section" id="api-usage">
+</section>
+<section id="api-usage">
 <h2>API Usage<a class="headerlink" href="#api-usage" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> also provides a Python API, the full documentation of which can
 be found <a class="reference internal" href="api.html"><span class="doc">here</span></a>. The API mostly mirrors that of the <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">pack</span></code>
@@ -150,8 +151,8 @@ commandline. Repeating the examples from above:</p>
 <span class="n">conda_pack</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/explicit/path/to/my_env&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="caveats">
+</section>
+<section id="caveats">
 <h2>Caveats<a class="headerlink" href="#caveats" title="Permalink to this headline">¶</a></h2>
 <p>This tool has a few caveats.</p>
 <ul class="simple">
@@ -167,8 +168,8 @@ conda environments.</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -213,6 +214,7 @@ conda environments.</p></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Usage with Apache Spark on YARN</a></li>
 <li class="toctree-l1"><a class="reference internal" href="parcel.html">Parcels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="squashfs.html">SquashFS</a></li>
 </ul>
 
 <h3>Need help?</h3>
@@ -224,7 +226,7 @@ conda environments.</p></li>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

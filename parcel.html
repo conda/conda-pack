@@ -4,16 +4,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Parcels &#8212; conda-pack 0.6.0 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Parcels &#8212; conda-pack 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SquashFS" href="squashfs.html" />
     <link rel="prev" title="Usage with Apache Spark on YARN" href="spark.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -31,7 +33,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="parcels">
+  <section id="parcels">
 <h1>Parcels<a class="headerlink" href="#parcels" title="Permalink to this headline">¶</a></h1>
 <p>Conda-pack has recently been enhanced with the ability to generate
 <a class="reference external" href="https://docs.cloudera.com/documentation/enterprise/latest/topics/cm_ig_parcels.html">parcels</a>
@@ -86,7 +88,7 @@ generates values for the following internal options:</p>
 <p>Conda-pack will exit with an error if you attempt to override the <code class="docutils literal notranslate"><span class="pre">dest-prefix</span></code>
 or <code class="docutils literal notranslate"><span class="pre">arcroot</span></code> options. We recommend against overriding the <code class="docutils literal notranslate"><span class="pre">output</span></code> option,
 but conda-pack does not prevent this.</p>
-<div class="section" id="example">
+<section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
 <p>Create an environment:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda create -y -n example <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.5 numpy pandas scikit-learn
@@ -99,8 +101,8 @@ Packing environment at <span class="s1">&#39;/Users/mgrant/miniconda3/envs/examp
 <span class="o">[</span><span class="c1">########################################] | 100% Completed |  9.8s</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -148,6 +150,7 @@ Packing environment at <span class="s1">&#39;/Users/mgrant/miniconda3/envs/examp
 <li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="squashfs.html">SquashFS</a></li>
 </ul>
 
 <h3>Need help?</h3>
@@ -159,7 +162,7 @@ Packing environment at <span class="s1">&#39;/Users/mgrant/miniconda3/envs/examp
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

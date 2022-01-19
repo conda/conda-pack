@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SquashFS &#8212; conda-pack 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Parcels" href="parcel.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="squashfs">
+<h1>SquashFS<a class="headerlink" href="#squashfs" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> can package environments into
+<a class="reference external" href="https://en.wikipedia.org/wiki/SquashFS">SquashFS</a>, a compressed, read-only Linux filesystem.
+These filesystems can then be mounted directly, without decompressing them first.
+This allows using packed environments immediately and without consuming disk space.</p>
+<section id="packing">
+<h2>Packing<a class="headerlink" href="#packing" title="Permalink to this headline">¶</a></h2>
+<p>Packing environments into SquashFS works on MacOS and Linux.
+You will need to install <a class="reference external" href="https://github.com/plougher/squashfs-tools">squashfs-tools</a>, more specifically
+the <code class="docutils literal notranslate"><span class="pre">mksquashfs</span></code> command.
+On Ubuntu run <code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">squashfs-tools</span></code>,
+on MacOS <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">squashfs</span></code> or alternatively (Linux+MacOS) install from conda-forge through
+<code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">squashfs-tools</span></code>.</p>
+</section>
+<section id="mounting">
+<h2>Mounting<a class="headerlink" href="#mounting" title="Permalink to this headline">¶</a></h2>
+<p>Mounting SquashFS environments is only possible on MacOS and Linux.</p>
+<p>On Linux there are two ways:</p>
+<ul class="simple">
+<li><p>Mounting directly: Since SquashFS is part of the Linux kernel, it can be mounted using
+<code class="docutils literal notranslate"><span class="pre">mount</span> <span class="pre">-t</span> <span class="pre">squashfs</span> <span class="pre">&lt;filename&gt;</span> <span class="pre">&lt;mountpoint&gt;</span></code>. This will require root or <code class="docutils literal notranslate"><span class="pre">CAP_SYS_ADMIN</span></code>.</p></li>
+<li><p>Mounting as <a class="reference external" href="https://en.wikipedia.org/wiki/Filesystem_in_Userspace">Filesystem in Userspace (FUSE)</a>:
+This can be done by installing <a class="reference external" href="https://github.com/vasi/squashfuse">squashfuse</a>, for example through
+<code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">squashfuse</span></code> (Ubuntu), <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">squashfuse</span></code> or from source.
+Contrary to the Kernel-version of SquashFS, <code class="docutils literal notranslate"><span class="pre">squashfuse</span></code> doesn’t require root permissions to run. <code class="docutils literal notranslate"><span class="pre">squashfuse_ll</span></code>
+comes packaged with <code class="docutils literal notranslate"><span class="pre">squashfuse</span></code> and is often faster.</p></li>
+</ul>
+<p>On Mac only the FUSE option is available:</p>
+<ul class="simple">
+<li><p>First install <a class="reference external" href="https://macfuse.io/">macFUSE</a>, eg via <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">--cask</span> <span class="pre">macfuse</span></code>.</p></li>
+<li><p>Then install <code class="docutils literal notranslate"><span class="pre">squashfuse</span></code>, ideally from <a class="reference external" href="https://github.com/vasi/squashfuse">source</a>.</p></li>
+</ul>
+</section>
+<section id="python-example">
+<h2>Python Example<a class="headerlink" href="#python-example" title="Permalink to this headline">¶</a></h2>
+<p>Create an environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda create -y -n example <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9 numpy pandas scikit-learn
+</pre></div>
+</div>
+<p>Pack the environment into SquashFS:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda pack -n example --format squashfs --n-threads <span class="m">4</span>
+</pre></div>
+</div>
+<p>Create a directory to mount to:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir env_mountpoint
+</pre></div>
+</div>
+<p>Option 1 (Linux + MacOS): Mount the environment using squashfuse:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ squashfuse example.squashfs env_mountpoint
+</pre></div>
+</div>
+<p>Option 2 (Linux): Mount the environment using <code class="docutils literal notranslate"><span class="pre">mount</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo mount -t squashfs example.squashfs env_mountpoint
+</pre></div>
+</div>
+</section>
+<section id="compression-options">
+<h2>Compression options<a class="headerlink" href="#compression-options" title="Permalink to this headline">¶</a></h2>
+<p>Compression can be specified through <code class="docutils literal notranslate"><span class="pre">--compress-level</span></code>.
+Default is level 4, which will use <code class="docutils literal notranslate"><span class="pre">zstd</span></code> compression.</p>
+<p>When selecting a compression option for packing, keep in mind the kernel or <code class="docutils literal notranslate"><span class="pre">squashfuse</span></code> version on the target system.
+For older systems, make sure that SquashFS or <code class="docutils literal notranslate"><span class="pre">squashfuse</span></code> support <code class="docutils literal notranslate"><span class="pre">zstd</span></code> compression
+(Linux kernel version <code class="docutils literal notranslate"><span class="pre">&gt;=4.14</span></code> or <code class="docutils literal notranslate"><span class="pre">squashfuse</span> <span class="pre">&gt;=</span> <span class="pre">0.1.101</span></code>).
+If <code class="docutils literal notranslate"><span class="pre">zstd</span></code> isn’t supported on the target, you can always compress with <code class="docutils literal notranslate"><span class="pre">xz</span></code> instead.</p>
+<ul class="simple">
+<li><p>0: no compression</p></li>
+<li><p>1-8: <code class="docutils literal notranslate"><span class="pre">zstd</span></code> with increasing compression level</p></li>
+<li><p>9: <code class="docutils literal notranslate"><span class="pre">xz</span></code></p></li>
+</ul>
+</section>
+<section id="making-the-unpacked-environment-writeable">
+<h2>Making the unpacked environment writeable<a class="headerlink" href="#making-the-unpacked-environment-writeable" title="Permalink to this headline">¶</a></h2>
+<p>SquashFS is a read-only filesystem.
+Sometimes the unpacked environment needs to be writeable on the target machine, for example to install
+more packages.
+A good way to do this is to use <a class="reference external" href="https://en.wikipedia.org/wiki/Union_mount">Union mounting</a> to
+add a writeable layer on top of the read-only SquashFS.
+On Linux the most used option is <a class="reference external" href="https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html">OverlayFS</a>.</p>
+<p>To set this up, we create three layers:</p>
+<ol class="arabic simple">
+<li><p>The SquashFS-packed conda env as a read-only lower layer</p></li>
+<li><p>A writeable working directory, necessary for OverlayFS</p></li>
+<li><p>A writeable upper directory, where all new and changed files will go</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="c1"># 1. Create read-only lower layer, consisting of squashFS-packed conda env</span>
+$ mkdir squashFS_mountpoint
+$ sudo mount -t squashfs example.squashfs squashFS_mountpoint
+$ <span class="c1"># 2. Create workdir &amp; 3. Create upperdir</span>
+$ mkdir workdir upperdir
+</pre></div>
+</div>
+<p>Now we combine them into a single directory <code class="docutils literal notranslate"><span class="pre">writeable_env</span></code>, which will contain our environment but
+which will be writeable.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir writeable_env
+$ sudo mount -t overlay overlay <span class="se">\</span>
+    -o <span class="nv">lowerdir</span><span class="o">=</span>squashFS_mountpoint,upperdir<span class="o">=</span>upperdir,workdir<span class="o">=</span>workdir writeable_env
+</pre></div>
+</div>
+<p>Any files created in the <code class="docutils literal notranslate"><span class="pre">writeable_env</span></code> directory will also show up in <code class="docutils literal notranslate"><span class="pre">upperdir</span></code>.
+After unmounting, delete <code class="docutils literal notranslate"><span class="pre">upperdir</span></code> and <code class="docutils literal notranslate"><span class="pre">workdir</span></code> and all changes made to the environment will be gone.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">conda-pack</a></h1>
+
+
+
+<p class="blurb">A tool for packaging and distributing conda environments.</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=conda&repo=conda-pack&type=watch&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a class="badge" href="https://travis-ci.org/conda/conda-pack">
+    <img
+        alt="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+        src="https://secure.travis-ci.org/conda/conda-pack.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spark.html">Usage with Apache Spark on YARN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parcel.html">Parcels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SquashFS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#packing">Packing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mounting">Mounting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#python-example">Python Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compression-options">Compression options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#making-the-unpacked-environment-writeable">Making the unpacked environment writeable</a></li>
+</ul>
+</li>
+</ul>
+
+<h3>Need help?</h3>
+
+<p>
+  Open an issue in the <a href="https://github.com/conda/conda-pack/issues">issue tracker</a>.
+</p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jim Crist.
+      
+      |
+      <a href="_sources/squashfs.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
