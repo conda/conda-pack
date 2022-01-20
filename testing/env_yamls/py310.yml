@@ -1,0 +1,11 @@
+name: py310
+
+channels:
+    - ctools
+    - conda-forge
+
+dependencies:
+    - python=3.10
+    - conda_pack_test_lib1
+    - conda_pack_test_lib2
+    - jinja2
