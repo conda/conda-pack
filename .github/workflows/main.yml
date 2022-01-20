@@ -20,12 +20,12 @@ jobs:
       run: |
         source $CONDA/bin/activate
         conda config --append channels conda-forge
-        conda install -y conda-build conda-verify flake8 sphinx numpydoc sphinxcontrib-autoprogram make
+        conda install -y conda-build conda-verify conda-forge::pre-commit sphinx numpydoc sphinxcontrib-autoprogram make
         python -m pip install -e .
-    - name: Verify flake8 compliance
+    - name: Run pre-commit
       run: |
         source $CONDA/bin/activate
-        flake8 conda_pack
+        pre-commit run --all-files
     - name: Build the documentation as a test
       run: |
         source $CONDA/bin/activate
