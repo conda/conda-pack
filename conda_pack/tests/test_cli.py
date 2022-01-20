@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import signal
 import tarfile
@@ -72,9 +70,9 @@ def test_cli_roundtrip(capsys, tmpdir):
     out, err = capsys.readouterr()
     assert not err
 
-    bar, percent, time = [i.strip() for i in out.split('\r')[-1].split('|')]
-    assert bar == '[' + '#' * 40 + ']'
-    assert percent == '100% Completed'
+    bar, percent, time = (i.strip() for i in out.split("\r")[-1].split("|"))
+    assert bar == "[" + "#" * 40 + "]"
+    assert percent == "100% Completed"
     assert time
 
 

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, print_function
-
 import argparse
 import sys
 import traceback
@@ -12,7 +10,7 @@ class MultiAppendAction(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         if nargs is not None:
             raise ValueError("nargs not allowed")
-        super(MultiAppendAction, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         if getattr(namespace, self.dest) is None:
@@ -22,11 +20,8 @@ class MultiAppendAction(argparse.Action):
 
 def build_parser():
     description = "Package an existing conda environment into an archive file."
-    kwargs = dict(prog="conda-pack",
-                  description=description,
-                  add_help=False)
-    if sys.version_info >= (3, 5):
-        kwargs['allow_abbrev'] = False
+    kwargs = dict(prog="conda-pack", description=description, add_help=False)
+    kwargs["allow_abbrev"] = False
     parser = argparse.ArgumentParser(**kwargs)
     parser.add_argument("--name", "-n",
                         metavar="ENV",

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import os
 import re
@@ -118,8 +116,8 @@ def test_missing_files():
         CondaEnv.from_prefix(py37_missing_files_path)
 
     msg = str(exc.value)
-    assert "{}toolz{}__init__.py".format(os.sep, os.sep) in msg, msg
-    assert "{}toolz{}_signatures.py".format(os.sep, os.sep) in msg, msg
+    assert f"{os.sep}toolz{os.sep}__init__.py" in msg, msg
+    assert f"{os.sep}toolz{os.sep}_signatures.py" in msg, msg
 
 
 def test_missing_files_ignored():
@@ -149,10 +147,10 @@ def test_env_properties(py37_env):
 
 def test_load_environment_ignores(py37_env):
     lk = {normpath(f.target): f for f in py37_env}
-    for fname in ('conda', 'conda.bat'):
-        assert '{}/{}'.format(BIN_DIR_L, fname) not in lk
-    for fname in ('activate', 'activate.bat', 'deactivate', 'deactivate.bat'):
-        fpath = '{}/{}'.format(BIN_DIR_L, fname)
+    for fname in ("conda", "conda.bat"):
+        assert f"{BIN_DIR_L}/{fname}" not in lk
+    for fname in ("activate", "activate.bat", "deactivate", "deactivate.bat"):
+        fpath = f"{BIN_DIR_L}/{fname}"
         assert fpath not in lk or not lk[fpath].source.startswith(py37_path)
 
 
@@ -166,27 +164,27 @@ def test_loaded_file_properties(py37_env):
     lk = {normpath(f.target): f for f in py37_env}
 
     # Pip installed entrypoint
-    exe_suffix = '.exe' if on_win else ''
-    fil = lk['{}/pytest{}'.format(BIN_DIR_L, exe_suffix)]
+    exe_suffix = ".exe" if on_win else ""
+    fil = lk[f"{BIN_DIR_L}/pytest{exe_suffix}"]
     assert not fil.is_conda
     assert fil.file_mode == 'unknown'
     assert fil.prefix_placeholder is None
 
     # Conda installed noarch entrypoint
-    fil = lk['{}/conda-pack-test-lib1'.format(BIN_DIR_L)]
+    fil = lk[f"{BIN_DIR_L}/conda-pack-test-lib1"]
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py37_env.prefix
 
     # Conda installed entrypoint
-    suffix = '-script.py' if on_win else ''
-    fil = lk['{}/conda-pack-test-lib2{}'.format(BIN_DIR_L, suffix)]
+    suffix = "-script.py" if on_win else ""
+    fil = lk[f"{BIN_DIR_L}/conda-pack-test-lib2{suffix}"]
     assert fil.is_conda
     assert fil.file_mode == 'text'
     assert fil.prefix_placeholder != py37_env.prefix
 
     # Conda installed file
-    fil = lk['{}/conda_pack_test_lib1/cli.py'.format(SP_37_L)]
+    fil = lk[f"{SP_37_L}/conda_pack_test_lib1/cli.py"]
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
@@ -261,7 +259,7 @@ def test_roundtrip(tmpdir, py37_env):
 
     # Shebang rewriting happens before prefixes are fixed
     textfile = os.path.join(extract_path, BIN_DIR, 'conda-pack-test-lib1')
-    with open(textfile, 'r') as fil:
+    with open(textfile) as fil:
         shebang = fil.readline().strip()
         assert shebang == '#!/usr/bin/env python'
 
@@ -358,26 +356,32 @@ def test_pack_with_conda(tmpdir, fix_dest):
             # windows), this failure isn't critical but isn't 100% correct.
             # Ideally this test shouldn't need to special case `fix_dest`, and
             # use the same batch commands in both cases.
-            commands = (r"@call {path}\condabin\conda activate".format(path=extract_path),
-                        r"@conda info --json",
-                        r"@conda deactivate")
+            commands = (
+                fr"@call {extract_path}\condabin\conda activate",
+                r"@conda info --json",
+                r"@conda deactivate",
+            )
         else:
-            commands = (r"@set CONDA_PREFIX=",
-                        r"@set CONDA_SHVL=",
-                        r"@call {path}\Scripts\activate".format(path=extract_path),
-                        r"@conda info --json",
-                        r"@deactivate")
-        script_file = tmpdir.join('unpack.bat')
-        cmd = ['cmd', '/c', str(script_file)]
+            commands = (
+                r"@set CONDA_PREFIX=",
+                r"@set CONDA_SHVL=",
+                fr"@call {extract_path}\Scripts\activate",
+                r"@conda info --json",
+                r"@deactivate",
+            )
+        script_file = tmpdir.join("unpack.bat")
+        cmd = ["cmd", "/c", str(script_file)]
 
     else:
-        commands = ("unset CONDA_PREFIX",
-                    "unset CONDA_SHLVL",
-                    ". {path}/bin/activate".format(path=extract_path),
-                    "conda info --json",
-                    ". deactivate >/dev/null 2>/dev/null")
-        script_file = tmpdir.join('unpack.sh')
-        cmd = ['/usr/bin/env', 'bash', str(script_file)]
+        commands = (
+            "unset CONDA_PREFIX",
+            "unset CONDA_SHLVL",
+            f". {extract_path}/bin/activate",
+            "conda info --json",
+            ". deactivate >/dev/null 2>/dev/null",
+        )
+        script_file = tmpdir.join("unpack.sh")
+        cmd = ["/usr/bin/env", "bash", str(script_file)]
 
     script_file.write('\n'.join(commands))
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
@@ -474,8 +478,8 @@ def test_pack(tmpdir, py37_env):
                 .include(include))
 
     # Files line up with filtering, with extra conda-unpack command
-    sol = set(os.path.normcase(f.target) for f in filtered.files)
-    res = set(os.path.normcase(p) for p in paths)
+    sol = {os.path.normcase(f.target) for f in filtered.files}
+    res = {os.path.normcase(p) for p in paths}
     diff = res.difference(sol)
 
     if on_win:
@@ -483,7 +487,7 @@ def test_pack(tmpdir, py37_env):
                   'activate.bat', 'deactivate.bat')
     else:
         fnames = ('conda-unpack', 'activate', 'deactivate')
-    assert diff == set(os.path.join(BIN_DIR_L, f) for f in fnames)
+    assert diff == {os.path.join(BIN_DIR_L, f) for f in fnames}
 
 
 def _test_dest_prefix(src_prefix, dest_prefix, arcroot, out_path, format):
@@ -551,10 +555,10 @@ def test_parcel(tmpdir, py37_env):
     # Verify that only the parcel files were added
     with tarfile.open(out_path, 'r:gz') as fil:
         paths = fil.getnames()
-    sol = set(os.path.join(arcroot, f.target) for f in py37_env.files)
+    sol = {os.path.join(arcroot, f.target) for f in py37_env.files}
     diff = set(paths).difference(sol)
-    fnames = ('conda_env.sh', 'parcel.json')
-    assert diff == set(os.path.join(arcroot, 'meta', f) for f in fnames)
+    fnames = ("conda_env.sh", "parcel.json")
+    assert diff == {os.path.join(arcroot, "meta", f) for f in fnames}
 
     # Verify correct metadata in parcel.json
     with tarfile.open(out_path) as fil:

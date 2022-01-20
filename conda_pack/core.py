@@ -1,5 +1,3 @@
-from __future__ import absolute_import, print_function
-
 import glob
 import json
 import os
@@ -47,7 +45,7 @@ else:
                  os.path.join(BIN_DIR, 'deactivate'))]
 
 
-class _Context(object):
+class _Context:
     def __init__(self):
         self.is_cli = False
 
@@ -70,7 +68,7 @@ class _Context(object):
 context = _Context()
 
 
-class CondaEnv(object):
+class CondaEnv:
     """A Conda environment for packaging.
 
     Use :func:`CondaEnv.from_prefix`, :func:`CondaEnv.from_name`, or
@@ -365,7 +363,7 @@ class CondaEnv(object):
             raise CondaPackException("File %r already exists" % output)
 
         if verbose:
-            print("Packing environment at %r to %r" % (self.prefix, output))
+            print(f"Packing environment at {self.prefix!r} to {output!r}")
 
         fd, temp_path = tempfile.mkstemp()
 
@@ -396,7 +394,7 @@ class CondaEnv(object):
         return output
 
 
-class File(object):
+class File:
     """A single archive record.
 
     Parameters
@@ -424,7 +422,7 @@ class File(object):
         self.prefix_placeholder = prefix_placeholder
 
     def __repr__(self):
-        return 'File<%r, is_conda=%r>' % (self.target, self.is_conda)
+        return f"File<{self.target!r}, is_conda={self.is_conda!r}>"
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
@@ -602,10 +600,10 @@ def check_no_editable_packages(prefix, site_packages):
 
 def name_to_prefix(name=None):
     try:
-        conda_exe = os.environ.get('CONDA_EXE', 'conda')
-        info = (subprocess.check_output("{} info --json".format(conda_exe),
-                                        shell=True, stderr=subprocess.PIPE)
-                          .decode(default_encoding))
+        conda_exe = os.environ.get("CONDA_EXE", "conda")
+        info = subprocess.check_output(
+            f"{conda_exe} info --json", shell=True, stderr=subprocess.PIPE
+        ).decode(default_encoding)
     except subprocess.CalledProcessError as exc:
         kind = ('current environment' if name is None
                 else 'environment: %r' % name)
@@ -764,7 +762,7 @@ packages. Uncached packages:
 {0}"""
 
 _uncached_warning = """\
-{0}
+{}
 
 Continuing with packing, treating these packages as if they were unmanaged
 files (e.g. from `pip`). This is usually fine, but may cause issues as
@@ -911,10 +909,11 @@ def rewrite_shebang(data, target, prefix):
 
         if executable.startswith(prefix_b):
             # shebang points inside environment, rewrite
-            executable_name = executable.decode('utf-8').split('/')[-1]
-            new_shebang = '#!/usr/bin/env %s%s' % (executable_name,
-                                                   options.decode('utf-8'))
-            data = data.replace(shebang, new_shebang.encode('utf-8'))
+            executable_name = executable.decode("utf-8").split("/")[-1]
+            new_shebang = "#!/usr/bin/env {}{}".format(
+                executable_name, options.decode("utf-8")
+            )
+            data = data.replace(shebang, new_shebang.encode("utf-8"))
 
             return data, True
 
@@ -925,7 +924,7 @@ def rewrite_conda_meta(source):
     """Remove absolute paths in conda-meta that reference local install.
 
     These are unnecessary for install/uninstall on the destination machine."""
-    with open(source, 'r') as f:
+    with open(source) as f:
         original = f.read()
 
     data = json.loads(original)
@@ -1018,7 +1017,7 @@ def is_binary_file(data):
         return True
 
 
-class Packer(object):
+class Packer:
     def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
         self.prefix = prefix
         self.archive = archive
@@ -1065,9 +1064,12 @@ class Packer(object):
 
         file_mode = file.file_mode
         placeholder = file.prefix_placeholder
-        if ((self.has_dest or
-             file_mode == 'unknown' or
-             file_mode == 'text' and file.target.startswith(BIN_DIR))):
+        if (
+            self.has_dest
+            or file_mode == "unknown"
+            or file_mode == "text"
+            and file.target.startswith(BIN_DIR)
+        ):
             # In each of these cases, we need to inspect the file contents here.
             with open(file.source, 'rb') as fil:
                 data = fil.read()
