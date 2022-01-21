@@ -1,4 +1,5 @@
 from setuptools import setup
+
 import versioneer
 
 setup(name='conda-pack',

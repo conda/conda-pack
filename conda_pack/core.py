@@ -3,7 +3,6 @@ from __future__ import absolute_import, print_function
 import glob
 import json
 import os
-import pkg_resources
 import re
 import shlex
 import shutil
@@ -15,10 +14,11 @@ from contextlib import contextmanager
 from datetime import datetime
 from fnmatch import fnmatch
 
-from .compat import on_win, default_encoding, find_py_source, is_32bit
-from .prefixes import SHEBANG_REGEX, replace_prefix
-from ._progress import progressbar
+import pkg_resources
 
+from ._progress import progressbar
+from .compat import default_encoding, find_py_source, is_32bit, on_win
+from .prefixes import SHEBANG_REGEX, replace_prefix
 
 __all__ = ('CondaPackException', 'CondaEnv', 'File', 'pack')
 
@@ -655,7 +655,7 @@ def read_has_prefix(path):
 
 
 def load_files(prefix):
-    from os.path import relpath, join, isfile, islink
+    from os.path import isfile, islink, join, relpath
 
     ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
               'conda-recipes', '.index', '.unionfs', '.nonadmin', 'python.app',

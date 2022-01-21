@@ -12,6 +12,7 @@ PY2 = sys.version_info.major == 2
 
 if PY2:
     from imp import load_source
+
     from Queue import Queue
 
     def source_from_cache(path):

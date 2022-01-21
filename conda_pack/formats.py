@@ -1,19 +1,18 @@
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import errno
 import os
+import shutil
 import stat
 import struct
 import subprocess
 import sys
-import shutil
 import tarfile
 import tempfile
 import threading
 import time
 import zipfile
 import zlib
-
 from contextlib import closing
 from functools import partial
 from io import BytesIO

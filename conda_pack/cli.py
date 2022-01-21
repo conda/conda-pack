@@ -1,11 +1,11 @@
-from __future__ import print_function, absolute_import
+from __future__ import absolute_import, print_function
 
 import argparse
 import sys
 import traceback
 
 from . import __version__
-from .core import pack, CondaPackException, context
+from .core import CondaPackException, context, pack
 
 
 class MultiAppendAction(argparse.Action):

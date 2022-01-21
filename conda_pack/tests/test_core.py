@@ -1,4 +1,4 @@
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
 
 import json
 import os
@@ -10,8 +10,8 @@ from glob import glob
 import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
-from conda_pack.compat import on_win, load_source
-from conda_pack.core import name_to_prefix, File, BIN_DIR
+from conda_pack.compat import load_source, on_win
+from conda_pack.core import BIN_DIR, File, name_to_prefix
 
 from .conftest import (
     activate_scripts_path,

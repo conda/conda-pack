@@ -1,6 +1,6 @@
-from __future__ import print_function, absolute_import
-
-from .core import CondaEnv, File, CondaPackException, pack
+from __future__ import absolute_import, print_function
 
 from . import _version
+from .core import CondaEnv, CondaPackException, File, pack
+
 __version__ = _version.get_versions()['version']
