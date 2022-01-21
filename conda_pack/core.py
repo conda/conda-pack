@@ -109,7 +109,7 @@ class CondaEnv(object):
 
     >>> env = (CondaEnv.from_default()
     ...                .exclude("*.pyx")
-    ...                .include("lib/python3.6/site-packages/cytoolz/*.pyx"))
+    ...                .include("lib/python3.7/site-packages/cytoolz/*.pyx"))
     CondaEnv<'~/miniconda/envs/example', 1234 files>
     """
     def __init__(self, prefix, files, excluded_files=None):
