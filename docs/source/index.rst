@@ -179,4 +179,3 @@ This tool has a few caveats.
     spark.rst
     parcel.rst
     squashfs.rst
-

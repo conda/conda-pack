@@ -1,19 +1,15 @@
-from __future__ import print_function, division, absolute_import
-
 import errno
 import os
+import shutil
 import stat
 import struct
 import subprocess
-import sys
-import shutil
 import tarfile
 import tempfile
 import threading
 import time
 import zipfile
 import zlib
-
 from contextlib import closing
 from functools import partial
 from io import BytesIO
@@ -79,7 +75,7 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
                       mode=mode, compresslevel=compress_level)
 
 
-class ParallelFileWriter(object):
+class ParallelFileWriter:
     def __init__(self, fileobj, compresslevel=9, n_threads=1):
         self.fileobj = fileobj
         self.compresslevel = compresslevel
@@ -241,7 +237,7 @@ class ParallelXZFileWriter(ParallelFileWriter):
         return compressor.flush()
 
 
-class ArchiveBase(object):
+class ArchiveBase:
     def add(self, source, target):
         target = os.path.join(self.arcroot, target)
         self._add(source, target)
@@ -351,8 +347,8 @@ class ZipArchive(ArchiveBase):
                                 # For managed packages, this will give us the package name
                                 # followed by the relative path within the environment, a
                                 # more readable result.
-                                source = os.path.basename(source[:-len(target)-1])
-                                source = '{}: {}'.format(source, target)
+                                source = os.path.basename(source[: -len(target) - 1])
+                                source = f"{source}: {target}"
                             msg = _dangling_link_error.format(source)
                             raise CondaPackException(msg)
                         raise
@@ -364,32 +360,7 @@ class ZipArchive(ArchiveBase):
         self.archive.writestr(info, sourcebytes)
 
 
-if sys.version_info >= (3, 6):
-    zipinfo_from_file = zipfile.ZipInfo.from_file
-else:  # pragma: no cover
-    # Backported from python 3.6
-    def zipinfo_from_file(filename, arcname=None):
-        st = os.stat(filename)
-        isdir = stat.S_ISDIR(st.st_mode)
-        mtime = time.localtime(st.st_mtime)
-        date_time = mtime[0:6]
-        # Create ZipInfo instance to store file information
-        if arcname is None:
-            arcname = filename
-        arcname = os.path.normpath(os.path.splitdrive(arcname)[1])
-        while arcname[0] in (os.sep, os.altsep):
-            arcname = arcname[1:]
-        if isdir:
-            arcname += '/'
-        zinfo = zipfile.ZipInfo(arcname, date_time)
-        zinfo.external_attr = (st.st_mode & 0xFFFF) << 16  # Unix attributes
-        if isdir:
-            zinfo.file_size = 0
-            zinfo.external_attr |= 0x10  # MS-DOS directory flag
-        else:
-            zinfo.file_size = st.st_size
-
-        return zinfo
+zipinfo_from_file = zipfile.ZipInfo.from_file
 
 
 class SquashFSArchive(ArchiveBase):
@@ -437,7 +408,7 @@ class SquashFSArchive(ArchiveBase):
             cmd += ["-comp", comp_algo_str]
         else:
             comp_level = int(self.compress_level / 8 * 20)
-            comp_algo_str = "zstd (level {})".format(comp_level)
+            comp_algo_str = f"zstd (level {comp_level})"
             # 256KB block size instead of the default 128KB for slightly smaller archive sizes
             cmd += ["-comp", "zstd", "-Xcompression-level", str(comp_level), "-b", str(256*1024)]
 

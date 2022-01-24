@@ -6,14 +6,14 @@ import threading
 import time
 import zipfile
 from multiprocessing import cpu_count
-from os.path import isdir, isfile, islink, join, exists
-from subprocess import check_output, STDOUT
+from os.path import exists, isdir, isfile, islink, join
+from subprocess import STDOUT, check_output
 
 import pytest
 
+from conda_pack.compat import PY2, on_linux, on_mac, on_win
 from conda_pack.core import CondaPackException
-from conda_pack.formats import archive, _parse_n_threads
-from conda_pack.compat import on_win, on_mac, on_linux, PY2
+from conda_pack.formats import _parse_n_threads, archive
 
 
 @pytest.fixture(scope="module")

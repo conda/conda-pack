@@ -1,5 +1,3 @@
-from __future__ import print_function, division, absolute_import
-
 import os
 
 test_dir = os.path.dirname(os.path.abspath(__file__))

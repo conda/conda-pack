@@ -27,7 +27,7 @@ _conda_pack_activate() {
         dash) x=$(lsof -p $$ -Fn0 | tail -1); script_dir="$(dirname "${x#*n}")";;
         *) script_dir="$(cd "$(dirname "$_")" && echo "$PWD")";;
     esac
-    
+
     local full_path_script_dir="$(cd "${script_dir}" > /dev/null && pwd)"
     local full_path_env="$(dirname "$full_path_script_dir")"
     local env_name="$(basename "$full_path_env")"
