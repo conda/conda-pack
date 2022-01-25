@@ -37,8 +37,7 @@ Use Cases
 
 - Packaging an environment as a single executable for those users who struggle
   with installers and just want to double-click somewhere. (See our
-  instructions for :doc:`Linux and macOS <unix-binary>` or :doc:`Windows
-  <windows-binary>` for details.)
+  instructions for :doc:`Linux and macOS <unix-binary>`.)
 
 - *BETA*: Packaging a conda environment as a standard Cloudera parcel. This is
   a newly added capability. It has been tested on a live cluster, but different
