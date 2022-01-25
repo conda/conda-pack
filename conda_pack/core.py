@@ -1,9 +1,6 @@
-from __future__ import absolute_import, print_function
-
 import glob
 import json
 import os
-import pkg_resources
 import re
 import shlex
 import shutil
@@ -15,10 +12,11 @@ from contextlib import contextmanager
 from datetime import datetime
 from fnmatch import fnmatch
 
-from .compat import on_win, default_encoding, find_py_source, is_32bit
-from .prefixes import SHEBANG_REGEX, replace_prefix
-from ._progress import progressbar
+import pkg_resources
 
+from ._progress import progressbar
+from .compat import default_encoding, find_py_source, is_32bit, on_win
+from .prefixes import SHEBANG_REGEX, replace_prefix
 
 __all__ = ('CondaPackException', 'CondaEnv', 'File', 'pack')
 
@@ -47,7 +45,7 @@ else:
                  os.path.join(BIN_DIR, 'deactivate'))]
 
 
-class _Context(object):
+class _Context:
     def __init__(self):
         self.is_cli = False
 
@@ -70,7 +68,7 @@ class _Context(object):
 context = _Context()
 
 
-class CondaEnv(object):
+class CondaEnv:
     """A Conda environment for packaging.
 
     Use :func:`CondaEnv.from_prefix`, :func:`CondaEnv.from_name`, or
@@ -109,7 +107,7 @@ class CondaEnv(object):
 
     >>> env = (CondaEnv.from_default()
     ...                .exclude("*.pyx")
-    ...                .include("lib/python3.6/site-packages/cytoolz/*.pyx"))
+    ...                .include("lib/python3.7/site-packages/cytoolz/*.pyx"))
     CondaEnv<'~/miniconda/envs/example', 1234 files>
     """
     def __init__(self, prefix, files, excluded_files=None):
@@ -237,11 +235,16 @@ class CondaEnv(object):
                 format = 'tar.gz'
             elif output.endswith('.tar.bz2') or output.endswith('.tbz2'):
                 format = 'tar.bz2'
+            elif output.endswith('.tar.xz') or output.endswith('.txz'):
+                format = 'tar.xz'
             elif output.endswith('.tar'):
                 format = 'tar'
+            elif output.endswith('.squashfs'):
+                format = 'squashfs'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}:
+        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2',
+                            'tar.xz', 'txz', 'tar', 'parcel', 'squashfs'}:
             raise CondaPackException("Unknown format %r" % format)
         elif output is not None and output.endswith('.parcel'):
             if format not in ('tar.gz', 'tgz'):
@@ -284,7 +287,7 @@ class CondaEnv(object):
             to the basename of the ``dest_prefix`` value, if supplied; otherwise to
             the basename of the environment. The suffix will be determined by the
             output format (e.g. ``my_env.tar.gz``).
-        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}
+        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs'}
             The archival format to use. By default this is inferred from the
             output file extension, and defaults to ``tar.gz`` if this is not supplied.
         arcroot : str, optional
@@ -360,22 +363,25 @@ class CondaEnv(object):
             raise CondaPackException("File %r already exists" % output)
 
         if verbose:
-            print("Packing environment at %r to %r" % (self.prefix, output))
+            print(f"Packing environment at {self.prefix!r} to {output!r}")
 
         fd, temp_path = tempfile.mkstemp()
 
         try:
             with os.fdopen(fd, 'wb') as temp_file:
-                with progressbar(self.files, enabled=verbose) as files:
-                    with archive(temp_file, arcroot, format,
-                                 compress_level=compress_level,
-                                 zip_symlinks=zip_symlinks,
-                                 zip_64=zip_64,
-                                 n_threads=n_threads) as arc:
-                        packer = Packer(self.prefix, arc, dest_prefix, parcel)
+                with archive(temp_file, temp_path, arcroot, format,
+                             compress_level=compress_level,
+                             zip_symlinks=zip_symlinks,
+                             zip_64=zip_64,
+                             n_threads=n_threads,
+                             verbose=verbose) as arc:
+                    packer = Packer(self.prefix, arc, dest_prefix, parcel)
+
+                    with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
                             packer.add(f)
-                        packer.finish()
+
+                    packer.finish()
 
         except Exception:
             # Writing failed, remove tempfile
@@ -388,7 +394,7 @@ class CondaEnv(object):
         return output
 
 
-class File(object):
+class File:
     """A single archive record.
 
     Parameters
@@ -416,7 +422,7 @@ class File(object):
         self.prefix_placeholder = prefix_placeholder
 
     def __repr__(self):
-        return 'File<%r, is_conda=%r>' % (self.target, self.is_conda)
+        return f"File<{self.target!r}, is_conda={self.is_conda!r}>"
 
 
 def pack(name=None, prefix=None, output=None, format='infer',
@@ -562,7 +568,7 @@ def find_site_packages(prefix):
         return 'Lib/site-packages'
 
     python_version = pythons[0]['version']
-    major_minor = python_version[:3]  # e.g. '3.5.1'[:3]
+    major_minor = ".".join(python_version.split(".")[:2])
 
     return 'lib/python%s/site-packages' % major_minor
 
@@ -594,10 +600,10 @@ def check_no_editable_packages(prefix, site_packages):
 
 def name_to_prefix(name=None):
     try:
-        conda_exe = os.environ.get('CONDA_EXE', 'conda')
-        info = (subprocess.check_output("{} info --json".format(conda_exe),
-                                        shell=True, stderr=subprocess.PIPE)
-                          .decode(default_encoding))
+        conda_exe = os.environ.get("CONDA_EXE", "conda")
+        info = subprocess.check_output(
+            f"{conda_exe} info --json", shell=True, stderr=subprocess.PIPE
+        ).decode(default_encoding)
     except subprocess.CalledProcessError as exc:
         kind = ('current environment' if name is None
                 else 'environment: %r' % name)
@@ -647,7 +653,7 @@ def read_has_prefix(path):
 
 
 def load_files(prefix):
-    from os.path import relpath, join, isfile, islink
+    from os.path import isfile, islink, join, relpath
 
     ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
               'conda-recipes', '.index', '.unionfs', '.nonadmin', 'python.app',
@@ -756,7 +762,7 @@ packages. Uncached packages:
 {0}"""
 
 _uncached_warning = """\
-{0}
+{}
 
 Continuing with packing, treating these packages as if they were unmanaged
 files (e.g. from `pip`). This is usually fine, but may cause issues as
@@ -903,10 +909,11 @@ def rewrite_shebang(data, target, prefix):
 
         if executable.startswith(prefix_b):
             # shebang points inside environment, rewrite
-            executable_name = executable.decode('utf-8').split('/')[-1]
-            new_shebang = '#!/usr/bin/env %s%s' % (executable_name,
-                                                   options.decode('utf-8'))
-            data = data.replace(shebang, new_shebang.encode('utf-8'))
+            executable_name = executable.decode("utf-8").split("/")[-1]
+            new_shebang = "#!/usr/bin/env {}{}".format(
+                executable_name, options.decode("utf-8")
+            )
+            data = data.replace(shebang, new_shebang.encode("utf-8"))
 
             return data, True
 
@@ -917,7 +924,7 @@ def rewrite_conda_meta(source):
     """Remove absolute paths in conda-meta that reference local install.
 
     These are unnecessary for install/uninstall on the destination machine."""
-    with open(source, 'r') as f:
+    with open(source) as f:
         original = f.read()
 
     data = json.loads(original)
@@ -1010,7 +1017,7 @@ def is_binary_file(data):
         return True
 
 
-class Packer(object):
+class Packer:
     def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
         self.prefix = prefix
         self.archive = archive
@@ -1057,9 +1064,12 @@ class Packer(object):
 
         file_mode = file.file_mode
         placeholder = file.prefix_placeholder
-        if ((self.has_dest or
-             file_mode == 'unknown' or
-             file_mode == 'text' and file.target.startswith(BIN_DIR))):
+        if (
+            self.has_dest
+            or file_mode == "unknown"
+            or file_mode == "text"
+            and file.target.startswith(BIN_DIR)
+        ):
             # In each of these cases, we need to inspect the file contents here.
             with open(file.source, 'rb') as fil:
                 data = fil.read()
@@ -1108,6 +1118,7 @@ class Packer(object):
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
+        from .formats import SquashFSArchive
 
         # Parcel mode
         if self.parcel:
@@ -1165,3 +1176,8 @@ class Packer(object):
             exe = 'cli-32.exe' if is_32bit else 'cli-64.exe'
             cli_exe = pkg_resources.resource_filename('setuptools', exe)
             self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
+
+        # mksquashfs has no (fast) iterative mode, only batch mode
+        # therefore can do the actual squashing only once we've added all the files
+        if isinstance(self.archive, SquashFSArchive):
+            self.archive.mksquashfs_from_staging()

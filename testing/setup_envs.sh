@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 set -Eeo pipefail
 
@@ -35,15 +35,9 @@ mkdir -p $envs
 # Make sure the local package cache is used
 rm -rf $croot/pkgs
 
-echo Creating py27 environment
-env=$envs/py27
-conda env create -f $ymls/py27.yml -p $env
-# Remove this package from the cache for testing
-rm -rf $croot/pkgs/conda_pack_test_lib2*py27*
-
-echo Creating py36 environment
-env=$envs/py36
-conda env create -f $ymls/py36.yml -p $env
+echo Creating py37 environment
+env=$envs/py37
+conda env create -f $ymls/py37.yml -p $env
 # Create unmanaged conda-related files for conda-pack to remove
 if [ -f $env/python.exe ]; then
     touch $env/Scripts/activate
@@ -58,9 +52,15 @@ else
     touch $env/bin/conda
 fi
 
-echo Creating py36_editable environment
-env=$envs/py36_editable
-conda env create -f $ymls/py36.yml -p $env
+echo Creating py310 environment
+env=$envs/py310
+conda env create -f $ymls/py310.yml -p $env
+# Remove this package from the cache for testing
+rm -rf $croot/pkgs/conda_pack_test_lib2*py310*
+
+echo Creating py37_editable environment
+env=$envs/py37_editable
+conda env create -f $ymls/py37.yml -p $env
 pushd $cwd/test_packages/conda_pack_test_lib1
 if [ -f $env/python.exe ]; then
     $env/python.exe setup.py develop
@@ -69,17 +69,17 @@ else
 fi
 popd
 
-echo Creating py36_broken environment
-env=$envs/py36_broken
-conda env create -f $ymls/py36_broken.yml -p $env
+echo Creating py37_broken environment
+env=$envs/py37_broken
+conda env create -f $ymls/py37_broken.yml -p $env
 
-echo Creating py36_missing_files environment
-env=$envs/py36_missing_files
-conda env create -f $ymls/py36.yml -p $env
+echo Creating py37_missing_files environment
+env=$envs/py37_missing_files
+conda env create -f $ymls/py37.yml -p $env
 if [ -f $env/python.exe ]; then
     rm $env/lib/site-packages/toolz/*.py
 else
-    rm $env/lib/python3.6/site-packages/toolz/*.py
+    rm $env/lib/python3.7/site-packages/toolz/*.py
 fi
 
 echo Creating nopython environment

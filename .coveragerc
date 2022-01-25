@@ -3,5 +3,5 @@ omit =
     */test_*.py
     conda_pack/compat.py
     conda_pack/prefixes.py
-source = 
+source =
     conda_pack

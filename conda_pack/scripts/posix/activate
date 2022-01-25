@@ -28,7 +28,7 @@ _conda_pack_activate() {
         *) script_dir="$(cd "$(dirname "$_")" && echo "$PWD")";;
     esac
 
-    local full_path_script_dir="$(cd "${script_dir}" && pwd)"
+    local full_path_script_dir="$(cd "${script_dir}" > /dev/null && pwd)"
     local full_path_env="$(dirname "$full_path_script_dir")"
     local env_name="$(basename "$full_path_env")"
 

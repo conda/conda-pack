@@ -12,29 +12,23 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-    - name: Print github context
-      run: |
-        echo "EVENT_NAME:" "$GITHUB_EVENT_NAME"
-        echo "       REF:" "$GITHUB_REF"
-        echo "  HEAD_REF:" "$GITHUB_HEAD_REF"
-        echo "  BASE_REF:" "$GITHUB_BASE_REF"
-        echo "       SHA:" "$GITHUB_SHA"
     - name: Retrieve the source code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - name: Install build dependencies
       run: |
+        source $CONDA/bin/activate
         conda config --append channels conda-forge
-        conda install -y conda-build conda-verify flake8 sphinx numpydoc sphinxcontrib-autoprogram make
-        /usr/share/miniconda/bin/python -m pip install -e .
-    - name: Verify flake8 compliance
+        conda install -y conda-build conda-verify conda-forge::pre-commit sphinx numpydoc sphinxcontrib-autoprogram make
+        python -m pip install -e .
+    - name: Run pre-commit
       run: |
-        source /usr/share/miniconda/bin/activate
-        flake8 conda_pack
+        source $CONDA/bin/activate
+        pre-commit run --all-files
     - name: Build the documentation as a test
       run: |
-        source /usr/share/miniconda/bin/activate
+        source $CONDA/bin/activate
         cd docs
         make html
     - name: Build the package
@@ -51,6 +45,9 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ matrix.os }}
+    # Need to allow the ::set-env command until we get it replaced
+    env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     strategy:
       matrix:
         os: [ubuntu-latest,macos-latest,windows-latest]
@@ -86,12 +83,23 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ matrix.os }}
+    # Need to allow the ::set-env command until we get it replaced
+    env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     needs: [package,testbed]
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest,ubuntu-latest,windows-latest]
-        pyver: [3.6,3.7,3.8,2.7]
+        pyver: ["3.7","3.8","3.9","3.10"]
+        include:
+          # include the appropriate dependencies for testing SquashFS on each OS
+          - os: macos-latest
+            squashfs_deps: "conda-forge::squashfs-tools"
+          - os: ubuntu-latest
+            squashfs_deps: "conda-forge::squashfs-tools conda-forge::squashfuse"
+          - os: windows-latest
+            squashfs_deps: ""
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v2
@@ -119,7 +127,7 @@ jobs:
         source $CONDA_ROOT/etc/profile.d/conda.sh
         conda info -a
         mv conda-bld $CONDA_ROOT/conda-bld
-        conda create -n cptest local::conda-pack pytest python=${{ matrix.pyver }}
+        conda create -n cptest local::conda-pack conda-forge::pytest python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
         conda activate cptest
         pytest -v -ss conda_pack/tests
   upload:
@@ -136,10 +144,12 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: conda-bld
-    - name: Build the documentation for deployment
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Install deployment dependencies and build the docs
       run: |
-        source /usr/share/miniconda/bin/activate
+        source $CONDA/bin/activate
+        conda config --append channels conda-forge
+        conda install -y sphinx numpydoc sphinxcontrib-autoprogram make anaconda-client
+        python -m pip install -e .
         cd docs
         make html
     - name: Deploy the documentation
@@ -154,7 +164,6 @@ jobs:
         GITHUB_REF: ${{ github.ref }}
       run: |
         source $CONDA/bin/activate
-        conda install -y anaconda-client
         [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
         anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.tar.bz2 --force
     - name: Clean up older artifacts

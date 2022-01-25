@@ -23,7 +23,7 @@
 @REM Restore the command prompt
 @SET "PROMPT=%_CONDA_PACK_OLD_PS1%"
 @SET "CONDA_PS1_BACKUP="
-  
+
 @REM This persists env variables, which are otherwise local to this script right now.
 @endlocal & (
     @REM Used for deactivate, to make sure we restore original state after deactivation
