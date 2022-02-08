@@ -1,5 +1,5 @@
-Bundle an Environment as a Single Executable
-============================================
+Bundle as Single Executable
+===========================
 
 ``conda-pack`` can be used to distribute conda environments as executable shell
 scripts for Linux and macOS.
@@ -8,7 +8,7 @@ scripts for Linux and macOS.
 Packaging a Simple Binary
 -------------------------
 
-We will package the [normaliz](https://github.com/Normaliz/Normaliz) binary in
+We will package the `normaliz <https://github.com/Normaliz/Normaliz>`_ binary in
 this example. It provides a command line tool which is compiled from C++ code.
 
 Create an environment and `conda pack` it:
@@ -40,14 +40,15 @@ Optional: reduce the size by removing files that are not needed here:
     $ find pack/lib -name '*.dylib' -type f -exec strip -S \{\} \; # macOS
     $ find pack/lib -name '*.so' -type f -exec strip --strip-unneeded \{\} \; # Linux
 
-Pack everything into a single shell script with [makeself](https://makeself.io/):
+Pack everything into a single shell script with `makeself <https://makeself.io/>`_:
 
 .. code-block:: bash
 
-    $ conda install -y makeself
+    $ conda install -y conda-forge::makeself
     $ makeself pack/ normaliz.run Normaliz ./entrypoint.sh
 
-The shell script `normaliz.run` should now work for others on the same platform. Note that arguments to `bin/normaliz` need to be given after an initial `--` since earlier arguments are consumed by makeself:
+The shell script `normaliz.run` now works on other machines with the same platform. Note that arguments to `bin/normaliz`
+need to be given after an initial `--` since earlier arguments are consumed by makeself:
 
 .. code-block:: bash
 
@@ -58,8 +59,8 @@ The shell script `normaliz.run` should now work for others on the same platform.
 Packaging a Complex Environment
 -------------------------------
 
-Note that complex environments can be packaged in the same way. Here we package
-the computer algebra system [SageMath](https://sagemath.org) which comes with a
+Complex environments can be packaged in the same way. Here we package
+the computer algebra system `SageMath <https://sagemath.org>`_ which comes with a
 Jupyter notebook interface:
 
 .. code-block:: bash
@@ -79,9 +80,8 @@ Jupyter notebook interface:
     $ ./sagmath.run # opens a browser with Jupyter running SageMath
 
 The above creates a huge bundle that takes a long time to pack and unpack (and
-might exceed the available space in your `/tmp`.) You can speed up the process
-by reducing the level of compression and by having your users uncompress things
-permanently:
+might exceed the available space in your `/tmp`). This can be speeded up by
+reducing the level of compression and by uncompressing things permanently:
 
 .. code-block:: bash
 
@@ -102,7 +102,7 @@ permanently:
     $ TMPDIR=tmp/ makeself --complevel 6 --target ./sagemath-9.2 pack/ sagemath.install SageMath ./unpack.sh
 
 The resulting shell script unpacks the environment into `./sagemath-9.2`.
-Users could overwrite this with the `--target` parameter:
+This can be overwritten with the `--target` parameter:
 
 .. code-block:: bash
 

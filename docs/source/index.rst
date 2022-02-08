@@ -35,9 +35,8 @@ Use Cases
   <https://conda.io/docs/user-guide/tasks/manage-environments.html#sharing-an-environment>`_,
   and recreate the environment when needed.
 
-- Packaging an environment as a single executable for those users who struggle
-  with installers and just want to double-click somewhere. (See our
-  instructions for :doc:`Linux and macOS <unix-binary>`.)
+- Packaging an environment as single executable with entrypoint to run on execution (see the
+  instructions for :doc:`Linux and macOS <unix-binary>`).
 
 - *BETA*: Packaging a conda environment as a standard Cloudera parcel. This is
   a newly added capability. It has been tested on a live cluster, but different
@@ -183,3 +182,4 @@ This tool has a few caveats.
     spark.rst
     parcel.rst
     squashfs.rst
+    unix-binary.rst
