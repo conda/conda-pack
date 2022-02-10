@@ -1144,38 +1144,36 @@ class Packer:
                 self.archive.add(source, target)
 
         # No `conda-unpack` command if dest-prefix specified
-        if self.has_dest:
-            return
+        if not self.has_dest:
+            if on_win:
+                shebang = '#!python.exe'
+                # Don't just use os.path.join here: the backslash needs
+                # to be doubled up for the sake of the regex match
+                python_pattern = re.compile(BIN_DIR + r'\\python\d.\d')
+            else:
+                shebang = '#!/usr/bin/env python'
+                python_pattern = re.compile(BIN_DIR + '/python')
 
-        if on_win:
-            shebang = '#!python.exe'
-            # Don't just use os.path.join here: the backslash needs
-            # to be doubled up for the sake of the regex match
-            python_pattern = re.compile(BIN_DIR + r'\\python\d.\d')
-        else:
-            shebang = '#!/usr/bin/env python'
-            python_pattern = re.compile(BIN_DIR + '/python')
+            # We skip prefix rewriting in python executables (if needed)
+            # to avoid editing a running file.
+            prefix_records = ',\n'.join(repr(p) for p in self.prefixes
+                                        if not python_pattern.match(p[0]))
 
-        # We skip prefix rewriting in python executables (if needed)
-        # to avoid editing a running file.
-        prefix_records = ',\n'.join(repr(p) for p in self.prefixes
-                                    if not python_pattern.match(p[0]))
+            with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
+                prefixes_py = fil.read()
 
-        with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
-            prefixes_py = fil.read()
+            script = _conda_unpack_template.format(shebang=shebang,
+                                                   prefix_records=prefix_records,
+                                                   prefixes_py=prefixes_py,
+                                                   version=__version__)
 
-        script = _conda_unpack_template.format(shebang=shebang,
-                                               prefix_records=prefix_records,
-                                               prefixes_py=prefixes_py,
-                                               version=__version__)
+            script_name = 'conda-unpack-script.py' if on_win else 'conda-unpack'
+            self._write_text_file(os.path.join(BIN_DIR, script_name), script, True)
 
-        script_name = 'conda-unpack-script.py' if on_win else 'conda-unpack'
-        self._write_text_file(os.path.join(BIN_DIR, script_name), script, True)
-
-        if on_win:
-            exe = 'cli-32.exe' if is_32bit else 'cli-64.exe'
-            cli_exe = pkg_resources.resource_filename('setuptools', exe)
-            self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
+            if on_win:
+                exe = 'cli-32.exe' if is_32bit else 'cli-64.exe'
+                cli_exe = pkg_resources.resource_filename('setuptools', exe)
+                self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
 
         # mksquashfs has no (fast) iterative mode, only batch mode
         # therefore can do the actual squashing only once we've added all the files
