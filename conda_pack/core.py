@@ -277,7 +277,8 @@ class CondaEnv:
              parcel_version=None, parcel_distro=None,
              verbose=False, force=False,
              compress_level=4, n_threads=1,
-             zip_symlinks=False, zip_64=True):
+             zip_symlinks=False, zip_64=True,
+             ignore_missing_files=False):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -336,6 +337,8 @@ class CondaEnv:
             the default is ``False``.
         zip_64 : bool, optional
             (``zip`` format only) Whether to enable ZIP64 extensions. Default is True.
+        ignore_missing_files : bool, optional
+            Skips checks for missing package files. Default is False.
 
         Returns
         -------
@@ -375,7 +378,7 @@ class CondaEnv:
                              zip_64=zip_64,
                              n_threads=n_threads,
                              verbose=verbose) as arc:
-                    packer = Packer(self.prefix, arc, dest_prefix, parcel)
+                    packer = Packer(self.prefix, arc, dest_prefix, parcel, ignore_missing_files)
 
                     with progressbar(self.files, enabled=verbose) as files:
                         for f in files:
@@ -543,7 +546,8 @@ def pack(name=None, prefix=None, output=None, format='infer',
                     parcel_version=parcel_version, parcel_distro=parcel_distro,
                     verbose=verbose, force=force,
                     compress_level=compress_level, n_threads=n_threads,
-                    zip_symlinks=zip_symlinks, zip_64=zip_64)
+                    zip_symlinks=zip_symlinks, zip_64=zip_64,
+                    ignore_missing_files=ignore_missing_files)
 
 
 def find_site_packages(prefix):
@@ -1018,12 +1022,13 @@ def is_binary_file(data):
 
 
 class Packer:
-    def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
+    def __init__(self, prefix, archive, dest_prefix=None, parcel=None, ignore_missing_files=False):
         self.prefix = prefix
         self.archive = archive
         self.dest = dest_prefix
         self.has_dest = dest_prefix is not None
         self.parcel = parcel
+        self.ignore_missing_files = ignore_missing_files
         self.prefixes = []
         self.packages = []
 
@@ -1070,6 +1075,8 @@ class Packer:
             or file_mode == "text"
             and file.target.startswith(BIN_DIR)
         ):
+            if self.ignore_missing_files and not os.path.exists(file.source):
+                return
             # In each of these cases, we need to inspect the file contents here.
             with open(file.source, 'rb') as fil:
                 data = fil.read()
