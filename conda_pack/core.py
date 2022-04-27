@@ -989,7 +989,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
             prog='conda-unpack',
-            description=('Finish unpacking the environment after unarchiving.'
+            description=('Finish unpacking the environment after unarchiving. '
                          'Cleans up absolute prefixes in any remaining files'))
     parser.add_argument('--version',
                         action='store_true',
