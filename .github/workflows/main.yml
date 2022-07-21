@@ -2,12 +2,12 @@ name: Build
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - '*'
   pull_request:
     branches:
-      - master
+      - main
 jobs:
   package:
     runs-on: ubuntu-latest
