@@ -190,7 +190,26 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
             subprocess.check_output(cmd)
     else:
         with tarfile.open(packed_env_path) as out:
-            out.extractall(spill_dir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(out, spill_dir)
 
     check(spill_dir, links=test_symlinks, root=root)
     for dir in ["dir", "somedir/nested dir"]:
@@ -243,6 +262,25 @@ def test_format_parallel(tmpdir, format, root_and_paths):
         check_output(['tar', '-xf', out_path, '-C', out_dir])
     else:
         with tarfile.open(out_path) as out:
-            out.extractall(out_dir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(out, out_dir)
 
     check(out_dir, links=(not on_win), root=root)

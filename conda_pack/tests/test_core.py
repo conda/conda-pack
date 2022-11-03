@@ -255,7 +255,26 @@ def test_roundtrip(tmpdir, py37_env):
             assert not member.startswith(os.path.sep)
 
         extract_path = str(tmpdir.join('env'))
-        fil.extractall(extract_path)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(fil, extract_path)
 
     # Shebang rewriting happens before prefixes are fixed
     textfile = os.path.join(extract_path, BIN_DIR, 'conda-pack-test-lib1')
@@ -321,7 +340,26 @@ def test_pack_with_conda(tmpdir, fix_dest):
     assert tarfile.is_tarfile(out_path)
     # Extract tarfile
     with tarfile.open(out_path, ignore_zeros=True) as fil:
-        fil.extractall(extract_path)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(fil, extract_path)
 
     if on_win:
         fnames = ['conda.exe', 'activate.bat']
@@ -581,7 +619,26 @@ def test_activate(tmpdir):
     env.pack(out_path)
 
     with tarfile.open(out_path) as fil:
-        fil.extractall(extract_path)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(fil, extract_path)
 
     # Check that activate environment variable is set
     if on_win:
