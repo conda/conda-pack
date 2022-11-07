@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from . import __version__
-from .core import pack, CondaPackException, context, formats
+from .core import CondaPackException, context, formats, pack
 
 
 class MultiAppendAction(argparse.Action):
@@ -20,11 +20,8 @@ class MultiAppendAction(argparse.Action):
 
 def build_parser():
     description = "Package an existing conda environment into an archive file."
-    kwargs = dict(prog="conda-pack",
-                  description=description,
-                  add_help=False)
-    if sys.version_info >= (3, 5):
-        kwargs['allow_abbrev'] = False
+    kwargs = dict(prog="conda-pack", description=description, add_help=False)
+    kwargs["allow_abbrev"] = False
 
     formats_available = list(formats)
     formats_available.insert(0, 'infer')

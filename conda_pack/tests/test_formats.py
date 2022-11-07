@@ -248,7 +248,7 @@ def test_format_parallel(tmpdir, format, root_and_paths):
                 out.extractall(out_dir)
     elif format == 'tar.zst':
         try:
-            from libarchive import (extract, extract_file)
+            from libarchive import extract, extract_file
         except Exception:
             return
         with tmp_chdir(out_dir):

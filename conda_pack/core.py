@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-import pkg_resources
 import re
 import shlex
 import shutil

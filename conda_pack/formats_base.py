@@ -1,7 +1,7 @@
 import os
 
 
-class ArchiveBase(object):
+class ArchiveBase:
     def __exit__(self, *args):
         if hasattr(self.archive, "close"):
             self.archive.close()

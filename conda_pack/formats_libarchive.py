@@ -1,8 +1,10 @@
-import libarchive
 import os
 import tempfile
-from .formats_base import ArchiveBase
+
+import libarchive
+
 from .core import tmp_chdir
+from .formats_base import ArchiveBase
 
 
 class _NewArchiveWrite(libarchive.write.ArchiveWrite):

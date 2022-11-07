@@ -1,7 +1,8 @@
+import sys
+
 from setuptools import setup
 
 import versioneer
-import sys
 
 is_win = sys.platform.startswith('win')
 

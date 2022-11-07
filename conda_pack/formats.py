@@ -13,6 +13,7 @@ import zlib
 from contextlib import closing
 from functools import partial
 from io import BytesIO
+
 from .formats_base import ArchiveBase
 
 _tar_mode = {'tar.gz': 'w:gz',
