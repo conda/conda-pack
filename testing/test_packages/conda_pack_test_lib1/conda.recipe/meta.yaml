@@ -13,14 +13,14 @@ build:
 requirements:
   build:
     - setuptools
-    - python
+    - python >=3.7
   run:
-    - python
+    - python >=3.7
 
 test:
   imports:
     - conda_pack_test_lib1
 
 about:
-  home: https://github.com/jcrist/conda-pack
+  home: https://github.com/conda/conda-pack
   summary: Dummy package for testing conda-pack

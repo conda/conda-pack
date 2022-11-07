@@ -1,11 +1,19 @@
+import os
 import sys
 
 default_encoding = sys.getdefaultencoding()
 on_win = sys.platform == 'win32'
+on_mac = sys.platform == 'darwin'
+on_linux = sys.platform == 'linux'
+is_32bit = sys.maxsize < 2**32 or os.environ.get('CONDA_FORCE_32BIT', '0') == '1'
+
+PY2 = sys.version_info.major == 2
 
 
-if sys.version_info.major == 2:
+if PY2:
     from imp import load_source
+
+    from Queue import Queue
 
     def source_from_cache(path):
         if path.endswith('.pyc') or path.endswith('.pyo'):
@@ -14,6 +22,7 @@ if sys.version_info.major == 2:
 else:
     import importlib
     from importlib.util import source_from_cache
+    from queue import Queue  # noqa
 
     def load_source(name, path):
         loader = importlib.machinery.SourceFileLoader(name, path)

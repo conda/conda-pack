@@ -1,4 +1,5 @@
 from setuptools import setup
+
 import versioneer
 import sys
 
@@ -14,22 +15,23 @@ setup(name='conda-pack',
       keywords='conda packaging',
       classifiers=["Development Status :: 4 - Beta",
                    "License :: OSI Approved :: BSD License",
-                   "Programming Language :: Python :: 2.7",
-                   "Programming Language :: Python :: 3.5",
-                   "Programming Language :: Python :: 3.6",
                    "Programming Language :: Python :: 3.7",
+                   "Programming Language :: Python :: 3.8",
+                   "Programming Language :: Python :: 3.9",
+                   "Programming Language :: Python :: 3.10",
                    "Topic :: System :: Archiving :: Packaging",
                    "Topic :: System :: Software Distribution",
                    "Topic :: Software Development :: Build Tools"],
       license='BSD',
       description='Package conda environments for redistribution',
-      long_description=open('README.rst').read(),
+      long_description=open('README.md').read(),
+      long_description_content_type="text/markdown",
       packages=['conda_pack'],
-      # We need to install both here so noarch packages build properly
-      package_data={'conda_pack': ['scripts/windows/*',
-                                   'scripts/posix/*']},
+      package_data={'conda_pack': ['scripts/windows/*', 'scripts/posix/*']},
       entry_points='''
         [console_scripts]
         conda-pack=conda_pack.cli:main
       ''',
+      install_requires=['setuptools'],
+      python_requires='>=3.7',
       zip_safe=False)
