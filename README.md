@@ -1,5 +1,7 @@
 # Conda-Pack
 
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/conda/conda-pack/main.svg)](https://results.pre-commit.ci/latest/github/conda/conda-pack/main)
+
 `conda-pack` is a command line tool for creating relocatable conda
 environments. This is useful for deploying code in a consistent environment,
 potentially in locations where python or conda isn't already installed.
