@@ -1,7 +1,10 @@
+# disable autofixing PRs, commenting "pre-commit.ci autofix" on a pull request triggers a autofix
+ci:
+    autofix_prs: false
 exclude: ^(versioneer.py|conda_pack/_version.py)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files
       - id: check-ast
@@ -19,25 +22,20 @@ repos:
         exclude: conda-recipe/meta.yaml
       - id: check-merge-conflict
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.31.0
+    rev: v3.3.1
     hooks:
       - id: pyupgrade
         args: ["--py37-plus"]
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.11.4
     hooks:
       - id: isort
   - repo: https://github.com/akaihola/darker
-    rev: github-action-v1.3.2-2
+    rev: 1.6.1
     hooks:
       - id: darker
-        additional_dependencies: [black==21.12b0]
+        additional_dependencies: [black]
   - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+    rev: 6.0.0
     hooks:
       - id: flake8
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 2.1.5
-    hooks:
-      # to be last to catch un-committed code changes
-      - id: git-dirty  # Configure in .gitignore
