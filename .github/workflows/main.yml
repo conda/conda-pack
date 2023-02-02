@@ -36,6 +36,7 @@ jobs:
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
+        retention-days: 5
   testbed:
     defaults:
       run:
@@ -162,7 +163,3 @@ jobs:
         source $CONDA/bin/activate
         [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
         anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.tar.bz2 --force
-    - name: Clean up older artifacts
-      uses: glassechidna/artifact-cleaner@master
-      with:
-        minimumAge: 86400
