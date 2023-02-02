@@ -1,7 +1,5 @@
 # Conda-Pack
 
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/conda/conda-pack/main.svg)](https://results.pre-commit.ci/latest/github/conda/conda-pack/main)
-
 `conda-pack` is a command line tool for creating relocatable conda
 environments. This is useful for deploying code in a consistent environment,
 potentially in locations where python or conda isn't already installed.
@@ -14,7 +12,7 @@ Conda-pack is offered under a New BSD license; see the
 
 ## Build status
 
-| [![Build status](https://github.com/conda/conda-pack/workflows/Build%20and%20test%20the%20package/badge.svg)](https://github.com/conda/conda-pack/actions) [![codecov](https://codecov.io/gh/conda/conda-pack/branch/main/graph/badge.svg)](https://codecov.io/gh/conda/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/ctools/conda-pack/badges/latest_release_date.svg)](https://anaconda.org/ctools/conda-pack) |
+| [![Build status](https://github.com/conda/conda-pack/actions/workflows/main.yml/badge.svg)](https://github.com/conda/conda-pack/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/conda/conda-pack/branch/main/graph/badge.svg)](https://codecov.io/gh/conda/conda-pack) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/conda/conda-pack/main.svg)](https://results.pre-commit.ci/latest/github/conda/conda-pack/main) | [![Anaconda-Server Badge](https://anaconda.org/ctools/conda-pack/badges/latest_release_date.svg)](https://anaconda.org/ctools/conda-pack) |
 | --- | :-: |
 | [`conda install ctools/label/dev::conda-pack`](https://anaconda.org/ctools/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/ctools/conda-pack/badges/version.svg)](https://anaconda.org/ctools/conda-pack) |
 | [`conda install defaults::conda-pack`](https://anaconda.org/anaconda/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/anaconda/conda-pack/badges/version.svg)](https://anaconda.org/anaconda/conda-pack) |
