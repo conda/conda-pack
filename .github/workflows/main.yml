@@ -42,9 +42,6 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ matrix.os }}
-    # Need to allow the ::set-env command until we get it replaced
-    env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     strategy:
       matrix:
         os: [ubuntu-latest,macos-latest,windows-latest]
@@ -55,8 +52,8 @@ jobs:
       name: Set CONDA_ROOT
       run: |
           CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
-          echo "::set-output name=value::$(dirname $GITHUB_WORKSPACE)/conda"
-          echo "::set-env name=CONDA_ROOT::$CONDA_ROOT"
+          echo "value=$(dirname $GITHUB_WORKSPACE)/conda" >> $GITHUB_OUTPUT
+          echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
           echo "CONDA_ROOT: $CONDA_ROOT"
     # Use a smaller cache entry to enable a quicker exit if we
     # have already built the testbed. Any small file will do
@@ -80,9 +77,6 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ matrix.os }}
-    # Need to allow the ::set-env command until we get it replaced
-    env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     needs: [package,testbed]
     strategy:
       fail-fast: false
@@ -104,8 +98,8 @@ jobs:
       name: Set CONDA_ROOT
       run: |
           CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
-          echo "::set-output name=value::$(dirname $GITHUB_WORKSPACE)/conda"
-          echo "::set-env name=CONDA_ROOT::$CONDA_ROOT"
+          echo "value=$(dirname $GITHUB_WORKSPACE)/conda" >> $GITHUB_OUTPUT
+          echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
           echo "CONDA_ROOT: $CONDA_ROOT"
     - name: Retrieve the testbed cache
       uses: actions/cache@v3
