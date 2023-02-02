@@ -118,9 +118,10 @@ jobs:
         source $CONDA_ROOT/etc/profile.d/conda.sh
         conda info -a
         mv conda-bld $CONDA_ROOT/conda-bld
-        conda create -n cptest local::conda-pack conda-forge::pytest python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
+        conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
         conda activate cptest
-        pytest -v -ss conda_pack/tests
+        pytest -v -ss --cov=conda_pack --cov-branch --cov-report=xml conda_pack/tests
+    - uses: codecov/codecov-action@v3
   upload:
     needs: tests
     runs-on: ubuntu-latest
