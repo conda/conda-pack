@@ -14,7 +14,7 @@ Conda-pack is offered under a New BSD license; see the
 
 ## Build status
 
-| [![Build status](https://github.com/conda/conda-pack/workflows/Build%20and%20test%20the%20package/badge.svg)](https://github.com/conda/conda-pack/actions) [![codecov](https://codecov.io/gh/conda/conda-pack/branch/main/graph/badge.svg)](https://codecov.io/gh/conda/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/ctools/conda-pack/badges/latest_release_date.svg)](https://anaconda.org/ctools/conda-pack) |
+| [![Build status](https://github.com/conda/conda-pack/actions/workflows/main.yml/badge.svg)](https://github.com/conda/conda-pack/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/conda/conda-pack/branch/main/graph/badge.svg)](https://codecov.io/gh/conda/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/ctools/conda-pack/badges/latest_release_date.svg)](https://anaconda.org/ctools/conda-pack) |
 | --- | :-: |
 | [`conda install ctools/label/dev::conda-pack`](https://anaconda.org/ctools/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/ctools/conda-pack/badges/version.svg)](https://anaconda.org/ctools/conda-pack) |
 | [`conda install defaults::conda-pack`](https://anaconda.org/anaconda/conda-pack) | [![Anaconda-Server Badge](https://anaconda.org/anaconda/conda-pack/badges/version.svg)](https://anaconda.org/anaconda/conda-pack) |
