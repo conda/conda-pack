@@ -4,7 +4,7 @@
 
 ### Bug fixes
 
-* Codesign relocated binaries on Apple Silicon (`osx-arm64`).
+* Codesign relocated binaries on Apple Silicon (`osx-arm64`). (#257)
 
 ### Deprecations
 
