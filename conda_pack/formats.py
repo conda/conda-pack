@@ -381,11 +381,12 @@ class SquashFSArchive(ArchiveBase):
     def __enter__(self):
         # create a staging directory where we will collect
         # hardlinks to files and make tmpfiles for bytes
-        self._staging_dir = os.path.normpath(tempfile.mkdtemp())
+        self._temp_dir = os.path.normpath(tempfile.mkdtemp())
+        self._staging_dir = os.path.join(self._temp_dir, "squashfs-root")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        shutil.rmtree(self._staging_dir)
+        shutil.rmtree(self._temp_dir)
 
     def mksquashfs_from_staging(self):
         """
