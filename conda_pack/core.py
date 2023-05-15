@@ -1111,7 +1111,7 @@ class Packer:
             fil.close()
             st = os.stat(fil.name)
             if executable:
-                os.chmod(fil.name, st.st_mode | 0o111)
+                os.chmod(fil.name, st.st_mode | 0o555)
             self.archive.add(fil.name, fpath)
         finally:
             os.unlink(fil.name)
