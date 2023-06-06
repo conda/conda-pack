@@ -75,8 +75,7 @@ def build_parser():
                         default=4,
                         help=("The compression level to use, from 0 to 9. "
                               "Higher numbers decrease output file size at "
-                              "the expense of compression time. Ignored for "
-                              "``format='zip'``. Default is 4."))
+                              "the expense of compression time. Default is 4."))
     parser.add_argument("--n-threads", "-j",
                         metavar="N",
                         type=int,
