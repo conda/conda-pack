@@ -34,8 +34,8 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
     n_threads = _parse_n_threads(n_threads)
 
     if format == 'zip':
-        return ZipArchive(fileobj, arcroot, zip_symlinks=zip_symlinks,
-                          zip_64=zip_64)
+        return ZipArchive(fileobj, arcroot, compresslevel=compress_level,
+                          zip_symlinks=zip_symlinks, zip_64=zip_64)
 
     # Tar archives
     if format in ('tar.gz', 'tgz', 'parcel'):
@@ -294,15 +294,17 @@ tar-based archive format instead."""
 
 
 class ZipArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, zip_symlinks=False, zip_64=True):
+    def __init__(self, fileobj, arcroot, compresslevel=4, zip_symlinks=False, zip_64=True):
         self.fileobj = fileobj
         self.arcroot = arcroot
+        self.compresslevel = compresslevel
         self.zip_symlinks = zip_symlinks
         self.zip_64 = zip_64
 
     def __enter__(self):
         self.archive = zipfile.ZipFile(self.fileobj, "w",
                                        allowZip64=self.zip_64,
+                                       compresslevel=self.compresslevel,
                                        compression=zipfile.ZIP_DEFLATED)
         return self
 
