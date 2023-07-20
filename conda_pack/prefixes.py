@@ -58,8 +58,9 @@ SHEBANG_REGEX = (
 
 def update_prefix(path, new_prefix, placeholder, mode='text'):
     if on_win and mode == 'text':
-        # force all prefix replacements to forward slashes to simplify need to
+        # force all paths and prefix replacements to forward slashes to simplify need to
         # escape backslashes replace with unix-style path separators
+        path = path.replace('\\', '/')
         new_prefix = new_prefix.replace('\\', '/')
 
     with open(path, 'rb+') as fh:
