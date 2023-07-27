@@ -419,11 +419,7 @@ class File:
         self.target = target
         self.is_conda = is_conda
         self.file_mode = file_mode
-        self.prefix_placeholder = (
-            prefix_placeholder.replace("\\", "/")
-            if file_mode == "text" and prefix_placeholder is not None
-            else prefix_placeholder
-        )
+        self.prefix_placeholder = prefix_placeholder
 
     def __repr__(self):
         return f"File<{self.target!r}, is_conda={self.is_conda!r}>"
@@ -1005,6 +1001,8 @@ if __name__ == '__main__':
     else:
         script_dir = os.path.dirname(__file__)
         new_prefix = os.path.abspath(os.path.dirname(script_dir))
+        if on_win:
+            new_prefix = new_prefix.replace('\\\\', '/')
         for path, placeholder, mode in _prefix_records:
             update_prefix(os.path.join(new_prefix, path), new_prefix,
                           placeholder, mode=mode)
