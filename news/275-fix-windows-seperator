@@ -4,7 +4,7 @@
 
 ### Bug fixes
 
-* Fixed bug in environment path separators preventing unpacking on Windows distributions
+* Fixed bug in environment path separators preventing unpacking on Windows distributions. (#275)
 
 ### Deprecations
 
