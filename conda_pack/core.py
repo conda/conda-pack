@@ -1002,8 +1002,10 @@ if __name__ == '__main__':
         script_dir = os.path.dirname(__file__)
         new_prefix = os.path.abspath(os.path.dirname(script_dir))
         for path, placeholder, mode in _prefix_records:
-            update_prefix(os.path.join(new_prefix, path), new_prefix,
-                          placeholder, mode=mode)
+            new_path = os.path.join(new_prefix, path)
+            if on_win:
+                new_path = new_path.replace('\\\\', '/')
+            update_prefix(new_path, new_prefix, placeholder, mode=mode)
 """
 
 
