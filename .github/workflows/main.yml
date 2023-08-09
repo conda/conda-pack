@@ -82,7 +82,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest,ubuntu-latest,windows-latest]
-        pyver: ["3.7","3.8","3.9","3.10"]
+        pyver: ["3.7","3.8.16", "3.8.17","3.9","3.10"]
         include:
           # include the appropriate dependencies for testing SquashFS on each OS
           - os: macos-latest
