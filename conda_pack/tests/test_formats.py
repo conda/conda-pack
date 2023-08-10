@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import threading
 import time
@@ -146,10 +147,15 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         test_symlinks = zip_symlinks
     else:
         test_symlinks = not on_win
-    if format == 'squashfs' and on_win:
-        # mksquashfs can work on win, but we don't support moving envs
-        # between OSs anyway, so we don't test it either
-        pytest.skip("Cannot mount squashfs on windows")
+    if format == "squashfs":
+        if on_win:
+            # mksquashfs can work on win, but we don't support moving envs
+            # between OSs anyway, so we don't test it either
+            pytest.skip("Cannot mount squashfs on windows")
+        elif on_mac and sys.version_info < (3, 9):
+            # We have some spurious hardlinking issues with older Pythons.
+            # xfail them until we can remove support for them.
+            pytest.xfail("Sometimes hardlinking inside the test environment fails.")
 
     root, paths = root_and_paths
 
