@@ -26,4 +26,4 @@ jobs:
       id-token: write
     steps:
       - uses: actions/download-artifact@v3
-      - shell: ls -l
+      - run: ls -l
