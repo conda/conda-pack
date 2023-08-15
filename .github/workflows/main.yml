@@ -1,0 +1,160 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - main
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Retrieve the source code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Install build dependencies
+      run: |
+        source $CONDA/bin/activate
+        conda config --append channels conda-forge
+        conda install -y conda-build conda-verify sphinx numpydoc sphinxcontrib-autoprogram make
+        python -m pip install -e .
+    - name: Build the documentation as a test
+      run: |
+        source $CONDA/bin/activate
+        cd docs
+        make html
+    - name: Build the package
+      run: conda build conda-recipe --no-test
+    - name: Reduce the size of the build artifact
+      run: rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
+    - name: Upload the build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: package-${{ github.sha }}
+        path: /usr/share/miniconda/conda-bld
+        retention-days: 5
+  testbed:
+    defaults:
+      run:
+        shell: bash
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest,macos-latest,windows-latest]
+    steps:
+    - name: Retrieve the source code
+      uses: actions/checkout@v3
+    - id: conda-root
+      name: Set CONDA_ROOT
+      run: |
+          CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
+          echo "value=$(dirname $GITHUB_WORKSPACE)/conda" >> $GITHUB_OUTPUT
+          echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
+          echo "CONDA_ROOT: $CONDA_ROOT"
+    # Use a smaller cache entry to enable a quicker exit if we
+    # have already built the testbed. Any small file will do
+    - id: cache-key
+      name: Retrieve cache key
+      uses: actions/cache@v3
+      with:
+        path: LICENSE.txt
+        key: key-${{ matrix.os }}-${{ hashFiles('testing') }}-5
+    - name: Retrieve or create the testbed cache
+      if: steps.cache-key.outputs.cache-hit != 'true'
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.conda-root.outputs.value }}
+        key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
+    - name: Verify or create the testbed
+      if: steps.cache-key.outputs.cache-hit != 'true'
+      run: testing/setup_envs.sh 1
+  tests:
+    defaults:
+      run:
+        shell: bash
+    runs-on: ${{ matrix.os }}
+    needs: [package,testbed]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest,ubuntu-latest,windows-latest]
+        pyver: ["3.7","3.8","3.9","3.10"]
+        include:
+          # include the appropriate dependencies for testing SquashFS on each OS
+          - os: macos-latest
+            squashfs_deps: "conda-forge::squashfs-tools"
+          - os: ubuntu-latest
+            squashfs_deps: "conda-forge::squashfs-tools conda-forge::squashfuse"
+          - os: windows-latest
+            squashfs_deps: ""
+    steps:
+    - name: Retrieve the source code
+      uses: actions/checkout@v3
+    - id: conda-root
+      name: Set CONDA_ROOT
+      run: |
+          CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
+          echo "value=$(dirname $GITHUB_WORKSPACE)/conda" >> $GITHUB_OUTPUT
+          echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
+          echo "CONDA_ROOT: $CONDA_ROOT"
+    - name: Retrieve the testbed cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.conda-root.outputs.value }}
+        key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
+    - name: Download the build artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: package-${{ github.sha }}
+        path: conda-bld
+    - name: Verify or create the testbed
+      run: testing/setup_envs.sh
+    - name: Create the test environment and run the tests
+      run: |
+        source $CONDA_ROOT/etc/profile.d/conda.sh
+        conda info -a
+        mv conda-bld $CONDA_ROOT/conda-bld
+        conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
+        conda activate cptest
+        pytest -v -ss --cov=conda_pack --cov-branch --cov-report=xml conda_pack/tests
+    - uses: codecov/codecov-action@v3
+  upload:
+    needs: tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Retrieve the source code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Download the build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: package-${{ github.sha }}
+        path: conda-bld
+    - name: Install deployment dependencies and build the docs
+      run: |
+        source $CONDA/bin/activate
+        conda config --append channels conda-forge
+        conda install -y sphinx numpydoc sphinxcontrib-autoprogram make anaconda-client
+        python -m pip install -e .
+        cd docs
+        make html
+    - name: Deploy the documentation
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/build/html
+    - name: Upload to anaconda.org
+      env:
+        ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        GITHUB_REF: ${{ github.ref }}
+      run: |
+        source $CONDA/bin/activate
+        [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
+        anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.tar.bz2 --force

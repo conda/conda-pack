@@ -35,8 +35,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import platform
 import re
 import struct
+import subprocess
 import sys
 
 on_win = sys.platform == 'win32'
@@ -62,6 +64,7 @@ def update_prefix(path, new_prefix, placeholder, mode='text'):
         # escape backslashes replace with unix-style path separators
         new_prefix = new_prefix.replace('\\', '/')
 
+    file_changed = False
     with open(path, 'rb+') as fh:
         original_data = fh.read()
         fh.seek(0)
@@ -72,6 +75,12 @@ def update_prefix(path, new_prefix, placeholder, mode='text'):
         if data != original_data:
             fh.write(data)
             fh.truncate()
+            file_changed = True
+
+    if file_changed and platform.system() == "Darwin" and platform.machine() == "arm64":
+        subprocess.run(
+            ["/usr/bin/codesign", "-s", "-", "-f", path], capture_output=True
+        )
 
 
 def replace_prefix(data, mode, placeholder, new_prefix):
@@ -81,7 +90,7 @@ def replace_prefix(data, mode, placeholder, new_prefix):
         data2 = binary_replace(data,
                                placeholder.encode('utf-8'),
                                new_prefix.encode('utf-8'))
-        if len(data2) != len(data):
+        if not on_win and len(data2) != len(data):
             message = ("Found mismatched data length in binary file:\n"
                        "original data length: {len_orig!d})\n"
                        "new data length: {len_new!d}\n"
@@ -99,9 +108,12 @@ def text_replace(data, placeholder, new_prefix):
 
 if on_win:
     def binary_replace(data, placeholder, new_prefix):
-        if placeholder not in data:
-            return data
-        return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
+        new_prefix = new_prefix.lower()
+        if placeholder in data:
+            return replace_pyzzer_entry_point_shebang(data, placeholder, new_prefix)
+        elif placeholder.lower() in data:
+            return replace_pyzzer_entry_point_shebang(data, placeholder.lower(), new_prefix)
+        return data
 
 else:
     def binary_replace(data, placeholder, new_prefix):

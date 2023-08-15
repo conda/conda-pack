@@ -1,18 +1,16 @@
-from __future__ import print_function, absolute_import
-
 import argparse
 import sys
 import traceback
 
 from . import __version__
-from .core import pack, CondaPackException, context
+from .core import CondaPackException, context, pack
 
 
 class MultiAppendAction(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         if nargs is not None:
             raise ValueError("nargs not allowed")
-        super(MultiAppendAction, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         if getattr(namespace, self.dest) is None:
@@ -22,19 +20,18 @@ class MultiAppendAction(argparse.Action):
 
 def build_parser():
     description = "Package an existing conda environment into an archive file."
-    kwargs = dict(prog="conda-pack",
-                  description=description,
-                  add_help=False)
-    if sys.version_info >= (3, 5):
-        kwargs['allow_abbrev'] = False
+    kwargs = dict(prog="conda-pack", description=description, add_help=False)
+    kwargs["allow_abbrev"] = False
     parser = argparse.ArgumentParser(**kwargs)
     parser.add_argument("--name", "-n",
                         metavar="ENV",
-                        help=("Name of existing environment. Default is "
-                              "current environment."))
+                        help="The name of the environment to pack. "
+                        "If neither --name nor --prefix are supplied, "
+                        "the current activated environment is packed.")
     parser.add_argument("--prefix", "-p",
                         metavar="PATH",
-                        help="Full path to environment prefix.")
+                        help="The path to the environment to pack. "
+                        "Only one of --name/--prefix should be supplied.")
     parser.add_argument("--output", "-o",
                         metavar="PATH",
                         help=("The path of the output file. Defaults to the "
@@ -48,10 +45,27 @@ def build_parser():
                         metavar="PATH",
                         help=("If present, prefixes will be rewritten to this "
                               "path before packaging. In this case the "
-                              "`conda-unpack` script will not be generated."))
+                              "`conda-unpack` script will not be generated. "
+                              "This option should not be used with parcels, which "
+                              "instead generate their destination prefix from the "
+                              "--parcel-root, --parcel-name, and "
+                              "--parcel-version options."))
+    parser.add_argument("--parcel-root", default=None,
+                        help="(Parcels only) The location where all parcels are unpacked "
+                        "on the target Hadoop cluster (default: '/opt/cloudera/parcels').")
+    parser.add_argument("--parcel-name", default=None,
+                        help="(Parcels only) The name of the parcel, without a version "
+                        "suffix. The default value is the local environment name. The parcel "
+                        "name may not have any hyphens.")
+    parser.add_argument("--parcel-version", default=None,
+                        help="(Parcels only) The version number for the parcel. The default "
+                        "value is the current date, using the format YYYY.MM.DD.")
+    parser.add_argument("--parcel-distro", default=None,
+                        help="(Parcels only) The distribution type for the parcel. The "
+                        "default value is 'el7'. This value cannot have any hyphens.")
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
-                                 'tbz2', 'tar'],
+                                 'tbz2', 'tar.xz', 'txz', 'tar', 'parcel', 'squashfs'],
                         default='infer',
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension."))
@@ -61,8 +75,7 @@ def build_parser():
                         default=4,
                         help=("The compression level to use, from 0 to 9. "
                               "Higher numbers decrease output file size at "
-                              "the expense of compression time. Ignored for "
-                              "``format='zip'``. Default is 4."))
+                              "the expense of compression time. Default is 4."))
     parser.add_argument("--n-threads", "-j",
                         metavar="N",
                         type=int,
@@ -146,6 +159,10 @@ def main(args=None, pack=pack):
                  zip_64=not args.no_zip_64,
                  arcroot=args.arcroot,
                  dest_prefix=args.dest_prefix,
+                 parcel_root=args.parcel_root,
+                 parcel_name=args.parcel_name,
+                 parcel_version=args.parcel_version,
+                 parcel_distro=args.parcel_distro,
                  verbose=not args.quiet,
                  filters=args.filters,
                  ignore_editable_packages=args.ignore_editable_packages,

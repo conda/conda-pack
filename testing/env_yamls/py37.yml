@@ -1,13 +1,14 @@
-name: py36
+name: py37
 
 channels:
-    - jcrist
+    - ctools
     - conda-forge
 
 dependencies:
-    - python=3.6
+    - python=3.7
     - conda_pack_test_lib1
     - conda_pack_test_lib2
     - toolz
+    - pip
     - pip:
         - pytest

@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import
-
 import sys
 import threading
 import time
@@ -17,14 +15,14 @@ def format_time(t):
     m, s = divmod(t, 60)
     h, m = divmod(m, 60)
     if h:
-        return '{0:2.0f}hr {1:2.0f}min {2:4.1f}s'.format(h, m, s)
+        return f"{h:2.0f}hr {m:2.0f}min {s:4.1f}s"
     elif m:
-        return '{0:2.0f}min {1:4.1f}s'.format(m, s)
+        return f"{m:2.0f}min {s:4.1f}s"
     else:
-        return '{0:4.1f}s'.format(s)
+        return f"{s:4.1f}s"
 
 
-class progressbar(object):
+class progressbar:
     """A simple progressbar for iterables.
 
     Displays a progress bar showing progress through an iterable.

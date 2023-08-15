@@ -1,5 +1,3 @@
-from __future__ import absolute_import, print_function, division
-
 import os
 import signal
 import tarfile
@@ -12,7 +10,7 @@ import conda_pack
 from conda_pack.cli import main
 from conda_pack.compat import on_win
 
-from .conftest import py36_path, py27_path
+from .conftest import py37_path, py310_path
 
 
 def test_help(capsys):
@@ -59,10 +57,10 @@ def test_parse_include_exclude():
 
 
 def test_cli_roundtrip(capsys, tmpdir):
-    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    out_path = os.path.join(str(tmpdir), 'py37.tar')
 
     with pytest.raises(SystemExit) as exc:
-        main(["-p", py36_path, "-o", out_path])
+        main(["-p", py37_path, "-o", out_path])
 
     assert exc.value.code == 0
 
@@ -72,17 +70,17 @@ def test_cli_roundtrip(capsys, tmpdir):
     out, err = capsys.readouterr()
     assert not err
 
-    bar, percent, time = [i.strip() for i in out.split('\r')[-1].split('|')]
-    assert bar == '[' + '#' * 40 + ']'
-    assert percent == '100% Completed'
+    bar, percent, time = (i.strip() for i in out.split("\r")[-1].split("|"))
+    assert bar == "[" + "#" * 40 + "]"
+    assert percent == "100% Completed"
     assert time
 
 
 def test_quiet(capsys, tmpdir):
-    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    out_path = os.path.join(str(tmpdir), 'py37.tar')
 
     with pytest.raises(SystemExit) as exc:
-        main(["-p", py36_path, "-o", out_path, "-q"])
+        main(["-p", py37_path, "-o", out_path, "-q"])
 
     assert exc.value.code == 0
 
@@ -113,11 +111,11 @@ def test_cli_exceptions(capsys):
     assert "usage: conda-pack" in err
 
 
-def test_cli_warnings(capsys, broken_package_cache, tmpdir):
-    out_path = os.path.join(str(tmpdir), 'py27.tar')
+def test_cli_warnings(capsys, tmpdir):
+    out_path = os.path.join(str(tmpdir), 'py310.tar')
 
     with pytest.raises(SystemExit) as exc:
-        main(["-p", py27_path, "-o", out_path])
+        main(["-p", py310_path, "-o", out_path])
 
     assert exc.value.code == 0
 
@@ -132,16 +130,16 @@ def test_cli_warnings(capsys, broken_package_cache, tmpdir):
 @pytest.mark.skipif(on_win, reason='SIGINT terminates the tests on Windows')
 def test_keyboard_interrupt(capsys, tmpdir):
     def interrupt():
-        time.sleep(0.5)
+        time.sleep(0.2)
         os.kill(os.getpid(), signal.SIGINT)
 
     interrupter = Thread(target=interrupt)
 
-    out_path = os.path.join(str(tmpdir), 'py36.tar')
+    out_path = os.path.join(str(tmpdir), 'py37.tar')
     try:
         with pytest.raises(SystemExit) as exc:
             interrupter.start()
-            main(["-p", py36_path, "-o", out_path])
+            main(["-p", py37_path, "-o", out_path])
     except KeyboardInterrupt:
         assert False, "Should have been caught by the CLI"
 

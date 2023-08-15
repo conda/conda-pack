@@ -1,0 +1,16 @@
+#!/bin/bash
+
+local CDH_PREFIX="${PARCELS_ROOT}/${PARCEL_DIRNAME}"
+
+if [ -z "${CDH_PYTHON}" ]; then
+    export CDH_PYTHON=${CDH_PREFIX}/bin/python
+fi
+
+# Run the activate scripts
+local _script_dir="${CDH_PREFIX}/etc/conda/activate.d"
+if [ -d "$_script_dir" ] && [ -n "$(ls -A "$_script_dir")" ]; then
+    local _path
+    for _path in "$_script_dir"/*.sh; do
+        . "$_path"
+    done
+fi

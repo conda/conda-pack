@@ -1,78 +1,114 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
-set -eo pipefail
+set -Eeo pipefail
 
-echo "== Setting up environments for testing =="
+echo Setting up environments for testing
 
 CONDA_CLEAN_P=$1
 
-current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# GitHub action specific items. These are no-ops locally
+[ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
+[ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
 
-echo "Creating py36_missing_files environment"
-conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36_missing_files" $@
-if [[ "$OS" == "Windows_NT" ]]; then
-  rm "${current_dir}/environments/py36_missing_files/Lib/site-packages/toolz/__init__.py"
+cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
+ymls=$cwd/env_yamls
+if [[ "$CONDA_ROOT" != "" ]]; then
+    mkdir -p $CONDA_ROOT
+    croot=$(cd $CONDA_ROOT && pwd)
 else
-  rm "${current_dir}/environments/py36_missing_files/lib/python3.6/site-packages/toolz/__init__.py"
+    croot=$cwd/conda
 fi
+envs=$croot/envs
+
+if [ ! -d $croot/conda-meta ]; then
+    ${CONDA_EXE:-conda} create -y -p $croot conda python=3.7
+fi
+
+source $croot/etc/profile.d/conda.sh
+export CONDA_PKGS_DIRS=$croot/pkgs
+
+if [ -d $croot/envs/activate_scripts/conda-meta ]; then
+    conda info
+    ls -l $croot/envs
+    exit 0
+fi
+
+mkdir -p $envs
+# Make sure the local package cache is used
+rm -rf $croot/pkgs
+
+echo Creating py37 environment
+env=$envs/py37
+conda env create -f $ymls/py37.yml -p $env
+# Create unmanaged conda-related files for conda-pack to remove
+if [ -f $env/python.exe ]; then
+    touch $env/Scripts/activate
+    touch $env/Scripts/activate.bat
+    touch $env/Scripts/deactivate
+    touch $env/Scripts/deactivate.bat
+    touch $env/Scripts/conda
+    touch $env/Scripts/conda.bat
+else
+    touch $env/bin/activate
+    touch $env/bin/deactivate
+    touch $env/bin/conda
+fi
+
+echo Creating py37_missing_files environment
+env=$envs/py37_missing_files
+conda env create -f $ymls/py37.yml -p $env
+if [ -f $env/python.exe ]; then
+    rm $env/lib/site-packages/toolz/*.py
+else
+    rm $env/lib/python3.7/site-packages/toolz/*.py
+fi
+
 # Only do this when the developer has agreed to it, this might otherwise break things in his system.
 if [[ "$CONDA_CLEAN_P" == "1" ]]; then
   conda clean -apfy
 fi
 
-echo "Creating py27 environment"
-conda env create -f "${current_dir}/env_yamls/py27.yml" -p "${current_dir}/environments/py27" $@
+echo Creating py310 environment
+env=$envs/py310
+conda env create -f $ymls/py310.yml -p $env
+# Remove this package from the cache for testing
+rm -rf $croot/pkgs/conda_pack_test_lib2*py310*
 
-echo "Creating py36 environment"
-conda env create -f "${current_dir}/env_yamls/py36.yml" -p "${current_dir}/environments/py36" $@
-# Create unmanaged conda-related files for conda-pack to remove
-if [[ "$OS" == "Windows_NT" ]]; then
-	touch ${current_dir}/environments/py36/Scripts/activate
-	touch ${current_dir}/environments/py36/Scripts/activate.bat
-	touch ${current_dir}/environments/py36/Scripts/deactivate
-	touch ${current_dir}/environments/py36/Scripts/deactivate.bat
-	touch ${current_dir}/environments/py36/Scripts/conda
-	touch ${current_dir}/environments/py36/Scripts/conda.bat
+echo Creating py37_editable environment
+env=$envs/py37_editable
+conda env create -f $ymls/py37.yml -p $env
+pushd $cwd/test_packages/conda_pack_test_lib1
+if [ -f $env/python.exe ]; then
+    $env/python.exe setup.py develop
 else
-	touch ${current_dir}/environments/py36/bin/activate
-	touch ${current_dir}/environments/py36/bin/deactivate
-	touch ${current_dir}/environments/py36/bin/conda
+    $env/bin/python setup.py develop
 fi
+popd
 
-echo "Creating py36_editable environment"
-py36_editable="${current_dir}/environments/py36_editable"
-conda env create -f "${current_dir}/env_yamls/py36.yml" -p $py36_editable $@
-activation=$((type activate > /dev/null && echo 'source' ) || echo conda)
+echo Creating py37_broken environment
+env=$envs/py37_broken
+conda env create -f $ymls/py37_broken.yml -p $env
 
-# If the activation is via conda, we sometimes need to load the hook first.
-# This is required if the default shell is not bash
-if [[ $activation == conda ]]; then
-  conda activate base || eval "$(conda shell.bash hook)"
-fi
+echo Creating nopython environment
+env=$envs/nopython
+conda env create -f $ymls/nopython.yml -p $env
 
-$activation activate $py36_editable
-pushd "${current_dir}/.." && python setup.py develop && popd
-deactivation=$((type deactivate > /dev/null && echo 'source' ) || echo conda)
-$deactivation deactivate
+echo Creating conda environment
+env=$envs/has_conda
+conda env create -f $ymls/has_conda.yml -p $env
 
-echo "Creating py36_broken environment"
-conda env create -f "${current_dir}/env_yamls/py36_broken.yml" -p "${current_dir}/environments/py36_broken" $@
-
-echo "Creating nopython environment"
-conda env create -f "${current_dir}/env_yamls/nopython.yml" -p "${current_dir}/environments/nopython" $@
-
-echo "Creating conda environment"
-conda env create -f "${current_dir}/env_yamls/has_conda.yml" -p "${current_dir}/environments/has_conda" $@
-
-echo "Creating activate_scripts environment"
-activate_scripts="${current_dir}/environments/activate_scripts"
-conda env create -f "${current_dir}/env_yamls/activate_scripts.yml" -p $activate_scripts $@
-mkdir -p "${activate_scripts}/etc/conda/activate.d"
-mkdir -p "${activate_scripts}/etc/conda/deactivate.d"
-if [[ "$OS" == "Windows_NT" ]]; then
-  cp "${current_dir}/extra_scripts/conda_pack_test_activate.bat" "${activate_scripts}/etc/conda/activate.d/"
-  cp "${current_dir}/extra_scripts/conda_pack_test_deactivate.bat" "${activate_scripts}/etc/conda/deactivate.d/"
+echo Creating activate_scripts environment
+env=$envs/activate_scripts
+conda env create -f $ymls/activate_scripts.yml -p $env
+mkdir -p $env/etc/conda/activate.d $env/etc/conda/deactivate.d
+if [ -f $env/python.exe ]; then
+    cp $cwd/extra_scripts/conda_pack_test_activate.bat $env/etc/conda/activate.d
+    cp $cwd/extra_scripts/conda_pack_test_deactivate.bat $env/etc/conda/deactivate.d
 else
-  cp "${current_dir}/extra_scripts/conda_pack_test_activate.sh" "${activate_scripts}/etc/conda/activate.d/"
-  cp "${current_dir}/extra_scripts/conda_pack_test_deactivate.sh" "${activate_scripts}/etc/conda/deactivate.d/"
+    cp $cwd/extra_scripts/conda_pack_test_activate.sh $env/etc/conda/activate.d
+    cp $cwd/extra_scripts/conda_pack_test_deactivate.sh $env/etc/conda/deactivate.d
 fi
+
+rm -f $croot/pkgs/{*.tar.bz2,*.conda}
+conda info
+ls -l $croot/envs

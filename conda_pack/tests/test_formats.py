@@ -1,18 +1,20 @@
 import os
 import shutil
+import subprocess
+import sys
 import tarfile
 import threading
 import time
 import zipfile
 from multiprocessing import cpu_count
-from os.path import isdir, isfile, islink, join, exists
-from subprocess import check_output, STDOUT
+from os.path import exists, isdir, isfile, islink, join
+from subprocess import STDOUT, check_output
 
 import pytest
 
+from conda_pack.compat import PY2, on_linux, on_mac, on_win
 from conda_pack.core import CondaPackException
-from conda_pack.formats import archive, _parse_n_threads
-from conda_pack.compat import on_win, PY2
+from conda_pack.formats import _parse_n_threads, archive
 
 
 @pytest.fixture(scope="module")
@@ -135,7 +137,8 @@ def has_tar_cli():
 
 @pytest.mark.parametrize('format, zip_symlinks', [
     ('zip', True), ('zip', False),
-    ('tar.gz', False), ('tar.bz2', False), ('tar', False)
+    ('tar.gz', False), ('tar.bz2', False), ('tar.xz', False), ('tar', False),
+    ('squashfs', False)
 ])
 def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     if format == 'zip':
@@ -144,35 +147,66 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         test_symlinks = zip_symlinks
     else:
         test_symlinks = not on_win
+    if format == "squashfs":
+        if on_win:
+            # mksquashfs can work on win, but we don't support moving envs
+            # between OSs anyway, so we don't test it either
+            pytest.skip("Cannot mount squashfs on windows")
+        elif on_mac and sys.version_info < (3, 9):
+            # We have some spurious hardlinking issues with older Pythons.
+            # xfail them until we can remove support for them.
+            pytest.xfail("Sometimes hardlinking inside the test environment fails.")
 
     root, paths = root_and_paths
 
-    out_path = join(str(tmpdir), 'test.' + format)
-    out_dir = join(str(tmpdir), 'test')
-    os.mkdir(out_dir)
+    packed_env_path = join(str(tmpdir), 'test.' + format)
+    spill_dir = join(str(tmpdir), 'test')
+    os.mkdir(spill_dir)
 
-    with open(out_path, mode='wb') as fil:
-        with archive(fil, '', format, zip_symlinks=zip_symlinks) as arc:
+    with open(packed_env_path, mode='wb') as fil:
+        with archive(fil, packed_env_path, '', format, zip_symlinks=zip_symlinks) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
             arc.add_bytes(join(root, "file"),
                           b"foo bar",
                           join("dir", "from_bytes"))
+            arc.add_bytes(join(root, "file"),
+                          b"foo bar",
+                          join("somedir/nested dir", "from_bytes"))
+            if format == "squashfs":
+                arc.mksquashfs_from_staging()
 
     if format == 'zip':
         if test_symlinks:
-            check_output(['unzip', out_path, '-d', out_dir])
+            check_output(['unzip', packed_env_path, '-d', spill_dir])
         else:
-            with zipfile.ZipFile(out_path) as out:
-                out.extractall(out_dir)
-    else:
-        with tarfile.open(out_path) as out:
-            out.extractall(out_dir)
+            with zipfile.ZipFile(packed_env_path) as out:
+                out.extractall(spill_dir)
+    elif format == "squashfs":
+        if on_mac:
+            # There is no simple way to install MacFUSE + squashfuse on the macOS CI runners.
+            # So instead of mounting we extract the archive and check the contents that way.
 
-    check(out_dir, links=test_symlinks, root=root)
-    assert isfile(join(out_dir, "dir", "from_bytes"))
-    with open(join(out_dir, "dir", "from_bytes"), 'rb') as fil:
-        assert fil.read() == b"foo bar"
+            # unsquashfs creates its own directories
+            os.rmdir(spill_dir)
+            cmd = ["unsquashfs", "-dest", spill_dir, packed_env_path]
+            subprocess.check_output(cmd)
+        else:
+            cmd = ["squashfuse", packed_env_path, spill_dir]
+            subprocess.check_output(cmd)
+    else:
+        with tarfile.open(packed_env_path) as out:
+            out.extractall(spill_dir)
+
+    check(spill_dir, links=test_symlinks, root=root)
+    for dir in ["dir", "somedir/nested dir"]:
+        assert isfile(join(spill_dir, dir, "from_bytes"))
+        with open(join(spill_dir, dir, "from_bytes"), 'rb') as fil:
+            assert fil.read() == b"foo bar"
+
+    if format == "squashfs" and on_linux:
+        cmd = ["fusermount", "-u", spill_dir]
+        subprocess.check_output(cmd)
 
 
 def test_n_threads():
@@ -184,7 +218,7 @@ def test_n_threads():
             _parse_n_threads(n)
 
 
-@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2'])
+@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2', 'tar.xz'])
 def test_format_parallel(tmpdir, format, root_and_paths):
     # Python 2's bzip dpesn't support reading multipart files :(
     if format == 'tar.bz2' and PY2:
@@ -202,7 +236,7 @@ def test_format_parallel(tmpdir, format, root_and_paths):
 
     baseline = threading.active_count()
     with open(out_path, mode='wb') as fil:
-        with archive(fil, '', format, n_threads=2) as arc:
+        with archive(fil, out_path, '', format, n_threads=2) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
     timeout = 5

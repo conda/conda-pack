@@ -1,10 +1,12 @@
-name: py36_broken
+name: py37_broken
 
 channels:
     - conda-forge
 
 dependencies:
+    - python=3.7
     - cytoolz
     - toolz
+    - pip
     - pip:
         - toolz==0.7.0
