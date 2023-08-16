@@ -71,7 +71,7 @@ jobs:
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Verify or create the testbed
       if: steps.cache-key.outputs.cache-hit != 'true'
-      run: testing/setup_envs.sh 1
+      run: testing/setup_envs.sh purge-packages
   tests:
     defaults:
       run:

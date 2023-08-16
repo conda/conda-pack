@@ -64,7 +64,7 @@ else
 fi
 
 # Only do this when the developer has agreed to it, this might otherwise break things in his system.
-if [[ "$CONDA_CLEAN_P" == "1" ]]; then
+if [[ "$CONDA_CLEAN_P" == "purge-packages" ]]; then
   conda clean -apfy
 fi
 
