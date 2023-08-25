@@ -4,6 +4,8 @@ set -Eeo pipefail
 
 echo Setting up environments for testing
 
+CONDA_CLEAN_P=$1
+
 # GitHub action specific items. These are no-ops locally
 [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
 [ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
@@ -52,6 +54,20 @@ else
     touch $env/bin/conda
 fi
 
+echo Creating py37_missing_files environment
+env=$envs/py37_missing_files
+conda env create -f $ymls/py37.yml -p $env
+if [ -f $env/python.exe ]; then
+    rm $env/lib/site-packages/toolz/*.py
+else
+    rm $env/lib/python3.7/site-packages/toolz/*.py
+fi
+
+# Only do this when the developer has agreed to it, this might otherwise break things in his system.
+if [[ "$CONDA_CLEAN_P" == "purge-packages" ]]; then
+  conda clean -apfy
+fi
+
 echo Creating py310 environment
 env=$envs/py310
 conda env create -f $ymls/py310.yml -p $env
@@ -72,15 +88,6 @@ popd
 echo Creating py37_broken environment
 env=$envs/py37_broken
 conda env create -f $ymls/py37_broken.yml -p $env
-
-echo Creating py37_missing_files environment
-env=$envs/py37_missing_files
-conda env create -f $ymls/py37.yml -p $env
-if [ -f $env/python.exe ]; then
-    rm $env/lib/site-packages/toolz/*.py
-else
-    rm $env/lib/python3.7/site-packages/toolz/*.py
-fi
 
 echo Creating nopython environment
 env=$envs/nopython

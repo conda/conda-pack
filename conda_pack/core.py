@@ -223,61 +223,85 @@ class CondaEnv:
                 exclude(f)
         return CondaEnv(self.prefix, files, excluded)
 
-    def _output_and_format(self, output=None, format='infer'):
-        if output is None and format == 'infer':
-            format = 'tar.gz'
-        elif format == 'infer':
-            if output.endswith('.parcel'):
-                format = 'parcel'
-            elif output.endswith('.zip'):
-                format = 'zip'
-            elif output.endswith('.tar.gz') or output.endswith('.tgz'):
-                format = 'tar.gz'
-            elif output.endswith('.tar.bz2') or output.endswith('.tbz2'):
-                format = 'tar.bz2'
-            elif output.endswith('.tar.xz') or output.endswith('.txz'):
-                format = 'tar.xz'
-            elif output.endswith('.tar'):
-                format = 'tar'
-            elif output.endswith('.squashfs'):
-                format = 'squashfs'
+    def _output_and_format(self, output=None, format="infer"):
+        if output is None and format == "infer":
+            format = "tar.gz"
+        elif format == "infer":
+            if output.endswith(".parcel"):
+                format = "parcel"
+            elif output.endswith(".zip"):
+                format = "zip"
+            elif output.endswith(".tar.gz") or output.endswith(".tgz"):
+                format = "tar.gz"
+            elif output.endswith(".tar.bz2") or output.endswith(".tbz2"):
+                format = "tar.bz2"
+            elif output.endswith(".tar.xz") or output.endswith(".txz"):
+                format = "tar.xz"
+            elif output.endswith(".tar"):
+                format = "tar"
+            elif output.endswith(".squashfs"):
+                format = "squashfs"
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
-        elif format not in {'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2',
-                            'tar.xz', 'txz', 'tar', 'parcel', 'squashfs'}:
+        elif format not in {
+            "zip",
+            "tar.gz",
+            "tgz",
+            "tar.bz2",
+            "tbz2",
+            "tar.xz",
+            "txz",
+            "tar",
+            "parcel",
+            "squashfs",
+        }:
             raise CondaPackException("Unknown format %r" % format)
-        elif output is not None and output.endswith('.parcel'):
-            if format not in ('tar.gz', 'tgz'):
+        elif output is not None and output.endswith(".parcel"):
+            if format not in ("tar.gz", "tgz"):
                 raise CondaPackException("Invalid format for parcel %r" % format)
-            format = 'parcel'
+            format = "parcel"
 
         # Construct the parcel name outside of this function
-        if output is None and format != 'parcel':
+        if output is None and format != "parcel":
             output = os.extsep.join([self.name, format])
 
         return output, format
 
     def _parcel_output(self, parcel_root, parcel_name, parcel_version, parcel_distro):
-        parcel_root = parcel_root or '/opt/cloudera/parcels'
+        parcel_root = parcel_root or "/opt/cloudera/parcels"
         parcel_name = parcel_name or self.name
-        parcel_version = parcel_version or datetime.today().strftime(format='%Y.%m.%d')
-        parcel_distro = parcel_distro or 'el7'
-        if '-' in parcel_name:
-            raise CondaPackException("Parcel names may not have dashes: %s" % parcel_name)
-        if '-' in parcel_distro:
-            raise CondaPackException("Parcel distributions may not have dashes: %s" % parcel_distro)
-        arcroot = parcel_name + '-' + parcel_version
-        triple = arcroot + '-' + parcel_distro
+        parcel_version = parcel_version or datetime.today().strftime(format="%Y.%m.%d")
+        parcel_distro = parcel_distro or "el7"
+        if "-" in parcel_name:
+            raise CondaPackException(
+                "Parcel names may not have dashes: %s" % parcel_name
+            )
+        if "-" in parcel_distro:
+            raise CondaPackException(
+                "Parcel distributions may not have dashes: %s" % parcel_distro
+            )
+        arcroot = parcel_name + "-" + parcel_version
+        triple = arcroot + "-" + parcel_distro
         dest_prefix = os.path.join(parcel_root, arcroot)
         return dest_prefix, arcroot, triple
 
-    def pack(self, output=None, format='infer',
-             arcroot='', dest_prefix=None,
-             parcel_root=None, parcel_name=None,
-             parcel_version=None, parcel_distro=None,
-             verbose=False, force=False,
-             compress_level=4, n_threads=1,
-             zip_symlinks=False, zip_64=True):
+    def pack(
+        self,
+        output=None,
+        format="infer",
+        arcroot="",
+        dest_prefix=None,
+        parcel_root=None,
+        parcel_name=None,
+        parcel_version=None,
+        parcel_distro=None,
+        verbose=False,
+        force=False,
+        compress_level=4,
+        n_threads=1,
+        zip_symlinks=False,
+        zip_64=True,
+    ):
         """Package the conda environment into an archive file.
 
         Parameters
@@ -347,17 +371,20 @@ class CondaEnv:
         # The output path and archive format
         output, format = self._output_and_format(output, format)
 
-        if format == 'parcel':
+        if format == "parcel":
             if dest_prefix or arcroot:
-                raise CondaPackException("Cannot specify 'dest_prefix'/'arcroot' for parcels")
-            dest_prefix, arcroot, parcel = self._parcel_output(parcel_root, parcel_name,
-                                                               parcel_version, parcel_distro)
+                raise CondaPackException(
+                    "Cannot specify 'dest_prefix'/'arcroot' for parcels"
+                )
+            dest_prefix, arcroot, parcel = self._parcel_output(
+                parcel_root, parcel_name, parcel_version, parcel_distro
+            )
             if output is None:
-                output = parcel + '.parcel'
+                output = parcel + ".parcel"
         else:
             parcel = None
             # Ensure the prefix is a relative path
-            arcroot = arcroot.strip(os.path.sep) if arcroot else ''
+            arcroot = arcroot.strip(os.path.sep) if arcroot else ""
 
         if os.path.exists(output) and not force:
             raise CondaPackException("File %r already exists" % output)
@@ -368,13 +395,18 @@ class CondaEnv:
         fd, temp_path = tempfile.mkstemp()
 
         try:
-            with os.fdopen(fd, 'wb') as temp_file:
-                with archive(temp_file, temp_path, arcroot, format,
-                             compress_level=compress_level,
-                             zip_symlinks=zip_symlinks,
-                             zip_64=zip_64,
-                             n_threads=n_threads,
-                             verbose=verbose) as arc:
+            with os.fdopen(fd, "wb") as temp_file:
+                with archive(
+                    temp_file,
+                    temp_path,
+                    arcroot,
+                    format,
+                    compress_level=compress_level,
+                    zip_symlinks=zip_symlinks,
+                    zip_64=zip_64,
+                    n_threads=n_threads,
+                    verbose=verbose,
+                ) as arc:
                     packer = Packer(self.prefix, arc, dest_prefix, parcel)
 
                     with progressbar(self.files, enabled=verbose) as files:
@@ -425,14 +457,27 @@ class File:
         return f"File<{self.target!r}, is_conda={self.is_conda!r}>"
 
 
-def pack(name=None, prefix=None, output=None, format='infer',
-         arcroot='', dest_prefix=None,
-         parcel_root=None, parcel_name=None,
-         parcel_version=None, parcel_distro=None,
-         verbose=False, force=False,
-         compress_level=4, n_threads=1, zip_symlinks=False, zip_64=True,
-         filters=None, ignore_editable_packages=False,
-         ignore_missing_files=False):
+def pack(
+    name=None,
+    prefix=None,
+    output=None,
+    format="infer",
+    arcroot="",
+    dest_prefix=None,
+    parcel_root=None,
+    parcel_name=None,
+    parcel_version=None,
+    parcel_distro=None,
+    verbose=False,
+    force=False,
+    compress_level=4,
+    n_threads=1,
+    zip_symlinks=False,
+    zip_64=True,
+    filters=None,
+    ignore_editable_packages=False,
+    ignore_missing_files=False,
+):
     """Package an existing conda environment into an archive file.
 
     Parameters
@@ -521,9 +566,11 @@ def pack(name=None, prefix=None, output=None, format='infer',
                                    ignore_editable_packages=ignore_editable_packages,
                                    ignore_missing_files=ignore_missing_files)
     elif name:
-        env = CondaEnv.from_name(name,
-                                 ignore_editable_packages=ignore_editable_packages,
-                                 ignore_missing_files=ignore_missing_files)
+        env = CondaEnv.from_name(
+            name,
+            ignore_editable_packages=ignore_editable_packages,
+            ignore_missing_files=ignore_missing_files,
+        )
     else:
         env = CondaEnv.from_default(ignore_editable_packages=ignore_editable_packages,
                                     ignore_missing_files=ignore_missing_files)
@@ -537,13 +584,22 @@ def pack(name=None, prefix=None, output=None, format='infer',
             else:
                 raise CondaPackException("Unknown filter of kind %r" % kind)
 
-    return env.pack(output=output, format=format,
-                    arcroot=arcroot, dest_prefix=dest_prefix,
-                    parcel_root=parcel_root, parcel_name=parcel_name,
-                    parcel_version=parcel_version, parcel_distro=parcel_distro,
-                    verbose=verbose, force=force,
-                    compress_level=compress_level, n_threads=n_threads,
-                    zip_symlinks=zip_symlinks, zip_64=zip_64)
+    return env.pack(
+        output=output,
+        format=format,
+        arcroot=arcroot,
+        dest_prefix=dest_prefix,
+        parcel_root=parcel_root,
+        parcel_name=parcel_name,
+        parcel_version=parcel_version,
+        parcel_distro=parcel_distro,
+        verbose=verbose,
+        force=force,
+        compress_level=compress_level,
+        n_threads=n_threads,
+        zip_symlinks=zip_symlinks,
+        zip_64=zip_64,
+    )
 
 
 def find_site_packages(prefix):
@@ -655,9 +711,19 @@ def read_has_prefix(path):
 def load_files(prefix):
     from os.path import isfile, islink, join, relpath
 
-    ignore = {'pkgs', 'envs', 'conda-bld', '.conda_lock', 'users',
-              'conda-recipes', '.index', '.unionfs', '.nonadmin', 'python.app',
-              'Launcher.app'}
+    ignore = {
+        "pkgs",
+        "envs",
+        "conda-bld",
+        ".conda_lock",
+        "users",
+        "conda-recipes",
+        ".index",
+        ".unionfs",
+        ".nonadmin",
+        "python.app",
+        "Launcher.app",
+    }
 
     res = set()
 
@@ -766,7 +832,9 @@ _uncached_warning = """\
 
 Continuing with packing, treating these packages as if they were unmanaged
 files (e.g. from `pip`). This is usually fine, but may cause issues as
-prefixes aren't being handled as robustly.""".format(_uncached_error)
+prefixes aren't being handled as robustly.""".format(
+    _uncached_error
+)
 
 
 _missing_files_error = """
@@ -830,7 +898,15 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
             if new_missing:
                 # Collect packages missing files as we progress to provide a
                 # complete error message on failure.
-                missing_files[(info['name'], info['version'])] = new_missing
+                missing_files[(info["name"], info["version"])] = new_missing
+
+                if ignore_missing_files:
+                    # Filter out missing files
+                    new_files = [
+                        f
+                        for f in new_files
+                        if os.path.normcase(f.target) not in new_missing
+                    ]
 
             managed.update(targets)
             files.extend(new_files)
@@ -853,12 +929,12 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
     if missing_files and not ignore_missing_files:
         packages = []
         for key, value in missing_files.items():
-            packages.append('- %s %s:' % key)
+            packages.append("- %s %s:" % key)
             value = sorted(value)
             if len(value) > 4:
-                value = value[:3] + ['+ %d others' % (len(value) - 3)]
-            packages.extend('    ' + p for p in value)
-        packages = '\n'.join(packages)
+                value = value[:3] + ["+ %d others" % (len(value) - 3)]
+            packages.extend("    " + p for p in value)
+        packages = "\n".join(packages)
         raise CondaPackException(_missing_files_error.format(packages))
 
     # Add unmanaged files, preserving their original case
@@ -1107,7 +1183,7 @@ class Packer:
         self.archive.add_bytes(file.source, data, file.target)
 
     def _write_text_file(self, fpath, ftext, executable=False):
-        fil = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        fil = tempfile.NamedTemporaryFile(mode="w", delete=False)
         try:
             fil.write(ftext)
             fil.close()
@@ -1124,23 +1200,26 @@ class Packer:
 
         # Parcel mode
         if self.parcel:
-            src = os.path.join(_current_dir, 'scripts', 'posix', 'parcel')
-            dst = os.path.join('meta', 'conda_env.sh')
+            src = os.path.join(_current_dir, "scripts", "posix", "parcel")
+            dst = os.path.join("meta", "conda_env.sh")
             self.archive.add(src, dst)
-            parcel_name, parcel_vd = self.parcel.split('-', 1)
-            parcel_version, parcel_distro = parcel_vd.rsplit('-', 1)
-            parcel_packages = ',\n'.join(_parcel_package_template.format(**p)
-                                         for p in self.packages)
-            parcel_json = _parcel_json_template.format(parcel_name=parcel_name,
-                                                       parcel_version=parcel_version,
-                                                       parcel_packages=parcel_packages,
-                                                       parcel_distro=parcel_distro)
-            dst = os.path.join('meta', 'parcel.json')
+            parcel_name, parcel_vd = self.parcel.split("-", 1)
+            parcel_version, parcel_distro = parcel_vd.rsplit("-", 1)
+            parcel_packages = ",\n".join(
+                _parcel_package_template.format(**p) for p in self.packages
+            )
+            parcel_json = _parcel_json_template.format(
+                parcel_name=parcel_name,
+                parcel_version=parcel_version,
+                parcel_packages=parcel_packages,
+                parcel_distro=parcel_distro,
+            )
+            dst = os.path.join("meta", "parcel.json")
             self._write_text_file(dst, parcel_json, False)
             return
 
         # Add conda-pack's activate/deactivate scripts
-        has_conda = any(d['name'] == 'conda' for d in self.packages)
+        has_conda = any(d["name"] == "conda" for d in self.packages)
         if not (self.has_dest and has_conda):
             for source, target in _scripts:
                 self.archive.add(source, target)
@@ -1148,34 +1227,37 @@ class Packer:
         # No `conda-unpack` command if dest-prefix specified
         if not self.has_dest:
             if on_win:
-                shebang = '#!python.exe'
+                shebang = "#!python.exe"
                 # Don't just use os.path.join here: the backslash needs
                 # to be doubled up for the sake of the regex match
-                python_pattern = re.compile(BIN_DIR + r'\\python\d.\d')
+                python_pattern = re.compile(BIN_DIR + r"\\python\d.\d")
             else:
-                shebang = '#!/usr/bin/env python'
-                python_pattern = re.compile(BIN_DIR + '/python')
+                shebang = "#!/usr/bin/env python"
+                python_pattern = re.compile(BIN_DIR + "/python")
 
             # We skip prefix rewriting in python executables (if needed)
             # to avoid editing a running file.
-            prefix_records = ',\n'.join(repr(p) for p in self.prefixes
-                                        if not python_pattern.match(p[0]))
+            prefix_records = ",\n".join(
+                repr(p) for p in self.prefixes if not python_pattern.match(p[0])
+            )
 
-            with open(os.path.join(_current_dir, 'prefixes.py')) as fil:
+            with open(os.path.join(_current_dir, "prefixes.py")) as fil:
                 prefixes_py = fil.read()
 
-            script = _conda_unpack_template.format(shebang=shebang,
-                                                   prefix_records=prefix_records,
-                                                   prefixes_py=prefixes_py,
-                                                   version=__version__)
+            script = _conda_unpack_template.format(
+                shebang=shebang,
+                prefix_records=prefix_records,
+                prefixes_py=prefixes_py,
+                version=__version__,
+            )
 
-            script_name = 'conda-unpack-script.py' if on_win else 'conda-unpack'
+            script_name = "conda-unpack-script.py" if on_win else "conda-unpack"
             self._write_text_file(os.path.join(BIN_DIR, script_name), script, True)
 
             if on_win:
-                exe = 'cli-32.exe' if is_32bit else 'cli-64.exe'
-                cli_exe = pkg_resources.resource_filename('setuptools', exe)
-                self.archive.add(cli_exe, os.path.join(BIN_DIR, 'conda-unpack.exe'))
+                exe = "cli-32.exe" if is_32bit else "cli-64.exe"
+                cli_exe = pkg_resources.resource_filename("setuptools", exe)
+                self.archive.add(cli_exe, os.path.join(BIN_DIR, "conda-unpack.exe"))
 
         # mksquashfs has no (fast) iterative mode, only batch mode
         # therefore can do the actual squashing only once we've added all the files

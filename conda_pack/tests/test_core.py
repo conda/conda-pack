@@ -24,8 +24,8 @@ from .conftest import (
 )
 
 BIN_DIR_L = BIN_DIR.lower()
-SP_37 = 'Lib\\site-packages' if on_win else 'lib/python3.7/site-packages'
-SP_37_L = SP_37.lower().replace('\\', '/')
+SP_37 = "Lib\\site-packages" if on_win else "lib/python3.7/site-packages"
+SP_37_L = SP_37.lower().replace("\\", "/")
 
 
 if on_win:
@@ -88,7 +88,7 @@ def test_missing_package_cache():
     assert 'conda_pack_test_lib2' in msg
 
     with pytest.raises(CondaPackException):
-        CondaEnv.from_prefix(py310_path, on_missing_cache='raise')
+        CondaEnv.from_prefix(py310_path, on_missing_cache="raise")
 
 
 def test_errors_editable_packages():
@@ -120,8 +120,11 @@ def test_missing_files():
     assert f"{os.sep}toolz{os.sep}_signatures.py" in msg, msg
 
 
-def test_missing_files_ignored():
-    CondaEnv.from_prefix(py37_missing_files_path, ignore_missing_files=True)
+def test_missing_files_ignored(tmpdir):
+    out_path = os.path.join(str(tmpdir), "py37_missing.tar")
+    CondaEnv.from_prefix(py37_missing_files_path, ignore_missing_files=True).pack(
+        out_path
+    )
 
 
 def test_errors_conda_missing(bad_conda_exe):
@@ -132,7 +135,7 @@ def test_errors_conda_missing(bad_conda_exe):
 
 
 def test_env_properties(py37_env):
-    assert py37_env.name == 'py37'
+    assert py37_env.name == "py37"
     assert py37_env.prefix == py37_path
 
     # Env has a length
@@ -142,7 +145,7 @@ def test_env_properties(py37_env):
     assert len(list(py37_env)) == len(py37_env)
 
     # Smoketest repr
-    assert 'CondaEnv<' in repr(py37_env)
+    assert "CondaEnv<" in repr(py37_env)
 
 
 def test_load_environment_ignores(py37_env):
@@ -215,36 +218,36 @@ def test_include_exclude(py37_env):
 
 def test_output_and_format(py37_env):
     output, format = py37_env._output_and_format()
-    assert output == 'py37.tar.gz'
-    assert format == 'tar.gz'
+    assert output == "py37.tar.gz"
+    assert format == "tar.gz"
 
-    for format in ['tar.gz', 'tar.bz2', 'tar.xz', 'tar', 'zip', 'parcel']:
+    for format in ["tar.gz", "tar.bz2", "tar.xz", "tar", "zip", "parcel"]:
         output = os.extsep.join([py37_env.name, format])
 
         o, f = py37_env._output_and_format(format=format)
         assert f == format
-        assert o == (None if f == 'parcel' else output)
+        assert o == (None if f == "parcel" else output)
 
         o, f = py37_env._output_and_format(output=output)
         assert o == output
         assert f == format
 
-        o, f = py37_env._output_and_format(output='foo.zip', format=format)
+        o, f = py37_env._output_and_format(output="foo.zip", format=format)
         assert f == format
         assert o == 'foo.zip'
 
     with pytest.raises(CondaPackException):
-        py37_env._output_and_format(format='foo')
+        py37_env._output_and_format(format="foo")
 
     with pytest.raises(CondaPackException):
-        py37_env._output_and_format(output='foo.bar')
+        py37_env._output_and_format(output="foo.bar")
 
     with pytest.raises(CondaPackException):
-        py37_env._output_and_format(output='foo.parcel', format='zip')
+        py37_env._output_and_format(output="foo.parcel", format="zip")
 
 
 def test_roundtrip(tmpdir, py37_env):
-    out_path = os.path.join(str(tmpdir), 'py37.tar')
+    out_path = os.path.join(str(tmpdir), "py37.tar")
     py37_env.pack(out_path)
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
@@ -357,7 +360,7 @@ def test_pack_with_conda(tmpdir, fix_dest):
             # Ideally this test shouldn't need to special case `fix_dest`, and
             # use the same batch commands in both cases.
             commands = (
-                fr"@call {extract_path}\condabin\conda activate",
+                rf"@call {extract_path}\condabin\conda activate",
                 r"@conda info --json",
                 r"@conda deactivate",
             )
@@ -365,7 +368,7 @@ def test_pack_with_conda(tmpdir, fix_dest):
             commands = (
                 r"@set CONDA_PREFIX=",
                 r"@set CONDA_SHVL=",
-                fr"@call {extract_path}\Scripts\activate",
+                rf"@call {extract_path}\Scripts\activate",
                 r"@conda info --json",
                 r"@deactivate",
             )
@@ -407,13 +410,11 @@ def test_pack_with_conda(tmpdir, fix_dest):
 def test_pack_exceptions(py37_env):
     # Can't pass both prefix and name
     with pytest.raises(CondaPackException):
-        pack(prefix=py37_path, name='py37')
+        pack(prefix=py37_path, name="py37")
 
     # Unknown filter type
     with pytest.raises(CondaPackException):
-        pack(prefix=py37_path,
-             filters=[("exclude", "*.py"),
-                      ("foo", "*.pyc")])
+        pack(prefix=py37_path, filters=[("exclude", "*.py"), ("foo", "*.pyc")])
 
 
 def test_zip64(tmpdir):
@@ -440,8 +441,8 @@ def test_zip64(tmpdir):
 
 
 def test_force(tmpdir, py37_env):
-    already_exists = os.path.join(str(tmpdir), 'py37.tar')
-    with open(already_exists, 'wb'):
+    already_exists = os.path.join(str(tmpdir), "py37.tar")
+    with open(already_exists, "wb"):
         pass
 
     # file already exists
@@ -453,17 +454,17 @@ def test_force(tmpdir, py37_env):
 
 
 def test_pack(tmpdir, py37_env):
-    out_path = os.path.join(str(tmpdir), 'py37.tar')
+    out_path = os.path.join(str(tmpdir), "py37.tar")
 
     exclude1 = "*.py"
     exclude2 = "*.pyc"
-    include = os.path.join(SP_37, 'conda_pack_test_lib1', '*')
+    include = os.path.join(SP_37, "conda_pack_test_lib1", "*")
 
-    res = pack(prefix=py37_path,
-               output=out_path,
-               filters=[("exclude", exclude1),
-                        ("exclude", exclude2),
-                        ("include", include)])
+    res = pack(
+        prefix=py37_path,
+        output=out_path,
+        filters=[("exclude", exclude1), ("exclude", exclude2), ("include", include)],
+    )
 
     assert res == out_path
     assert os.path.exists(out_path)
@@ -472,10 +473,7 @@ def test_pack(tmpdir, py37_env):
     with tarfile.open(out_path) as fil:
         paths = fil.getnames()
 
-    filtered = (py37_env
-                .exclude(exclude1)
-                .exclude(exclude2)
-                .include(include))
+    filtered = py37_env.exclude(exclude1).exclude(exclude2).include(include)
 
     # Files line up with filtering, with extra conda-unpack command
     sol = {os.path.normcase(f.target) for f in filtered.files}
@@ -507,7 +505,7 @@ def _test_dest_prefix(src_prefix, dest_prefix, arcroot, out_path, format):
     # all paths, including shebangs, are rewritten using the prefix
     with tarfile.open(out_path) as fil:
         for path in fil.getnames():
-            assert os.path.basename(path) != 'conda-unpack', path
+            assert os.path.basename(path) != "conda-unpack", path
             if arcroot:
                 assert path.startswith(arcroot), path
         for test_file in test_files:
@@ -522,30 +520,28 @@ def _test_dest_prefix(src_prefix, dest_prefix, arcroot, out_path, format):
 
 
 def test_dest_prefix(tmpdir, py37_env):
-    out_path = os.path.join(str(tmpdir), 'py37.tar')
-    dest = r'c:\foo\bar\baz\biz' if on_win else '/foo/bar/baz/biz'
-    res = pack(prefix=py37_path,
-               dest_prefix=dest,
-               output=out_path)
+    out_path = os.path.join(str(tmpdir), "py37.tar")
+    dest = r"c:\foo\bar\baz\biz" if on_win else "/foo/bar/baz/biz"
+    res = pack(prefix=py37_path, dest_prefix=dest, output=out_path)
 
     assert res == out_path
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
 
-    _test_dest_prefix(py37_env.prefix, dest, '', out_path, 'r')
+    _test_dest_prefix(py37_env.prefix, dest, "", out_path, "r")
 
 
 def test_parcel(tmpdir, py37_env):
     if on_win:
         pytest.skip("Not parcel tests on Windows")
-    arcroot = 'py37-1234.56'
+    arcroot = "py37-1234.56"
 
-    out_path = os.path.join(str(tmpdir), arcroot + '-el7.parcel')
+    out_path = os.path.join(str(tmpdir), arcroot + "-el7.parcel")
 
     pdir = os.getcwd()
     try:
         os.chdir(str(tmpdir))
-        res = pack(prefix=py37_path, format='parcel', parcel_version='1234.56')
+        res = pack(prefix=py37_path, format="parcel", parcel_version="1234.56")
     finally:
         os.chdir(pdir)
 
@@ -553,7 +549,7 @@ def test_parcel(tmpdir, py37_env):
     assert os.path.exists(out_path)
 
     # Verify that only the parcel files were added
-    with tarfile.open(out_path, 'r:gz') as fil:
+    with tarfile.open(out_path, "r:gz") as fil:
         paths = fil.getnames()
     sol = {os.path.join(arcroot, f.target) for f in py37_env.files}
     diff = set(paths).difference(sol)
@@ -562,15 +558,17 @@ def test_parcel(tmpdir, py37_env):
 
     # Verify correct metadata in parcel.json
     with tarfile.open(out_path) as fil:
-        fpath = os.path.join(arcroot, 'meta', 'parcel.json')
+        fpath = os.path.join(arcroot, "meta", "parcel.json")
         data = fil.extractfile(fpath).read()
     data = json.loads(data)
-    assert data['name'] == 'py37' and data['components'][0]['name'] == 'py37'
-    assert data['version'] == '1234.56' and data['components'][0]['version'] == '1234.56'
+    assert data["name"] == "py37" and data["components"][0]["name"] == "py37"
+    assert (
+        data["version"] == "1234.56" and data["components"][0]["version"] == "1234.56"
+    )
 
     # Verify the correct dest_prefix substitution
-    dest = os.path.join('/opt/cloudera/parcels', arcroot)
-    _test_dest_prefix(py37_env.prefix, dest, arcroot, out_path, 'r:gz')
+    dest = os.path.join("/opt/cloudera/parcels", arcroot)
+    _test_dest_prefix(py37_env.prefix, dest, arcroot, out_path, "r:gz")
 
 
 def test_activate(tmpdir):
