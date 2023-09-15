@@ -658,7 +658,7 @@ def name_to_prefix(name=None):
     try:
         conda_exe = os.environ.get("CONDA_EXE", "conda")
         info = subprocess.check_output(
-            f"{conda_exe} info --json", shell=True, stderr=subprocess.PIPE
+            f"{conda_exe} env list --json", shell=True, stderr=subprocess.PIPE
         ).decode(default_encoding)
     except subprocess.CalledProcessError as exc:
         kind = ('current environment' if name is None
