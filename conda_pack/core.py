@@ -285,6 +285,18 @@ class CondaEnv:
         dest_prefix = os.path.join(parcel_root, arcroot)
         return dest_prefix, arcroot, triple
 
+    def _check_output_dir(self, output, force):
+        directory = os.path.dirname(output)
+        if (
+            not directory or  # when passed just a filename, `directory` will be an empty string
+            os.path.exists(directory)
+        ):
+            return
+        if force:
+            os.makedirs(directory)
+            return
+        raise CondaPackException(f"The target output diretory {directory} does not exist")
+
     def pack(
         self,
         output=None,
@@ -385,6 +397,8 @@ class CondaEnv:
             parcel = None
             # Ensure the prefix is a relative path
             arcroot = arcroot.strip(os.path.sep) if arcroot else ""
+
+        self._check_output_dir(output, force)
 
         if os.path.exists(output) and not force:
             raise CondaPackException("File %r already exists" % output)
