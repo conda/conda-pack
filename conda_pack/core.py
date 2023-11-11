@@ -352,8 +352,8 @@ class CondaEnv:
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         force : bool, optional
-            Whether to overwrite any existing archive at the output path.
-            Default is False.
+            Whether to overwrite any existing archive at the output path if present, or
+            create the output directory structure if it's missing. Default is False.
         compress_level : int, optional
             The compression level to use, from 0 to 9. Higher numbers decrease
             output file size at the expense of compression time. Ignored for
@@ -532,8 +532,8 @@ def pack(
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     force : bool, optional
-        Whether to overwrite any existing archive at the output path. Default
-        is False.
+        Whether to overwrite any existing archive at the output path if present, or
+        create the output directory structure if it's missing. Default is False.
     compress_level : int, optional
         The compression level to use, from 0 to 9. Higher numbers decrease
         output file size at the expense of compression time. Ignored for
