@@ -117,7 +117,8 @@ def build_parser():
                         help="Re-add excluded files matching this pattern")
     parser.add_argument("--force", "-f",
                         action="store_true",
-                        help="Overwrite any existing archive at the output path.")
+                        help=("Overwrite any existing archive at the output path, "
+                              "or create the output directory structure if it's missing."))
     parser.add_argument("--quiet", "-q",
                         action="store_true",
                         help="Do not report progress")

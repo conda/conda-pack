@@ -285,6 +285,18 @@ class CondaEnv:
         dest_prefix = os.path.join(parcel_root, arcroot)
         return dest_prefix, arcroot, triple
 
+    def _check_output_location(self, output, force):
+        if os.path.exists(output) and not force:
+            raise CondaPackException("File %r already exists" % output)
+
+        # `dirname` returns an empty string if the provided `output` is just a filename.
+        directory = os.path.dirname(output) or "."
+        if force:
+            os.makedirs(directory, exist_ok=True)
+
+        if not os.path.exists(directory):
+            raise CondaPackException(f"The target output directory {directory} does not exist")
+
     def pack(
         self,
         output=None,
@@ -340,8 +352,8 @@ class CondaEnv:
         verbose : bool, optional
             If True, progress is reported to stdout. Default is False.
         force : bool, optional
-            Whether to overwrite any existing archive at the output path.
-            Default is False.
+            Whether to overwrite any existing archive at the output path if present, or
+            create the output directory structure if it's missing. Default is False.
         compress_level : int, optional
             The compression level to use, from 0 to 9. Higher numbers decrease
             output file size at the expense of compression time. Ignored for
@@ -386,8 +398,7 @@ class CondaEnv:
             # Ensure the prefix is a relative path
             arcroot = arcroot.strip(os.path.sep) if arcroot else ""
 
-        if os.path.exists(output) and not force:
-            raise CondaPackException("File %r already exists" % output)
+        self._check_output_location(output, force)
 
         if verbose:
             print(f"Packing environment at {self.prefix!r} to {output!r}")
@@ -518,8 +529,8 @@ def pack(
     verbose : bool, optional
         If True, progress is reported to stdout. Default is False.
     force : bool, optional
-        Whether to overwrite any existing archive at the output path. Default
-        is False.
+        Whether to overwrite any existing archive at the output path if present, or
+        create the output directory structure if it's missing. Default is False.
     compress_level : int, optional
         The compression level to use, from 0 to 9. Higher numbers decrease
         output file size at the expense of compression time. Ignored for

@@ -102,6 +102,31 @@ def test_ignore_errors_editable_packages():
     CondaEnv.from_prefix(py37_editable_path, ignore_editable_packages=True)
 
 
+def test_errors_when_target_directory_not_exists_and_not_force(tmpdir, py37_env):
+
+    target_directory = os.path.join(tmpdir, "not_a_real_directory/")
+    assert not os.path.exists(target_directory)
+
+    target_file = os.path.join(target_directory, "env.tar.gz")
+
+    with pytest.raises(CondaPackException) as exc:
+        py37_env.pack(output=target_file, force=False)
+
+    assert "not_a_real_directory" in str(exc.value)
+
+
+def test_creates_directories_if_missing_and_force(tmpdir, py37_env):
+
+    target_directory = os.path.join(tmpdir, "not_a_real_directory/")
+    assert not os.path.exists(target_directory)
+
+    target_file = os.path.join(target_directory, "env.tar.gz")
+
+    py37_env.pack(output=target_file, force=True)
+
+    assert os.path.exists(target_directory)
+
+
 def test_errors_pip_overwrites():
     with pytest.raises(CondaPackException) as exc:
         CondaEnv.from_prefix(py37_broken_path)
