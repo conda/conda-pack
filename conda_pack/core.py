@@ -295,7 +295,7 @@ class CondaEnv:
         if force:
             os.makedirs(directory)
             return
-        raise CondaPackException(f"The target output diretory {directory} does not exist")
+        raise CondaPackException(f"The target output directory {directory} does not exist")
 
     def pack(
         self,
