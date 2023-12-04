@@ -65,7 +65,7 @@ def build_parser():
                         "default value is 'el7'. This value cannot have any hyphens.")
     parser.add_argument("--format",
                         choices=['infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2',
-                                 'tbz2', 'tar.xz', 'txz', 'tar', 'parcel', 'squashfs'],
+                                 'tbz2', 'tar.xz', 'txz', 'tar.zst', 'tzst', 'tar', 'parcel', 'squashfs'],
                         default='infer',
                         help=("The archival format to use. By default this is "
                               "inferred by the output file extension."))
@@ -74,6 +74,7 @@ def build_parser():
                         type=int,
                         default=4,
                         help=("The compression level to use, from 0 to 9. "
+			      "If ZSTD is used, compression is supported up to 19. "
                               "Higher numbers decrease output file size at "
                               "the expense of compression time. Default is 4."))
     parser.add_argument("--n-threads", "-j",

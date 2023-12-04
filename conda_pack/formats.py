@@ -63,8 +63,20 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
         else:
             mode = 'w'
             close_file = True
-            fileobj = ParallelXZFileWriter(fileobj, compresslevel=compress_level,
-                                           n_threads=n_threads)
+            fileobj = ParallelZSTDFileWriter(
+                fileobj, compresslevel=compress_level, n_threads=n_threads
+            )
+
+    elif format in ('tar.zst', 'tzst'):
+        if n_threads == 1:
+            mode = "w:zst"
+            close_file = False
+        else:
+            mode = 'w'
+            close_file = True
+            fileobj = ParallelBZ2FileWriter(fileobj, compresslevel=compress_level,
+                                            n_threads=n_threads)
+
     elif format == "squashfs":
         return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose,
                                compress_level=compress_level)
@@ -223,6 +235,29 @@ class ParallelXZFileWriter(ParallelFileWriter):
     def _new_compressor(self):
         import lzma
         return lzma.LZMACompressor(preset=self.compresslevel)
+
+    def _per_buffer_op(self, buffer):
+        pass
+
+    def _write_header(self):
+        pass
+
+    def _write_footer(self):
+        pass
+
+    def _flush_compressor(self, compressor):
+        return compressor.flush()
+
+
+class ParallelZSTDFileWriter(ParallelFileWriter):
+    def _init_state(self):
+        # From the `zstd_manual`: it must be <= ZSTD_getBlockSize() <=
+        # ZSTD_BLOCKSIZE_MAX == 128 KB
+        self._block_size = self.compresslevel * 128 * 2**10
+
+    def _new_compressor(self):
+        import zstandard as zstd
+        return zstd.ZstdCompressor(compression_level=self.compresslevel)
 
     def _per_buffer_op(self, buffer):
         pass

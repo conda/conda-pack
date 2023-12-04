@@ -135,11 +135,19 @@ def has_tar_cli():
         return False
 
 
-@pytest.mark.parametrize('format, zip_symlinks', [
-    ('zip', True), ('zip', False),
-    ('tar.gz', False), ('tar.bz2', False), ('tar.xz', False), ('tar', False),
-    ('squashfs', False)
-])
+@pytest.mark.parametrize(
+    "format, zip_symlinks",
+    [
+        ("zip", True),
+        ("zip", False),
+        ("tar.gz", False),
+        ("tar.bz2", False),
+        ("tar.xz", False),
+        ("tar.zst", False),
+        ("tar", False),
+        ("squashfs", False),
+    ],
+)
 def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     if format == 'zip':
         if zip_symlinks and (on_win or not has_infozip_cli()):
@@ -218,7 +226,7 @@ def test_n_threads():
             _parse_n_threads(n)
 
 
-@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2', 'tar.xz'])
+@pytest.mark.parametrize("format", ["tar.gz", "tar.bz2", "tar.xz", "tar.zst"])
 def test_format_parallel(tmpdir, format, root_and_paths):
     # Python 2's bzip dpesn't support reading multipart files :(
     if format == 'tar.bz2' and PY2:
