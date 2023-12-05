@@ -1,0 +1,19 @@
+### Enhancements
+
+* Add support for zstd compression
+
+### Bug fixes
+
+* none
+
+### Deprecations
+
+* none
+
+### Docs
+
+* CLI args are updated for the new compression format and compression levels
+
+### Other
+
+* none
