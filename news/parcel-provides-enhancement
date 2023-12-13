@@ -1,4 +1,4 @@
 ### Enhancements
 
-* The provides tag in the parcel.json file was hardcoded to spark-plugin. I have changed this to use the parcel name in case a Cloudera Manager CSD file is being developed to be used in conjunction whtih the generated parcel.
+* The provides tag in the parcel.json file was hardcoded to spark-plugin. This has been changed to use the parcel name in case a Cloudera Manager CSD file is being developed to be used in conjunction whtih the generated parcel.
 
