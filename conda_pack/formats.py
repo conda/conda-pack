@@ -439,8 +439,12 @@ class SquashFSArchive(ArchiveBase):
         self._ensure_parent(target_abspath)
 
         # hardlink instead of copy is faster, but it doesn't work across devices
-        same_device = os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev
-        if same_device:
+        source_stat = os.lstat(source)
+        target_stat = os.lstat(os.path.dirname(target_abspath))
+        same_device = source_stat.st_dev == target_stat.st_dev
+        same_user = source_stat.st_uid == target_stat.st_uid
+
+        if same_device and same_user:
             copy_func = partial(os.link, follow_symlinks=False)
         else:
             copy_func = partial(shutil.copy2, follow_symlinks=False)
