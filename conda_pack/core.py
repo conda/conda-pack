@@ -930,13 +930,17 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
                               file_mode=None))
 
     # Add remaining conda metadata files
-    if os.path.exists(os.path.join(conda_meta, 'history')):
-        managed.add(os.path.join('conda-meta', 'history'))
-        files.append(File(os.path.join(conda_meta, 'history'),
-                        os.path.join('conda-meta', 'history'),
-                        is_conda=True,
-                        prefix_placeholder=None,
-                        file_mode=None))
+    if os.path.exists(os.path.join(conda_meta, "history")):
+        managed.add(os.path.join("conda-meta", "history"))
+        files.append(
+            File(
+                os.path.join(conda_meta, "history"),
+                os.path.join("conda-meta", "history"),
+                is_conda=True,
+                prefix_placeholder=None,
+                file_mode=None,
+            )
+        )
 
     if missing_files and not ignore_missing_files:
         packages = []
