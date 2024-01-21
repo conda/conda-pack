@@ -890,7 +890,7 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
             with open(os.path.join(conda_meta, path)) as fil:
                 info = json.load(fil)
 
-            pkg = info['link']['source']
+            pkg = info['link']['source'] if info['link'] else ""
 
             if not os.path.exists(pkg):
                 # Package cache is cleared, set file_mode='unknown' to properly
@@ -930,12 +930,17 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
                               file_mode=None))
 
     # Add remaining conda metadata files
-    managed.add(os.path.join('conda-meta', 'history'))
-    files.append(File(os.path.join(conda_meta, 'history'),
-                      os.path.join('conda-meta', 'history'),
-                      is_conda=True,
-                      prefix_placeholder=None,
-                      file_mode=None))
+    if os.path.exists(os.path.join(conda_meta, "history")):
+        managed.add(os.path.join("conda-meta", "history"))
+        files.append(
+            File(
+                os.path.join(conda_meta, "history"),
+                os.path.join("conda-meta", "history"),
+                is_conda=True,
+                prefix_placeholder=None,
+                file_mode=None,
+            )
+        )
 
     if missing_files and not ignore_missing_files:
         packages = []
@@ -1019,7 +1024,7 @@ def rewrite_conda_meta(source):
         if field in data:
             data[field] = ""
 
-    if "link" in data and "source" in data["link"]:
+    if "link" in data and data["link"] and "source" in data["link"]:
         data["link"]["source"] = ""
 
     out = json.dumps(data, indent=True, sort_keys=True)
