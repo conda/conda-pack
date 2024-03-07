@@ -1051,7 +1051,7 @@ _parcel_json_template = """\
 {parcel_packages}
   ],
   "provides": [
-    "spark-plugin"
+    "{parcel_name}"
   ],
   "schema_version": 1,
   "scripts": {{
