@@ -30,7 +30,7 @@ option and four parcel-specific options:
   This is generally expected to follow a standard `semver <https://semver.org/>`_
   format. If not supplied, conda-pack will autogenerate one from today's date in
   ``YYYY.MM.DD`` format.
-- ``--parcel-distribution``: the target distribution for the parcel.
+- ``--parcel-distro``: the target distribution for the parcel.
 
   This is an abbreviation describing the specific operating system on which
   your Cloudera clsuter runs. Its default value is ``el7``, corresponding
