@@ -241,6 +241,8 @@ class CondaEnv:
                 format = "tar"
             elif output.endswith(".squashfs"):
                 format = "squashfs"
+            elif output.endswith('.no-archive'):
+                format = 'no-archive'
             else:
                 raise CondaPackException("Unknown file extension %r" % output)
         elif format not in {
@@ -254,6 +256,7 @@ class CondaEnv:
             "tar",
             "parcel",
             "squashfs",
+            "no-archive",
         }:
             raise CondaPackException("Unknown format %r" % format)
         elif output is not None and output.endswith(".parcel"):
@@ -323,7 +326,8 @@ class CondaEnv:
             to the basename of the ``dest_prefix`` value, if supplied; otherwise to
             the basename of the environment. The suffix will be determined by the
             output format (e.g. ``my_env.tar.gz``).
-        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs'}
+        format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel', 'squashfs',
+            'no-archive'}
             The archival format to use. By default this is inferred from the
             output file extension, and defaults to ``tar.gz`` if this is not supplied.
         arcroot : str, optional
@@ -408,6 +412,7 @@ class CondaEnv:
         try:
             with os.fdopen(fd, "wb") as temp_file:
                 with archive(
+                    output,
                     temp_file,
                     temp_path,
                     arcroot,
@@ -501,7 +506,8 @@ def pack(
     output : str, optional
         The path of the output file. Defaults to the environment name with a
         suffix determined by the format; e.g. ``my_env.tar.gz``.
-    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel'}, optional
+    format : {'infer', 'zip', 'tar.gz', 'tgz', 'tar.bz2', 'tbz2', 'tar', 'parcel',
+        'no-archive'}, optional
         The archival format to use. By default, this is inferred from the output
         file extension, and defaults to ``tar.gz`` if ``output`` is not supplied.
     arcroot : str, optional
