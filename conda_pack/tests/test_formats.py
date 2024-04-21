@@ -194,7 +194,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         else:
             cmd = ["squashfuse", packed_env_path, spill_dir]
             subprocess.check_output(cmd)
-    else:
+    elif format != "no-archive":
         with tarfile.open(packed_env_path) as out:
             out.extractall(spill_dir)
 
