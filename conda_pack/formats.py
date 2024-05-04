@@ -28,8 +28,8 @@ def _parse_n_threads(n_threads=1):
     return n_threads
 
 
-def archive(output, fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
-            zip_64=True, n_threads=1, verbose=False):
+def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
+            zip_64=True, n_threads=1, verbose=False, output=None):
 
     n_threads = _parse_n_threads(n_threads)
 

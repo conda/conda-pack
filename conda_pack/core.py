@@ -412,7 +412,6 @@ class CondaEnv:
         try:
             with os.fdopen(fd, "wb") as temp_file:
                 with archive(
-                    output,
                     temp_file,
                     temp_path,
                     arcroot,
@@ -422,6 +421,7 @@ class CondaEnv:
                     zip_64=zip_64,
                     n_threads=n_threads,
                     verbose=verbose,
+                    output=output,
                 ) as arc:
                     packer = Packer(self.prefix, arc, dest_prefix, parcel)
 
