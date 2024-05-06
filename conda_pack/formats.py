@@ -29,7 +29,7 @@ def _parse_n_threads(n_threads=1):
 
 
 def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
-            zip_64=True, n_threads=1, verbose=False):
+            zip_64=True, n_threads=1, verbose=False, output=None):
 
     n_threads = _parse_n_threads(n_threads)
 
@@ -68,6 +68,8 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
     elif format == "squashfs":
         return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose,
                                compress_level=compress_level)
+    elif format == "no-archive":
+        return NoArchive(output, arcroot)
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
@@ -463,6 +465,50 @@ class SquashFSArchive(ArchiveBase):
         else:
             # files & links to directories we copy directly
             copy_func(source, target_abspath)
+
+    def _add_bytes(self, source, sourcebytes, target):
+        target_abspath = self._absolute_path(target)
+        self._ensure_parent(target_abspath)
+        with open(target_abspath, "wb") as f:
+            shutil.copystat(source, target_abspath)
+            f.write(sourcebytes)
+
+
+# Copies files to the output directory
+class NoArchive(ArchiveBase):
+    def __init__(self, output, arcroot):
+        self.output = output
+        self.arcroot = arcroot
+        self.copy_func = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self
+
+    def _absolute_path(self, path):
+        return os.path.normpath(os.path.join(self.output, path))
+
+    def _ensure_parent(self, path):
+        dir_path = os.path.dirname(path)
+        os.makedirs(dir_path, exist_ok=True)
+
+    def _add(self, source, target):
+        target_abspath = self._absolute_path(target)
+        self._ensure_parent(target_abspath)
+
+        # hardlink instead of copy is faster, but it doesn't work across devices
+        if self.copy_func is None:
+            if os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev:
+                self.copy_func = partial(os.link, follow_symlinks=False)
+            else:
+                self.copy_func = partial(shutil.copy2, follow_symlinks=False)
+
+        if os.path.isfile(source) or os.path.islink(source):
+            self.copy_func(source, target_abspath)
+        else:
+            os.mkdir(target_abspath)
 
     def _add_bytes(self, source, sourcebytes, target):
         target_abspath = self._absolute_path(target)

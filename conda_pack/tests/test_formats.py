@@ -138,7 +138,7 @@ def has_tar_cli():
 @pytest.mark.parametrize('format, zip_symlinks', [
     ('zip', True), ('zip', False),
     ('tar.gz', False), ('tar.bz2', False), ('tar.xz', False), ('tar', False),
-    ('squashfs', False)
+    ('squashfs', False), ('no-archive', False),
 ])
 def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     if format == 'zip':
@@ -164,7 +164,8 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     os.mkdir(spill_dir)
 
     with open(packed_env_path, mode='wb') as fil:
-        with archive(fil, packed_env_path, '', format, zip_symlinks=zip_symlinks) as arc:
+        with archive(fil, packed_env_path, '', format, zip_symlinks=zip_symlinks,
+                     output=spill_dir) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
             arc.add_bytes(join(root, "file"),
@@ -194,7 +195,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         else:
             cmd = ["squashfuse", packed_env_path, spill_dir]
             subprocess.check_output(cmd)
-    else:
+    elif format != "no-archive":
         with tarfile.open(packed_env_path) as out:
             out.extractall(spill_dir)
 
@@ -236,7 +237,7 @@ def test_format_parallel(tmpdir, format, root_and_paths):
 
     baseline = threading.active_count()
     with open(out_path, mode='wb') as fil:
-        with archive(fil, out_path, '', format, n_threads=2) as arc:
+        with archive(fil, out_path, '', format, n_threads=2, output=out_dir) as arc:
             for rel in paths:
                 arc.add(join(root, rel), rel)
     timeout = 5
