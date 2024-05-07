@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Install build dependencies
@@ -32,7 +32,7 @@ jobs:
     - name: Reduce the size of the build artifact
       run: rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
     - name: Upload the build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
@@ -47,7 +47,7 @@ jobs:
         os: [ubuntu-latest,macos-12,windows-latest]
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
@@ -59,13 +59,13 @@ jobs:
     # have already built the testbed. Any small file will do
     - id: cache-key
       name: Retrieve cache key
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: LICENSE.txt
         key: key-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Retrieve or create the testbed cache
       if: steps.cache-key.outputs.cache-hit != 'true'
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
@@ -93,7 +93,7 @@ jobs:
             squashfs_deps: ""
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
@@ -102,12 +102,12 @@ jobs:
           echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
           echo "CONDA_ROOT: $CONDA_ROOT"
     - name: Retrieve the testbed cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Download the build artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: package-${{ github.sha }}
         path: conda-bld
@@ -121,18 +121,20 @@ jobs:
         conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
         conda activate cptest
         pytest -v -ss --cov=conda_pack --cov-branch --cov-report=xml conda_pack/tests
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
   upload:
     needs: tests
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Download the build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: package-${{ github.sha }}
         path: conda-bld
@@ -146,7 +148,7 @@ jobs:
         make html
     - name: Deploy the documentation
       if: startsWith(github.ref, 'refs/tags/')
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs/build/html
