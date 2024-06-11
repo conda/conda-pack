@@ -509,7 +509,7 @@ def test_pack(tmpdir, py37_env):
         fnames = ('conda-unpack.exe', 'conda-unpack-script.py',
                   'activate.bat', 'deactivate.bat')
     else:
-        fnames = ('conda-unpack', 'activate', 'deactivate')
+        fnames = ('conda-unpack', 'activate', 'deactivate', 'activate.fish')
     assert diff == {os.path.join(BIN_DIR_L, f) for f in fnames}
 
 
@@ -622,6 +622,7 @@ def test_activate(tmpdir):
         assert out == 'CONDAPACK_ACTIVATED=1\r\nCONDAPACK_ACTIVATED=\r\nDone\r\n'
 
     else:
+        # bash
         command = (". {path}/bin/activate && "
                    "test $CONDAPACK_ACTIVATED -eq 1 && "
                    ". {path}/bin/deactivate && "
@@ -632,3 +633,14 @@ def test_activate(tmpdir):
                                       stderr=subprocess.STDOUT).decode()
 
         assert out == 'Done\n'
+
+        # fish
+        command = (". {path}/bin/activate.fish && "
+                   "python -c 'import sys; print(sys.executable)' && "
+                   "deactivate && "
+                   "echo 'Done'").format(path=extract_path)
+
+        out = subprocess.check_output(['/usr/bin/env', 'fish', '-c', command],
+                                      stderr=subprocess.STDOUT).decode()
+        assert "test_activate0" in out
+        assert "Done\n" in out
