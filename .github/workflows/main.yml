@@ -86,11 +86,11 @@ jobs:
         include:
           # include the appropriate dependencies for testing SquashFS on each OS
           - os: macos-12
-            squashfs_deps: "conda-forge::squashfs-tools"
+            conda_deps: "conda-forge::squashfs-tools conda-forge::fish"
           - os: ubuntu-latest
-            squashfs_deps: "conda-forge::squashfs-tools conda-forge::squashfuse"
+            conda_deps: "conda-forge::squashfs-tools conda-forge::squashfuse conda-forge::fish"
           - os: windows-latest
-            squashfs_deps: ""
+            conda_deps: ""
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v4
@@ -118,7 +118,7 @@ jobs:
         source $CONDA_ROOT/etc/profile.d/conda.sh
         conda info -a
         mv conda-bld $CONDA_ROOT/conda-bld
-        conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov defaults::python=${{ matrix.pyver }} ${{ matrix.squashfs_deps }}
+        conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov defaults::python=${{ matrix.pyver }} ${{ matrix.conda_deps }}
         conda activate cptest
         pytest -v -ss --cov=conda_pack --cov-branch --cov-report=xml conda_pack/tests
     - uses: codecov/codecov-action@v4

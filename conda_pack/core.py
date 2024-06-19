@@ -42,7 +42,9 @@ else:
     _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
                  os.path.join(BIN_DIR, 'activate')),
                 (os.path.join(_current_dir, 'scripts', 'posix', 'deactivate'),
-                 os.path.join(BIN_DIR, 'deactivate'))]
+                 os.path.join(BIN_DIR, 'deactivate')),
+                (os.path.join(_current_dir, 'scripts', 'posix', 'activate.fish'),
+                 os.path.join(BIN_DIR, 'activate.fish'))]
 
 
 class _Context:
