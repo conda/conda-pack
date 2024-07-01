@@ -506,6 +506,10 @@ class NoArchive(ArchiveBase):
                 self.copy_func = partial(shutil.copy2, follow_symlinks=False)
 
         if os.path.isfile(source) or os.path.islink(source):
+            if os.path.islink(target_abspath) or os.path.isfile(target_abspath):
+                os.remove(target_abspath)
+            elif os.path.isdir(target_abspath):
+                shutil.rmtree(target_abspath)
             self.copy_func(source, target_abspath)
         else:
             os.mkdir(target_abspath)
