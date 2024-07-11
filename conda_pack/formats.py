@@ -1,4 +1,5 @@
 import errno
+import gzip
 import os
 import shutil
 import stat
@@ -28,8 +29,19 @@ def _parse_n_threads(n_threads=1):
     return n_threads
 
 
-def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False,
-            zip_64=True, n_threads=1, verbose=False, output=None):
+def archive(
+    fileobj,
+    path,
+    arcroot,
+    format,
+    compress_level=4,
+    zip_symlinks=False,
+    zip_64=True,
+    n_threads=1,
+    verbose=False,
+    output=None,
+    mtime=None,
+):
 
     n_threads = _parse_n_threads(n_threads)
 
@@ -40,14 +52,18 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
     # Tar archives
     if format in ('tar.gz', 'tgz', 'parcel'):
         if n_threads == 1:
-            mode = 'w:gz'
-            close_file = False
+            mode = "w"
+            close_file = True
+            fileobj = gzip.GzipFile(
+                fileobj=fileobj, mode="w", compresslevel=compress_level, mtime=mtime
+            )
         else:
             mode = 'w'
             close_file = True
-            fileobj = ParallelGzipFileWriter(fileobj, compresslevel=compress_level,
-                                             n_threads=n_threads)
-    elif format in ('tar.bz2', 'tbz2'):
+            fileobj = ParallelGzipFileWriter(
+                fileobj, compresslevel=compress_level, n_threads=n_threads, mtime=mtime
+            )
+    elif format in ("tar.bz2", "tbz2"):
         if n_threads == 1:
             mode = 'w:bz2'
             close_file = False
@@ -73,15 +89,22 @@ def archive(fileobj, path, arcroot, format, compress_level=4, zip_symlinks=False
     else:  # format == 'tar'
         mode = 'w'
         close_file = False
-    return TarArchive(fileobj, arcroot, close_file=close_file,
-                      mode=mode, compresslevel=compress_level)
+    return TarArchive(
+        fileobj,
+        arcroot,
+        close_file=close_file,
+        mode=mode,
+        compresslevel=compress_level,
+        mtime=mtime,
+    )
 
 
 class ParallelFileWriter:
-    def __init__(self, fileobj, compresslevel=9, n_threads=1):
+    def __init__(self, fileobj, compresslevel=9, n_threads=1, mtime=None):
         self.fileobj = fileobj
         self.compresslevel = compresslevel
         self.n_threads = n_threads
+        self.mtime = mtime
 
         # Initialize file state
         self.size = 0
@@ -182,7 +205,10 @@ class ParallelGzipFileWriter(ParallelFileWriter):
     def _write_header(self):
         self.fileobj.write(b'\037\213\010')
         self.fileobj.write(b'\x00')
-        self._write32u(int(time.time()))
+        if self.mtime is not None:
+            self._write32u(int(self.mtime))
+        else:
+            self._write32u(int(time.time()))
         self.fileobj.write(b'\002\377')
 
     def _write_footer(self):
@@ -250,13 +276,15 @@ class ArchiveBase:
 
 
 class TarArchive(ArchiveBase):
-    def __init__(self, fileobj, arcroot, close_file=False,
-                 mode='w', compresslevel=4):
+    def __init__(
+        self, fileobj, arcroot, close_file=False, mode="w", compresslevel=4, mtime=None
+    ):
         self.fileobj = fileobj
         self.arcroot = arcroot
         self.close_file = close_file
         self.mode = mode
         self.compresslevel = compresslevel
+        self.mtime = mtime
 
     def __enter__(self):
         kwargs = {'compresslevel': self.compresslevel} if self.mode not in {'w', 'w:xz'} else {}
@@ -274,7 +302,14 @@ class TarArchive(ArchiveBase):
             self.fileobj.close()
 
     def _add(self, source, target):
-        self.archive.add(source, target, recursive=False)
+        def filter_mtime(tarinfo):
+            tarinfo.mtime = self.mtime
+            return tarinfo
+
+        if target == "bin/conda-unpack":
+            self.archive.add(source, target, recursive=False, filter=filter_mtime)
+        else:
+            self.archive.add(source, target, recursive=False)
 
     def _add_bytes(self, source, sourcebytes, target):
         info = self.archive.gettarinfo(source, target)

@@ -1,3 +1,4 @@
+import filecmp
 import json
 import os
 import re
@@ -476,6 +477,18 @@ def test_force(tmpdir, py37_env):
 
     py37_env.pack(output=already_exists, force=True)
     assert tarfile.is_tarfile(already_exists)
+
+
+@pytest.mark.parametrize("format,n_threads", [("tar.gz", 1), ("tar.gz", 2)])
+def test_reproducible(tmpdir, py37_env, format, n_threads):
+    output_1 = os.path.join(str(tmpdir), "out1.tar")
+    output_2 = os.path.join(str(tmpdir), "out2.tar")
+
+    # Two consecutive runs should lead to exactly the same contents.
+    py37_env.pack(output=output_1, n_threads=n_threads, format=format)
+    py37_env.pack(output=output_2, n_threads=n_threads, format=format)
+
+    filecmp.cmp(output_1, output_2)
 
 
 def test_pack(tmpdir, py37_env):

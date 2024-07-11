@@ -11,6 +11,7 @@ import warnings
 from contextlib import contextmanager
 from datetime import datetime
 from fnmatch import fnmatch
+from pathlib import Path
 
 import pkg_resources
 
@@ -114,7 +115,7 @@ class CondaEnv:
     """
     def __init__(self, prefix, files, excluded_files=None):
         self.prefix = prefix
-        self.files = files
+        self.files = sorted(files, key=lambda x: x.target)
         self._excluded_files = excluded_files or []
 
     def __repr__(self):
@@ -412,6 +413,11 @@ class CondaEnv:
         fd, temp_path = tempfile.mkstemp()
 
         try:
+            history_file = Path(self.prefix) / "conda-meta" / "history"
+            if history_file.exists():
+                mtime = history_file.lstat().st_mtime
+            else:
+                mtime = None
             with os.fdopen(fd, "wb") as temp_file:
                 with archive(
                     temp_file,
@@ -424,6 +430,7 @@ class CondaEnv:
                     n_threads=n_threads,
                     verbose=verbose,
                     output=output,
+                    mtime=mtime,
                 ) as arc:
                     packer = Packer(self.prefix, arc, dest_prefix, parcel)
 
