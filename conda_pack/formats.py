@@ -120,9 +120,7 @@ class ParallelZstdFileWriter:
     def close(self):
         import zstandard
 
-        self.compressor.flush()
         self.compressor.flush(zstandard.FLUSH_FRAME)
-        self.compressor.close()
 
 
 class ParallelFileWriter:
