@@ -81,6 +81,11 @@ def archive(
             close_file = True
             fileobj = ParallelXZFileWriter(fileobj, compresslevel=compress_level,
                                            n_threads=n_threads)
+    elif format in ("tar.zst", "tzst"):
+        # python's tarfile doesn't support zstd natively yet
+        mode = "w"
+        close_file = True
+        fileobj = ParallelZstdFileWriter(fileobj)
     elif format == "squashfs":
         return SquashFSArchive(fileobj, path, arcroot, n_threads, verbose=verbose,
                                compress_level=compress_level)
@@ -97,6 +102,25 @@ def archive(
         compresslevel=compress_level,
         mtime=mtime,
     )
+
+
+class ParallelZstdFileWriter:
+    def __init__(self, fileobj, compresslevel=9, n_threads=1, mtime=None):
+        import zstandard
+
+        self.cctx = zstandard.ZstdCompressor(level=compresslevel, threads=n_threads)
+        self.compressor = self.cctx.stream_writer(fileobj)
+
+    def write(self, data: bytes):
+        self.compressor.write(data)
+
+    def tell(self):
+        return self.compressor.tell()
+
+    def close(self):
+        import zstandard
+
+        self.compressor.flush(zstandard.FLUSH_FRAME)
 
 
 class ParallelFileWriter:

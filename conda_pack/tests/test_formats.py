@@ -73,6 +73,17 @@ def root_and_paths(tmpdir_factory):
 
     return root, paths
 
+# Need to open twice, to make sure excess is truncated
+def decompress_zstd_inplace(path):
+    import zstandard
+
+    decomp = zstandard.ZstdDecompressor()
+    with open(path, "rb") as fil:
+        data = decomp.decompress(fil.read(), max_output_size=2**32)
+
+    with open(path, "wb") as fil:
+        fil.write(data)
+
 
 def check(out_dir, root=None, links=False):
     assert exists(join(out_dir, "empty_dir"))
@@ -137,7 +148,7 @@ def has_tar_cli():
 
 @pytest.mark.parametrize('format, zip_symlinks', [
     ('zip', True), ('zip', False),
-    ('tar.gz', False), ('tar.bz2', False), ('tar.xz', False), ('tar', False),
+    ('tar.gz', False), ('tar.bz2', False), ('tar.xz', False), ('tar', False), ('tar.zst', False),
     ('squashfs', False), ('no-archive', False),
 ])
 def test_format(tmpdir, format, zip_symlinks, root_and_paths):
@@ -195,6 +206,10 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
         else:
             cmd = ["squashfuse", packed_env_path, spill_dir]
             subprocess.check_output(cmd)
+    elif format == "tar.zst":
+        decompress_zstd_inplace(packed_env_path)
+        with tarfile.open(packed_env_path) as out:
+            out.extractall(spill_dir) 
     elif format != "no-archive":
         with tarfile.open(packed_env_path) as out:
             out.extractall(spill_dir)
@@ -219,7 +234,7 @@ def test_n_threads():
             _parse_n_threads(n)
 
 
-@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2', 'tar.xz'])
+@pytest.mark.parametrize('format', ['tar.gz', 'tar.bz2', 'tar.xz', 'tar.zst'])
 def test_format_parallel(tmpdir, format, root_and_paths):
     # Python 2's bzip dpesn't support reading multipart files :(
     if format == 'tar.bz2' and PY2:
@@ -228,6 +243,9 @@ def test_format_parallel(tmpdir, format, root_and_paths):
         use_cli_to_extract = True
     else:
         use_cli_to_extract = False
+
+    if format == "tar.zst" and PY2:
+        pytest.skip("Unable to test parallel tar.zst support on this platform")
 
     root, paths = root_and_paths
 
@@ -245,6 +263,10 @@ def test_format_parallel(tmpdir, format, root_and_paths):
         time.sleep(0.1)
         timeout -= 0.1
         assert timeout > 0, "Threads failed to shutdown in sufficient time"
+
+    # python's tarfile doesn't support decompressing zstd natively
+    if format == "tar.zst":
+        decompress_zstd_inplace(out_path)
 
     if use_cli_to_extract:
         check_output(['tar', '-xf', out_path, '-C', out_dir])

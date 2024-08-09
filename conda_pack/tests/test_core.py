@@ -247,7 +247,7 @@ def test_output_and_format(py37_env):
     assert output == "py37.tar.gz"
     assert format == "tar.gz"
 
-    for format in ["tar.gz", "tar.bz2", "tar.xz", "tar", "zip", "parcel"]:
+    for format in ["tar.gz", "tar.bz2", "tar.xz", "tar.zst", "tar", "zip", "parcel"]:
         output = os.extsep.join([py37_env.name, format])
 
         o, f = py37_env._output_and_format(format=format)
