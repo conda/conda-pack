@@ -22,7 +22,7 @@ repos:
         exclude: conda-recipe/meta.yaml
       - id: check-merge-conflict
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
+    rev: v3.17.0
     hooks:
       - id: pyupgrade
         args: ["--py37-plus"]
@@ -36,6 +36,6 @@ repos:
       - id: darker
         additional_dependencies: [black]
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
       - id: flake8
