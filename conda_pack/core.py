@@ -552,7 +552,7 @@ def pack(
         create the output directory structure if it's missing. Default is False.
     compress_level : int, optional
         The compression level to use, from 0 to 9. If ZSTD is used, compression is
-        supported up to 19. Higher numbers decrease output file size at the expense 
+        supported up to 19. Higher numbers decrease output file size at the expense
         of compression time. Ignored for ``format='zip'``. Default is 4.
     zip_symlinks : bool, optional
         (``zip`` format only) Symbolic links aren't supported by the Zip standard,

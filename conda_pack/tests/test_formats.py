@@ -73,6 +73,7 @@ def root_and_paths(tmpdir_factory):
 
     return root, paths
 
+
 # Need to open twice, to make sure excess is truncated
 def decompress_zstd_inplace(path):
     import zstandard
@@ -209,7 +210,7 @@ def test_format(tmpdir, format, zip_symlinks, root_and_paths):
     elif format == "tar.zst":
         decompress_zstd_inplace(packed_env_path)
         with tarfile.open(packed_env_path) as out:
-            out.extractall(spill_dir) 
+            out.extractall(spill_dir)
     elif format != "no-archive":
         with tarfile.open(packed_env_path) as out:
             out.extractall(spill_dir)
