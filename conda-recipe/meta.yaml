@@ -34,7 +34,7 @@ test:
     - pytest
     - squashfs-tools
     - squashfuse
-    - zstandard >= 0.23.0
+    - zstandard >=0.23.0
   commands:
     - bash testing/setup_envs.sh
     - pytest -s -vv conda_pack/tests
