@@ -1,3 +1,0 @@
-### Enhancements
-
-* Archives using tar and gzip compression are now reproducible. (#349)
