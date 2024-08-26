@@ -4,7 +4,7 @@
 
 ### Bug fixes
 
-* Fix a crash when trying to use conda-pack environments created with [pixi](https://pixi.sh).
+* <news item>
 
 ### Deprecations
 
@@ -16,4 +16,4 @@
 
 ### Other
 
-* <news item>
+* Dropped support for Python 3.7
