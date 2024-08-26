@@ -22,6 +22,8 @@ requirements:
   run:
     - python >=3.8
     - setuptools
+  run_constrained:
+    - zstandard >=0.23.0
 
 test:
   source_files:
@@ -32,6 +34,7 @@ test:
     - pytest
     - squashfs-tools
     - squashfuse
+    - zstandard >=0.23.0
   commands:
     - bash testing/setup_envs.sh
     - pytest -s -vv conda_pack/tests

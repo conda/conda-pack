@@ -240,6 +240,8 @@ class CondaEnv:
                 format = "tar.bz2"
             elif output.endswith(".tar.xz") or output.endswith(".txz"):
                 format = "tar.xz"
+            elif output.endswith(".tar.zst") or output.endswith(".tzst"):
+                format = "tar.zst"
             elif output.endswith(".tar"):
                 format = "tar"
             elif output.endswith(".squashfs"):
@@ -257,6 +259,8 @@ class CondaEnv:
             "tar.xz",
             "txz",
             "tar",
+            "tar.zst",
+            "tzst",
             "parcel",
             "squashfs",
             "no-archive",
@@ -362,9 +366,9 @@ class CondaEnv:
             Whether to overwrite any existing archive at the output path if present, or
             create the output directory structure if it's missing. Default is False.
         compress_level : int, optional
-            The compression level to use, from 0 to 9. Higher numbers decrease
-            output file size at the expense of compression time. Ignored for
-            ``format='zip'``. Default is 4.
+            The compression level to use, from 0 to 9. If ZSTD is used, compression is
+            supported up to 19. Higher numbers decrease output file size at the expense of
+            compression time. Ignored for ``format='zip'``. Default is 4.
         n_threads : int, optional
             The number of threads to use. Set to -1 to use the number of cpus
             on this machine. If a file format doesn't support threaded
@@ -547,9 +551,9 @@ def pack(
         Whether to overwrite any existing archive at the output path if present, or
         create the output directory structure if it's missing. Default is False.
     compress_level : int, optional
-        The compression level to use, from 0 to 9. Higher numbers decrease
-        output file size at the expense of compression time. Ignored for
-        ``format='zip'``. Default is 4.
+        The compression level to use, from 0 to 9. If ZSTD is used, compression is
+        supported up to 19. Higher numbers decrease output file size at the expense
+        of compression time. Ignored for ``format='zip'``. Default is 4.
     zip_symlinks : bool, optional
         (``zip`` format only) Symbolic links aren't supported by the Zip standard,
         but are supported by *many* common Zip implementations. If ``True``, symbolic
