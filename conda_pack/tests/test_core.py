@@ -414,6 +414,10 @@ def test_pack_with_conda(tmpdir, fix_dest):
 
     script_file.write('\n'.join(commands))
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+    print("JSON output:")
+    print("------------")
+    print(out)
+    print("------------")
     conda_info = json.loads(out)
     extract_path_n = normpath(extract_path)
     for var in ('conda_prefix', 'sys.prefix', 'default_prefix', 'root_prefix'):
