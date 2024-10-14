@@ -394,7 +394,7 @@ def test_pack_with_conda(tmpdir, fix_dest):
             commands = (
                 r"@set CONDA_PREFIX=",
                 r"@set CONDA_SHVL=",
-                rf"@call {extract_path}\Scripts\activate",
+                rf"@call {extract_path}\Scripts\activate.bat",
                 r"@conda info --json",
                 r"@deactivate",
             )
