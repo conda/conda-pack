@@ -116,6 +116,8 @@ jobs:
     - name: Create the test environment and run the tests
       run: |
         source $CONDA_ROOT/etc/profile.d/conda.sh
+        # Explicitly add defaults to silence the FutureWarning breaking JSON output
+        conda config --add channels defaults
         conda info -a
         mv conda-bld $CONDA_ROOT/conda-bld
         conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov defaults::python=${{ matrix.pyver }} zstandard>=0.23.0 ${{ matrix.conda_deps }}

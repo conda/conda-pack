@@ -1,5 +1,5 @@
 name: has_conda
 
 dependencies:
-    - conda
+    - conda<24.9
     - toolz
