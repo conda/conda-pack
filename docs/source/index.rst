@@ -109,7 +109,7 @@ On the target machine
 
     # Unpack environment into directory `my_env`
     $ mkdir -p my_env
-    $ tar -xzf my_env.tar.gz -C my_env
+    $ tar -xzf out_name.tar.gz -C my_env
 
     # Use python without activating or fixing the prefixes. Most python
     # libraries will work fine, but things that require prefix cleanups
