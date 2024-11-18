@@ -32,7 +32,7 @@ html_theme_options = {
     'github_count': False,
     'github_user': 'conda',
     'github_repo': 'conda-pack',
-    'travis_button': True,
+    'travis_button': False,
     'show_powered_by': False,
     'page_width': '960px',
     'sidebar_width': '200px',
