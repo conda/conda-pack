@@ -21,7 +21,7 @@ fi
 envs=$croot/envs
 
 if [ ! -d $croot/conda-meta ]; then
-    ${CONDA_EXE:-conda} create -y -p $croot conda python=3.7
+    ${CONDA_EXE:-conda} create -y -p $croot conda python=3.9
 fi
 
 source $croot/etc/profile.d/conda.sh
