@@ -25,7 +25,7 @@ from .conftest import (
 )
 
 BIN_DIR_L = BIN_DIR.lower()
-SP_37 = "Lib\\site-packages" if on_win else "lib/python3.7/site-packages"
+SP_37 = "Lib\\site-packages" if on_win else "lib/python3.9/site-packages"
 SP_37_L = SP_37.lower().replace("\\", "/")
 
 
