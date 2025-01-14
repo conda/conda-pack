@@ -60,7 +60,7 @@ conda env create -f $ymls/py37.yml -p $env
 if [ -f $env/python.exe ]; then
     rm $env/lib/site-packages/toolz/*.py
 else
-    rm $env/lib/python3.7/site-packages/toolz/*.py
+    rm $env/lib/python3.9/site-packages/toolz/*.py
 fi
 
 # Only do this when the developer has agreed to it, this might otherwise break things in his system.
