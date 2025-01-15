@@ -174,7 +174,7 @@ jobs:
       run: |
         source $CONDA/bin/activate
         [[ "$GITHUB_REF" =~ ^refs/tags/ ]] || export LABEL="--label dev"
-        anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.tar.bz2 --force
+        anaconda --verbose --token $ANACONDA_TOKEN upload --user ctools $LABEL conda-bld/*/*.conda --force
 
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
