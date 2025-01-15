@@ -10,7 +10,7 @@ import conda_pack
 from conda_pack.cli import main
 from conda_pack.compat import on_win
 
-from .conftest import py37_path, py310_path
+from .conftest import basic_python_path, py310_path
 
 
 def test_help(capsys):
@@ -57,10 +57,10 @@ def test_parse_include_exclude():
 
 
 def test_cli_roundtrip(capsys, tmpdir):
-    out_path = os.path.join(str(tmpdir), 'py37.tar')
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
 
     with pytest.raises(SystemExit) as exc:
-        main(["-p", py37_path, "-o", out_path])
+        main(["-p", basic_python_path, "-o", out_path])
 
     assert exc.value.code == 0
 
@@ -77,10 +77,10 @@ def test_cli_roundtrip(capsys, tmpdir):
 
 
 def test_quiet(capsys, tmpdir):
-    out_path = os.path.join(str(tmpdir), 'py37.tar')
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
 
     with pytest.raises(SystemExit) as exc:
-        main(["-p", py37_path, "-o", out_path, "-q"])
+        main(["-p", basic_python_path, "-o", out_path, "-q"])
 
     assert exc.value.code == 0
 
@@ -135,11 +135,11 @@ def test_keyboard_interrupt(capsys, tmpdir):
 
     interrupter = Thread(target=interrupt)
 
-    out_path = os.path.join(str(tmpdir), 'py37.tar')
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
     try:
         with pytest.raises(SystemExit) as exc:
             interrupter.start()
-            main(["-p", py37_path, "-o", out_path])
+            main(["-p", basic_python_path, "-o", out_path])
     except KeyboardInterrupt:
         assert False, "Should have been caught by the CLI"
 

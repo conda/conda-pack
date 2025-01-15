@@ -1,4 +1,4 @@
-name: py39
+name: basic_python
 
 channels:
     - ctools

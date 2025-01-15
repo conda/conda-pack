@@ -37,9 +37,9 @@ mkdir -p $envs
 # Make sure the local package cache is used
 rm -rf $croot/pkgs
 
-echo Creating py37 environment
-env=$envs/py37
-conda env create -f $ymls/py37.yml -p $env
+echo Creating basic_python environment
+env=$envs/basic_python
+conda env create -f $ymls/basic_python.yml -p $env
 # Create unmanaged conda-related files for conda-pack to remove
 if [ -f $env/python.exe ]; then
     touch $env/Scripts/activate
@@ -54,9 +54,9 @@ else
     touch $env/bin/conda
 fi
 
-echo Creating py37_missing_files environment
-env=$envs/py37_missing_files
-conda env create -f $ymls/py37.yml -p $env
+echo Creating basic_python_missing_files environment
+env=$envs/basic_python_missing_files
+conda env create -f $ymls/basic_python.yml -p $env
 if [ -f $env/python.exe ]; then
     rm $env/lib/site-packages/toolz/*.py
 else
@@ -74,9 +74,9 @@ conda env create -f $ymls/py310.yml -p $env
 # Remove this package from the cache for testing
 rm -rf $croot/pkgs/conda_pack_test_lib2*py310*
 
-echo Creating py37_editable environment
-env=$envs/py37_editable
-conda env create -f $ymls/py37.yml -p $env
+echo Creating baisc_python_editable environment
+env=$envs/basic_python_editable
+conda env create -f $ymls/basic_python.yml -p $env
 pushd $cwd/test_packages/conda_pack_test_lib1
 if [ -f $env/python.exe ]; then
     $env/python.exe setup.py develop
@@ -85,9 +85,9 @@ else
 fi
 popd
 
-echo Creating py37_broken environment
-env=$envs/py37_broken
-conda env create -f $ymls/py37_broken.yml -p $env
+echo Creating basic_python_broken environment
+env=$envs/basic_python_broken
+conda env create -f $ymls/basic_python_broken.yml -p $env
 
 echo Creating nopython environment
 env=$envs/nopython

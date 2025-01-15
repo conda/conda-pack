@@ -1,4 +1,4 @@
-name: py37_broken
+name: basic_python_broken
 
 channels:
     - conda-forge
