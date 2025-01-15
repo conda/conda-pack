@@ -14,19 +14,19 @@ from conda_pack.core import BIN_DIR, File, name_to_prefix
 
 from .conftest import (
     activate_scripts_path,
+    basic_python_broken_path,
+    basic_python_editable_path,
+    basic_python_missing_files_path,
+    basic_python_path,
     env_dir,
     has_conda_path,
     nopython_path,
-    py37_broken_path,
-    py37_editable_path,
-    py37_missing_files_path,
-    py37_path,
     py310_path,
 )
 
 BIN_DIR_L = BIN_DIR.lower()
-SP_37 = "Lib\\site-packages" if on_win else "lib/python3.7/site-packages"
-SP_37_L = SP_37.lower().replace("\\", "/")
+SP = "Lib\\site-packages" if on_win else "lib/python3.9/site-packages"
+SP_L = SP.lower().replace("\\", "/")
 
 
 if on_win:
@@ -38,8 +38,8 @@ else:
 
 
 @pytest.fixture(scope="module")
-def py37_env():
-    return CondaEnv.from_prefix(py37_path)
+def basic_python_env():
+    return CondaEnv.from_prefix(basic_python_path)
 
 
 @pytest.fixture
@@ -63,11 +63,11 @@ def test_name_to_prefix():
 
 
 def test_from_prefix():
-    rel_env_dir = os.path.relpath(py37_path, os.getcwd())
+    rel_env_dir = os.path.relpath(basic_python_path, os.getcwd())
     env = CondaEnv.from_prefix(rel_env_dir)
     assert len(env)
     # relative path is normalized
-    assert os.path.normcase(env.prefix) == os.path.normcase(py37_path)
+    assert os.path.normcase(env.prefix) == os.path.normcase(basic_python_path)
 
     # Path is missing
     with pytest.raises(CondaPackException):
@@ -94,16 +94,18 @@ def test_missing_package_cache():
 
 def test_errors_editable_packages():
     with pytest.raises(CondaPackException) as exc:
-        CondaEnv.from_prefix(py37_editable_path)
+        CondaEnv.from_prefix(basic_python_editable_path)
 
     assert "Editable packages found" in str(exc.value)
 
 
 def test_ignore_errors_editable_packages():
-    CondaEnv.from_prefix(py37_editable_path, ignore_editable_packages=True)
+    CondaEnv.from_prefix(basic_python_editable_path, ignore_editable_packages=True)
 
 
-def test_errors_when_target_directory_not_exists_and_not_force(tmpdir, py37_env):
+def test_errors_when_target_directory_not_exists_and_not_force(
+    tmpdir, basic_python_env
+):
 
     target_directory = os.path.join(tmpdir, "not_a_real_directory/")
     assert not os.path.exists(target_directory)
@@ -111,26 +113,26 @@ def test_errors_when_target_directory_not_exists_and_not_force(tmpdir, py37_env)
     target_file = os.path.join(target_directory, "env.tar.gz")
 
     with pytest.raises(CondaPackException) as exc:
-        py37_env.pack(output=target_file, force=False)
+        basic_python_env.pack(output=target_file, force=False)
 
     assert "not_a_real_directory" in str(exc.value)
 
 
-def test_creates_directories_if_missing_and_force(tmpdir, py37_env):
+def test_creates_directories_if_missing_and_force(tmpdir, basic_python_env):
 
     target_directory = os.path.join(tmpdir, "not_a_real_directory/")
     assert not os.path.exists(target_directory)
 
     target_file = os.path.join(target_directory, "env.tar.gz")
 
-    py37_env.pack(output=target_file, force=True)
+    basic_python_env.pack(output=target_file, force=True)
 
     assert os.path.exists(target_directory)
 
 
 def test_errors_pip_overwrites():
     with pytest.raises(CondaPackException) as exc:
-        CondaEnv.from_prefix(py37_broken_path)
+        CondaEnv.from_prefix(basic_python_broken_path)
 
     msg = str(exc.value)
     assert "pip" in msg
@@ -139,7 +141,7 @@ def test_errors_pip_overwrites():
 
 def test_missing_files():
     with pytest.raises(CondaPackException) as exc:
-        CondaEnv.from_prefix(py37_missing_files_path)
+        CondaEnv.from_prefix(basic_python_missing_files_path)
 
     msg = str(exc.value)
     assert f"{os.sep}toolz{os.sep}__init__.py" in msg, msg
@@ -147,10 +149,10 @@ def test_missing_files():
 
 
 def test_missing_files_ignored(tmpdir):
-    out_path = os.path.join(str(tmpdir), "py37_missing.tar")
-    CondaEnv.from_prefix(py37_missing_files_path, ignore_missing_files=True).pack(
-        out_path
-    )
+    out_path = os.path.join(str(tmpdir), "basic_python_missing.tar")
+    CondaEnv.from_prefix(
+        basic_python_missing_files_path, ignore_missing_files=True
+    ).pack(out_path)
 
 
 def test_errors_conda_missing(bad_conda_exe):
@@ -160,27 +162,27 @@ def test_errors_conda_missing(bad_conda_exe):
     assert 'Failed to determine path to environment' in str(exc.value)
 
 
-def test_env_properties(py37_env):
-    assert py37_env.name == "py37"
-    assert py37_env.prefix == py37_path
+def test_env_properties(basic_python_env):
+    assert basic_python_env.name == "basic_python"
+    assert basic_python_env.prefix == basic_python_path
 
     # Env has a length
-    assert len(py37_env) == len(py37_env.files)
+    assert len(basic_python_env) == len(basic_python_env.files)
 
     # Env is iterable
-    assert len(list(py37_env)) == len(py37_env)
+    assert len(list(basic_python_env)) == len(basic_python_env)
 
     # Smoketest repr
-    assert "CondaEnv<" in repr(py37_env)
+    assert "CondaEnv<" in repr(basic_python_env)
 
 
-def test_load_environment_ignores(py37_env):
-    lk = {normpath(f.target): f for f in py37_env}
+def test_load_environment_ignores(basic_python_env):
+    lk = {normpath(f.target): f for f in basic_python_env}
     for fname in ("conda", "conda.bat"):
         assert f"{BIN_DIR_L}/{fname}" not in lk
     for fname in ("activate", "activate.bat", "deactivate", "deactivate.bat"):
         fpath = f"{BIN_DIR_L}/{fname}"
-        assert fpath not in lk or not lk[fpath].source.startswith(py37_path)
+        assert fpath not in lk or not lk[fpath].source.startswith(basic_python_path)
 
 
 def test_file():
@@ -189,8 +191,8 @@ def test_file():
     repr(f)
 
 
-def test_loaded_file_properties(py37_env):
-    lk = {normpath(f.target): f for f in py37_env}
+def test_loaded_file_properties(basic_python_env):
+    lk = {normpath(f.target): f for f in basic_python_env}
 
     # Pip installed entrypoint
     exe_suffix = ".exe" if on_win else ""
@@ -203,17 +205,17 @@ def test_loaded_file_properties(py37_env):
     fil = lk[f"{BIN_DIR_L}/conda-pack-test-lib1"]
     assert fil.is_conda
     assert fil.file_mode == 'text'
-    assert fil.prefix_placeholder != py37_env.prefix
+    assert fil.prefix_placeholder != basic_python_env.prefix
 
     # Conda installed entrypoint
     suffix = "-script.py" if on_win else ""
     fil = lk[f"{BIN_DIR_L}/conda-pack-test-lib2{suffix}"]
     assert fil.is_conda
     assert fil.file_mode == 'text'
-    assert fil.prefix_placeholder != py37_env.prefix
+    assert fil.prefix_placeholder != basic_python_env.prefix
 
     # Conda installed file
-    fil = lk[f"{SP_37_L}/conda_pack_test_lib1/cli.py"]
+    fil = lk[f"{SP_L}/conda_pack_test_lib1/cli.py"]
     assert fil.is_conda
     assert fil.file_mode is None
     assert fil.prefix_placeholder is None
@@ -226,55 +228,55 @@ def test_works_with_no_python():
     assert len(env)
 
 
-def test_include_exclude(py37_env):
-    old_len = len(py37_env)
-    env2 = py37_env.exclude("*.pyc")
+def test_include_exclude(basic_python_env):
+    old_len = len(basic_python_env)
+    env2 = basic_python_env.exclude("*.pyc")
     # No mutation
-    assert len(py37_env) == old_len
-    assert env2 is not py37_env
-    assert len(env2) < len(py37_env)
+    assert len(basic_python_env) == old_len
+    assert env2 is not basic_python_env
+    assert len(env2) < len(basic_python_env)
 
     # Re-add the removed files, envs are equivalent
-    assert len(env2.include("*.pyc")) == len(py37_env)
+    assert len(env2.include("*.pyc")) == len(basic_python_env)
 
-    env3 = env2.exclude(os.path.join(SP_37, "conda_pack_test_lib1", "*"))
-    env4 = env3.include(os.path.join(SP_37, "conda_pack_test_lib1", "cli.py"))
+    env3 = env2.exclude(os.path.join(SP, "conda_pack_test_lib1", "*"))
+    env4 = env3.include(os.path.join(SP, "conda_pack_test_lib1", "cli.py"))
     assert len(env3) + 1 == len(env4)
 
 
-def test_output_and_format(py37_env):
-    output, format = py37_env._output_and_format()
-    assert output == "py37.tar.gz"
+def test_output_and_format(basic_python_env):
+    output, format = basic_python_env._output_and_format()
+    assert output == "basic_python.tar.gz"
     assert format == "tar.gz"
 
     for format in ["tar.gz", "tar.bz2", "tar.xz", "tar.zst", "tar", "zip", "parcel"]:
-        output = os.extsep.join([py37_env.name, format])
+        output = os.extsep.join([basic_python_env.name, format])
 
-        o, f = py37_env._output_and_format(format=format)
+        o, f = basic_python_env._output_and_format(format=format)
         assert f == format
         assert o == (None if f == "parcel" else output)
 
-        o, f = py37_env._output_and_format(output=output)
+        o, f = basic_python_env._output_and_format(output=output)
         assert o == output
         assert f == format
 
-        o, f = py37_env._output_and_format(output="foo.zip", format=format)
+        o, f = basic_python_env._output_and_format(output="foo.zip", format=format)
         assert f == format
         assert o == 'foo.zip'
 
     with pytest.raises(CondaPackException):
-        py37_env._output_and_format(format="foo")
+        basic_python_env._output_and_format(format="foo")
 
     with pytest.raises(CondaPackException):
-        py37_env._output_and_format(output="foo.bar")
+        basic_python_env._output_and_format(output="foo.bar")
 
     with pytest.raises(CondaPackException):
-        py37_env._output_and_format(output="foo.parcel", format="zip")
+        basic_python_env._output_and_format(output="foo.parcel", format="zip")
 
 
-def test_roundtrip(tmpdir, py37_env):
-    out_path = os.path.join(str(tmpdir), "py37.tar")
-    py37_env.pack(out_path)
+def test_roundtrip(tmpdir, basic_python_env):
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
+    basic_python_env.pack(out_path)
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
 
@@ -433,14 +435,14 @@ def test_pack_with_conda(tmpdir, fix_dest):
             assert data["link"]["source"] == ""
 
 
-def test_pack_exceptions(py37_env):
+def test_pack_exceptions(basic_python_env):
     # Can't pass both prefix and name
     with pytest.raises(CondaPackException):
-        pack(prefix=py37_path, name="py37")
+        pack(prefix=basic_python_path, name="basic_python")
 
     # Unknown filter type
     with pytest.raises(CondaPackException):
-        pack(prefix=py37_path, filters=[("exclude", "*.py"), ("foo", "*.pyc")])
+        pack(prefix=basic_python_path, filters=[("exclude", "*.py"), ("foo", "*.pyc")])
 
 
 def test_zip64(tmpdir):
@@ -466,40 +468,40 @@ def test_zip64(tmpdir):
     assert os.path.exists(out_path)
 
 
-def test_force(tmpdir, py37_env):
-    already_exists = os.path.join(str(tmpdir), "py37.tar")
+def test_force(tmpdir, basic_python_env):
+    already_exists = os.path.join(str(tmpdir), "basic_python.tar")
     with open(already_exists, "wb"):
         pass
 
     # file already exists
     with pytest.raises(CondaPackException):
-        py37_env.pack(output=already_exists)
+        basic_python_env.pack(output=already_exists)
 
-    py37_env.pack(output=already_exists, force=True)
+    basic_python_env.pack(output=already_exists, force=True)
     assert tarfile.is_tarfile(already_exists)
 
 
 @pytest.mark.parametrize("format,n_threads", [("tar.gz", 1), ("tar.gz", 2)])
-def test_reproducible(tmpdir, py37_env, format, n_threads):
+def test_reproducible(tmpdir, basic_python_env, format, n_threads):
     output_1 = os.path.join(str(tmpdir), "out1.tar")
     output_2 = os.path.join(str(tmpdir), "out2.tar")
 
     # Two consecutive runs should lead to exactly the same contents.
-    py37_env.pack(output=output_1, n_threads=n_threads, format=format)
-    py37_env.pack(output=output_2, n_threads=n_threads, format=format)
+    basic_python_env.pack(output=output_1, n_threads=n_threads, format=format)
+    basic_python_env.pack(output=output_2, n_threads=n_threads, format=format)
 
     filecmp.cmp(output_1, output_2)
 
 
-def test_pack(tmpdir, py37_env):
-    out_path = os.path.join(str(tmpdir), "py37.tar")
+def test_pack(tmpdir, basic_python_env):
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
 
     exclude1 = "*.py"
     exclude2 = "*.pyc"
-    include = os.path.join(SP_37, "conda_pack_test_lib1", "*")
+    include = os.path.join(SP, "conda_pack_test_lib1", "*")
 
     res = pack(
-        prefix=py37_path,
+        prefix=basic_python_path,
         output=out_path,
         filters=[("exclude", exclude1), ("exclude", exclude2), ("include", include)],
     )
@@ -511,7 +513,7 @@ def test_pack(tmpdir, py37_env):
     with tarfile.open(out_path) as fil:
         paths = fil.getnames()
 
-    filtered = py37_env.exclude(exclude1).exclude(exclude2).include(include)
+    filtered = basic_python_env.exclude(exclude1).exclude(exclude2).include(include)
 
     # Files line up with filtering, with extra conda-unpack command
     sol = {os.path.normcase(f.target) for f in filtered.files}
@@ -557,29 +559,29 @@ def _test_dest_prefix(src_prefix, dest_prefix, arcroot, out_path, format):
                 assert new_bytes in data or new_bytes_l in data, test_file
 
 
-def test_dest_prefix(tmpdir, py37_env):
-    out_path = os.path.join(str(tmpdir), "py37.tar")
+def test_dest_prefix(tmpdir, basic_python_env):
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
     dest = r"c:\foo\bar\baz\biz" if on_win else "/foo/bar/baz/biz"
-    res = pack(prefix=py37_path, dest_prefix=dest, output=out_path)
+    res = pack(prefix=basic_python_path, dest_prefix=dest, output=out_path)
 
     assert res == out_path
     assert os.path.exists(out_path)
     assert tarfile.is_tarfile(out_path)
 
-    _test_dest_prefix(py37_env.prefix, dest, "", out_path, "r")
+    _test_dest_prefix(basic_python_env.prefix, dest, "", out_path, "r")
 
 
-def test_parcel(tmpdir, py37_env):
+def test_parcel(tmpdir, basic_python_env):
     if on_win:
         pytest.skip("Not parcel tests on Windows")
-    arcroot = "py37-1234.56"
+    arcroot = "basic_python-1234.56"
 
     out_path = os.path.join(str(tmpdir), arcroot + "-el7.parcel")
 
     pdir = os.getcwd()
     try:
         os.chdir(str(tmpdir))
-        res = pack(prefix=py37_path, format="parcel", parcel_version="1234.56")
+        res = pack(prefix=basic_python_path, format="parcel", parcel_version="1234.56")
     finally:
         os.chdir(pdir)
 
@@ -589,7 +591,7 @@ def test_parcel(tmpdir, py37_env):
     # Verify that only the parcel files were added
     with tarfile.open(out_path, "r:gz") as fil:
         paths = fil.getnames()
-    sol = {os.path.join(arcroot, f.target) for f in py37_env.files}
+    sol = {os.path.join(arcroot, f.target) for f in basic_python_env.files}
     diff = set(paths).difference(sol)
     fnames = ("conda_env.sh", "parcel.json")
     assert diff == {os.path.join(arcroot, "meta", f) for f in fnames}
@@ -599,14 +601,17 @@ def test_parcel(tmpdir, py37_env):
         fpath = os.path.join(arcroot, "meta", "parcel.json")
         data = fil.extractfile(fpath).read()
     data = json.loads(data)
-    assert data["name"] == "py37" and data["components"][0]["name"] == "py37"
+    assert (
+        data["name"] == "basic_python"
+        and data["components"][0]["name"] == "basic_python"
+    )
     assert (
         data["version"] == "1234.56" and data["components"][0]["version"] == "1234.56"
     )
 
     # Verify the correct dest_prefix substitution
     dest = os.path.join("/opt/cloudera/parcels", arcroot)
-    _test_dest_prefix(py37_env.prefix, dest, arcroot, out_path, "r:gz")
+    _test_dest_prefix(basic_python_env.prefix, dest, arcroot, out_path, "r:gz")
 
 
 def test_activate(tmpdir):

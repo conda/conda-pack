@@ -8,6 +8,16 @@ on:
   pull_request:
     branches:
       - main
+
+concurrency:
+  # Concurrency group that uses the workflow name and PR number if available
+  # or commit SHA as a fallback. If a new build is triggered under that
+  # concurrency group while a previous build is running it will be canceled.
+  # Repeated pushes to a PR will cancel all previous builds, while multiple
+  # merges to main will not cancel.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -43,11 +53,14 @@ jobs:
         shell: bash
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest,macos-12,windows-latest]
+        os: [ubuntu-latest,macos-14,windows-latest]
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v4
+    - uses: conda-incubator/setup-miniconda@v3.1.0
+      if: matrix.os == 'macos-14'
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
@@ -81,11 +94,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12,ubuntu-latest,windows-latest]
+        os: [macos-14,ubuntu-latest,windows-latest]
         pyver: ["3.8","3.9","3.10"]
         include:
           # include the appropriate dependencies for testing SquashFS on each OS
-          - os: macos-12
+          - os: macos-14
             conda_deps: "conda-forge::squashfs-tools conda-forge::fish"
           - os: ubuntu-latest
             conda_deps: "conda-forge::squashfs-tools conda-forge::squashfuse conda-forge::fish"

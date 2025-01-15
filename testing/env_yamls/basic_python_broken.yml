@@ -1,10 +1,10 @@
-name: py37_broken
+name: basic_python_broken
 
 channels:
     - conda-forge
 
 dependencies:
-    - python=3.7
+    - python=3.9
     - cytoolz
     - toolz
     - pip
