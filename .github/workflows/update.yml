@@ -80,7 +80,7 @@ jobs:
       - if: github.event.comment.body != '@conda-bot render'
         id: create
         # no-op if no commits were made
-        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # v7.0.6
+        uses: peter-evans/create-pull-request@dd2324fc52d5d43c699a5636bcf19fceaa70c284 # v7.0.7
         with:
           push-to-fork: ${{ env.FORK }}
           token: ${{ secrets.SYNC_TOKEN }}
