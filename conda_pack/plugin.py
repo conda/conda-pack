@@ -1,5 +1,4 @@
 import conda.plugins
-from conda.base.context import context
 from conda_pack.cli import main
 
 
