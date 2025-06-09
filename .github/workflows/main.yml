@@ -59,7 +59,7 @@ jobs:
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v4
-    - uses: conda-incubator/setup-miniconda@v3.1.1
+    - uses: conda-incubator/setup-miniconda@v3.2.0
       if: matrix.os == 'macos-14'
     - id: conda-root
       name: Set CONDA_ROOT
