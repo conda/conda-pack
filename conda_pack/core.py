@@ -660,9 +660,32 @@ def find_site_packages(prefix):
 
 
 def check_no_editable_packages(prefix, site_packages):
-    pth_files = glob.glob(os.path.join(prefix, site_packages, '*.pth'))
     editable_packages = set()
+
+    # Check for modern editable packages (pip >= 20.0)
+    # Look for __editable__*.pth files
+    modern_pth_files = glob.glob(os.path.join(prefix, site_packages, '__editable__*.pth'))
+    for pth_fil in modern_pth_files:
+        # Extract package name from filename like __editable__.package_name-version.pth
+        basename = os.path.basename(pth_fil)
+        if basename.startswith('__editable__.'):
+            package_name = basename[13:]  # Remove '__editable__.'
+            # Remove version suffix if present
+            if '-' in package_name:
+                package_name = package_name.rsplit('-', 1)[0]
+            editable_packages.add(package_name)
+
+    # Check for old-style editable packages (pre-pip 20.0)
+    # Look for .pth files with relative paths
+    pth_files = glob.glob(os.path.join(prefix, site_packages, '*.pth'))
     for pth_fil in pth_files:
+        # Skip modern editable .pth files we already checked
+        if os.path.basename(pth_fil).startswith('__editable__'):
+            continue
+        # Skip distutils-precedence.pth which is not an editable package
+        if os.path.basename(pth_fil) == 'distutils-precedence.pth':
+            continue
+
         dirname = os.path.dirname(pth_fil)
         with open(pth_fil) as pth:
             for line in pth:
@@ -676,6 +699,7 @@ def check_no_editable_packages(prefix, site_packages):
                 location = os.path.normpath(os.path.join(dirname, line))
                 if not location.startswith(prefix):
                     editable_packages.add(line)
+
     if editable_packages:
         msg = ("Cannot pack an environment with editable packages\n"
                "installed (e.g. from `python setup.py develop` or\n "
