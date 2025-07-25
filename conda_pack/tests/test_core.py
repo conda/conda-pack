@@ -102,7 +102,11 @@ def test_errors_editable_packages():
 def test_ignore_errors_editable_packages():
     # The environment has both editable packages and missing conda-managed files
     # (because pip replaced the conda installation), so we need to ignore both
-    CondaEnv.from_prefix(basic_python_editable_path, ignore_editable_packages=True, ignore_missing_files=True)
+    CondaEnv.from_prefix(
+        basic_python_editable_path,
+        ignore_editable_packages=True,
+        ignore_missing_files=True,
+    )
 
 
 def test_errors_when_target_directory_not_exists_and_not_force(
