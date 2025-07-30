@@ -663,25 +663,28 @@ def check_no_editable_packages(prefix, site_packages):
     editable_packages = set()
 
     # Check for modern editable packages (pip >= 20.0)
-    # Look for __editable__*.pth files
-    modern_pth_files = glob.glob(os.path.join(prefix, site_packages, '__editable__*.pth'))
-    for pth_fil in modern_pth_files:
-        # Extract package name from filename like __editable__.package_name-version.pth
-        basename = os.path.basename(pth_fil)
-        if basename.startswith('__editable__.'):
-            package_name = basename[13:]  # Remove '__editable__.'
-            # Remove version suffix if present
-            if '-' in package_name:
-                package_name = package_name.rsplit('-', 1)[0]
-            editable_packages.add(package_name)
+    # Look for *.dist-info/direct_url.json files with editable=True
+    dist_info_dirs = glob.glob(os.path.join(prefix, site_packages, "*.dist-info"))
+    for dist_info_dir in dist_info_dirs:
+        direct_url_path = os.path.join(dist_info_dir, "direct_url.json")
+        if os.path.exists(direct_url_path):
+            try:
+                with open(direct_url_path) as f:
+                    direct_url_data = json.load(f)
+                if direct_url_data.get("dir_info", {}).get("editable") is True:
+                    # Extract package name from dist-info directory name
+                    # e.g., "package_name-1.0.0.dist-info" -> "package_name"
+                    dist_info_name = os.path.basename(dist_info_dir)
+                    package_name = dist_info_name.split("-")[0]
+                    editable_packages.add(package_name)
+            except (json.JSONDecodeError, KeyError, IndexError):
+                # Skip malformed direct_url.json files
+                continue
 
     # Check for old-style editable packages (pre-pip 20.0)
     # Look for .pth files with relative paths
     pth_files = glob.glob(os.path.join(prefix, site_packages, '*.pth'))
     for pth_fil in pth_files:
-        # Skip modern editable .pth files we already checked
-        if os.path.basename(pth_fil).startswith('__editable__'):
-            continue
         # Skip distutils-precedence.pth which is not an editable package
         if os.path.basename(pth_fil) == 'distutils-precedence.pth':
             continue
