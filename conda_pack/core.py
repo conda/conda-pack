@@ -681,28 +681,6 @@ def check_no_editable_packages(prefix, site_packages):
                 # Skip malformed direct_url.json files
                 continue
 
-    # Check for old-style editable packages (pre-pip 20.0)
-    # Look for .pth files with relative paths
-    pth_files = glob.glob(os.path.join(prefix, site_packages, '*.pth'))
-    for pth_fil in pth_files:
-        # Skip distutils-precedence.pth which is not an editable package
-        if os.path.basename(pth_fil) == 'distutils-precedence.pth':
-            continue
-
-        dirname = os.path.dirname(pth_fil)
-        with open(pth_fil) as pth:
-            for line in pth:
-                line = line.rstrip()
-                # Blank lines are skipped
-                # Lines starting with "#" are skipped
-                # Lines starting with "import" are executed
-                if not line or line.startswith('#') or line.startswith('import'):
-                    continue
-                # All other lines are relative paths
-                location = os.path.normpath(os.path.join(dirname, line))
-                if not location.startswith(prefix):
-                    editable_packages.add(line)
-
     if editable_packages:
         msg = ("Cannot pack an environment with editable packages\n"
                "installed (e.g. from `python setup.py develop` or\n "
