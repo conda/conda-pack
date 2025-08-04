@@ -1177,6 +1177,12 @@ class Packer:
 
         file_mode = file.file_mode
         placeholder = file.prefix_placeholder
+
+        # Normalize placeholder to handle Windows extended-length paths
+        if on_win and placeholder and placeholder.startswith('//?/'):
+            placeholder = placeholder[4:]
+        elif on_win and placeholder and placeholder.startswith('\\\\?\\'):
+            placeholder = placeholder[4:]
         if (
             self.has_dest
             or file_mode == "unknown"
@@ -1194,6 +1200,11 @@ class Packer:
 
         if file_mode == 'unknown':
             placeholder = self.prefix
+            # Normalize self.prefix to handle Windows extended-length paths
+            if on_win and placeholder.startswith('//?/'):
+                placeholder = placeholder[4:]
+            elif on_win and placeholder.startswith('\\\\?\\'):
+                placeholder = placeholder[4:]
             if is_binary_file(data):
                 if on_win:
                     # The only binary replacement we do on Windows is distlib
