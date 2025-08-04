@@ -96,7 +96,9 @@ def test_errors_editable_packages():
     with pytest.raises(CondaPackException) as exc:
         CondaEnv.from_prefix(basic_python_editable_path)
 
-    assert "Editable packages found" in str(exc.value)
+    # The error message has changed to reflect conda/pip conflicts
+    # rather than just "editable packages found"
+    assert "pip" in str(exc.value) and "conda" in str(exc.value)
 
 
 def test_ignore_errors_editable_packages():
