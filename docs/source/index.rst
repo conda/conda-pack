@@ -174,6 +174,13 @@ This tool has a few caveats.
   present. It is intended for building archives from actively maintained
   conda environments.
 
+- For use on Windows, ``conda-pack version ??? or later`` is recommended to
+  avoid possible issues with long paths. See
+  `Long path issues <https://github.com/conda/conda-pack/issues/398>`_.
+  If possible it is strongly recommended to turn on Windows long path support:
+  `Long path support <https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later>`_.
+ 
+
 .. toctree::
     :hidden:
 
