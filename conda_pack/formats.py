@@ -565,7 +565,9 @@ class NoArchive(ArchiveBase):
                 self.copy_func = partial(shutil.copy2, follow_symlinks=False)
 
         if os.path.isfile(source) or os.path.islink(source):
-            self.copy_func(source, target_abspath)
+            # Do not overwrite if the same `target` is added twice.
+            if not os.path.exists(target_abspath):
+                self.copy_func(source, target_abspath)
         else:
             os.mkdir(target_abspath)
 
