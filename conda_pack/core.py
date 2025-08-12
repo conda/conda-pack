@@ -13,7 +13,6 @@ from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
 
-
 from ._progress import progressbar
 from .compat import default_encoding, find_py_source, is_32bit, on_win
 from .prefixes import SHEBANG_REGEX, replace_prefix
