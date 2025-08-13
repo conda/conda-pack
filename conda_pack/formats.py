@@ -538,7 +538,6 @@ class NoArchive(ArchiveBase):
     def __init__(self, output, arcroot):
         self.output = output
         self.arcroot = arcroot
-        self.copy_func = None
 
     def __enter__(self):
         return self
@@ -558,17 +557,17 @@ class NoArchive(ArchiveBase):
         target_abspath = self._absolute_path(target)
         self._ensure_parent(target_abspath)
 
+        copy_func = None
         # hardlink instead of copy is faster, but it doesn't work across devices
-        if self.copy_func is None:
-            if os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev:
-                self.copy_func = partial(os.link, follow_symlinks=False)
-            else:
-                self.copy_func = partial(shutil.copy2, follow_symlinks=False)
+        if os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev:
+            copy_func = partial(os.link, follow_symlinks=False)
+        else:
+            copy_func = partial(shutil.copy2, follow_symlinks=False)
 
         if os.path.isfile(source) or os.path.islink(source):
             # Skip the copy if the file or symlink already exists.
             if not os.path.lexists(target_abspath):
-                self.copy_func(source, target_abspath)
+                copy_func(source, target_abspath)
         else:
             os.mkdir(target_abspath)
 
