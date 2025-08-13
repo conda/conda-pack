@@ -544,7 +544,8 @@ class NoArchive(ArchiveBase):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        return self
+        # Do not suppress exceptions so they are caught in the layers above.
+        pass
 
     def _absolute_path(self, path):
         return os.path.normpath(os.path.join(self.output, path))
