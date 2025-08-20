@@ -11,6 +11,7 @@ import warnings
 from contextlib import contextmanager
 from datetime import datetime
 from fnmatch import fnmatch
+from importlib.resources import files
 from pathlib import Path
 
 from ._progress import progressbar
@@ -1289,14 +1290,7 @@ class Packer:
 
             if on_win:
                 exe = "cli-32.exe" if is_32bit else "cli-64.exe"
-                try:
-                    # Python 3.9+
-                    from importlib.resources import files
-                    cli_exe = str(files("setuptools") / exe)
-                except ImportError:
-                    # Python < 3.9
-                    import importlib_resources
-                    cli_exe = str(importlib_resources.files("setuptools") / exe)
+                cli_exe = str(files("setuptools") / exe)
                 self.archive.add(cli_exe, os.path.join(BIN_DIR, "conda-unpack.exe"))
 
         # mksquashfs has no (fast) iterative mode, only batch mode
