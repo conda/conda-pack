@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 import threading
 import time
+import warnings
 import zipfile
 import zlib
 from contextlib import closing
@@ -575,10 +576,11 @@ class NoArchive(ArchiveBase):
                 os.link(source, target_abspath, follow_symlinks=False)
             except OSError as e:
                 if not self.printed_warning:
-                    print(f"\nWARNING: Falling back to copy because "
-                          f"linking {source} to {target_abspath} failed with {e}."
-                          f" For faster conda-pack make sure {source} and {target_abspath}"
-                          "are on the same filesystem.")
+                    warnings.warn(f"In creating a conda pack for {self.arcroot} in target directory "
+                                  f"{self.output} we tried to use hardlinks which failed with exception "
+                                  f"{e} when linking {source} to {target_abspath}. We will fall back to "
+                                  f"copying files instead of linking. For faster performance make sure "
+                                  f"the conda root and --output are on the same filesystem.")
                     self.printed_warning = True
                 shutil.copy2(source, target_abspath, follow_symlinks=False)
         else:
