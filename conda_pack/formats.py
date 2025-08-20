@@ -538,6 +538,7 @@ class NoArchive(ArchiveBase):
     def __init__(self, output, arcroot):
         self.output = output
         self.arcroot = arcroot
+        self.printed_warning = False
 
     def __enter__(self):
         return self
@@ -566,9 +567,19 @@ class NoArchive(ArchiveBase):
         if os.path.isfile(source) or os.path.islink(source):
             # Try hardlinking as it's faster. Fallback to copy if hardlink fails
             # example: if source and target are on different devices.
+            # An alternative would be to do os.lstat() on source and target and compare st_dev
+            # and call os.link if st_devs are identical. However that approach does not work on
+            # btrfs.
+            # So we just try os.link and fallback in the except block.
             try:
                 os.link(source, target_abspath, follow_symlinks=False)
             except OSError as e:
+                if not self.printed_warning:
+                    print(f"\nWARNING: Falling back to copy because "
+                          f"linking {source} to {target_abspath} failed with {e}."
+                          f" For faster conda-pack make sure {source} and {target_abspath}"
+                          "are on the same filesystem.")
+                    self.printed_warning = True
                 shutil.copy2(source, target_abspath, follow_symlinks=False)
         else:
             os.mkdir(target_abspath)
