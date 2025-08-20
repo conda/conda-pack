@@ -557,17 +557,19 @@ class NoArchive(ArchiveBase):
         target_abspath = self._absolute_path(target)
         self._ensure_parent(target_abspath)
 
-        copy_func = None
-        # hardlink instead of copy is faster, but it doesn't work across devices
-        if os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev:
-            copy_func = partial(os.link, follow_symlinks=False)
-        else:
-            copy_func = partial(shutil.copy2, follow_symlinks=False)
+        # Delete target if it exists already.
+        if os.path.islink(target_abspath) or os.path.isfile(target_abspath):
+            os.remove(target_abspath)
+        elif os.path.isdir(target_abspath):
+            shutil.rmtree(target_abspath)
 
         if os.path.isfile(source) or os.path.islink(source):
-            # Skip the copy if the file or symlink already exists.
-            if not os.path.lexists(target_abspath):
-                copy_func(source, target_abspath)
+            # Try hardlinking as it's faster. Fallback to copy if hardlink fails
+            # example: if source and target are on different devices.
+            try:
+                os.link(source, target_abspath, follow_symlinks=False)
+            except OSError as e:
+                shutil.copy2(source, target_abspath, follow_symlinks=False)
         else:
             os.mkdir(target_abspath)
 
