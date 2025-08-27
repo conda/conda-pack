@@ -757,3 +757,53 @@ def test_windows_extended_length_path_normalization_none_placeholder():
 
     # Verify the file was added to archive without prefix processing
     mock_archive.add.assert_called_once_with(test_file.source, test_file.target)
+
+
+@pytest.mark.skipif(not on_win, reason="Windows-specific test")
+def test_windows_extended_length_path_normalization_unknown_mode():
+    """Test Windows extended-length path normalization for unknown file mode (self.prefix)."""
+    mock_archive = Mock()
+
+    # Use a prefix with extended-length path to test the second normalization block
+    test_prefix = r"\\?\C:\very\long\test\prefix"
+    dest_prefix = r"C:\dest\prefix"
+
+    packer = Packer(prefix=test_prefix, archive=mock_archive, dest_prefix=dest_prefix)
+
+    # Test data: (prefix_input, expected_normalized_prefix)
+    test_cases = [
+        (r"\\?\C:\very\long\test\prefix", r"C:\very\long\test\prefix"),
+        (r"//?/C:\very\long\test\prefix", r"C:\very\long\test\prefix"),
+    ]
+
+    for i, (input_prefix, expected_prefix) in enumerate(test_cases):
+        # Update the packer's prefix for each test case
+        packer.prefix = input_prefix
+
+        # Use file_mode="unknown" to trigger the second normalization block (lines 1203-1207)
+        test_file = File(
+            source=f"C:\\source\\file{i}.exe",
+            target=f"Scripts/some_executable{i}.exe",  # Windows bin dir with executable
+            is_conda=True,
+            file_mode="unknown",  # This triggers the second code path
+            prefix_placeholder=None  # When None, it uses self.prefix
+        )
+
+        test_content = b"#!/usr/bin/env python\nprint('test')"
+
+        with patch('builtins.open', mock_open(read_data=test_content)):
+            with patch('conda_pack.core.replace_prefix') as mock_replace_prefix:
+                with patch('conda_pack.core.is_binary_file', return_value=False):  # Force text mode
+                    mock_replace_prefix.return_value = test_content
+
+                    packer.add(test_file)
+
+                    # Verify the normalized self.prefix was used (no \\?\ or //?/)
+                    calls = mock_replace_prefix.call_args_list
+                    assert len(calls) == 1, f"Expected 1 call, got {len(calls)}"
+
+                    # Check the call arguments
+                    actual_placeholder = calls[0][0][2]  # Third argument is the placeholder
+                    assert actual_placeholder == expected_prefix, (
+                        f"Test case {i}: expected {expected_prefix}, got {actual_placeholder}"
+                    )
