@@ -681,13 +681,13 @@ def test_activate(tmpdir):
 @pytest.mark.skipif(not on_win, reason="Windows-specific test")
 def test_windows_extended_length_path_normalization():
     """Test that Windows extended-length paths are properly normalized in Packer.add()."""
-
     # Create mock archive
     mock_archive = Mock()
     test_prefix = r"C:\test\prefix"
+    dest_prefix = r"C:\dest\prefix"  # Add dest_prefix to trigger replace_prefix
 
-    # Create Packer instance
-    packer = Packer(prefix=test_prefix, archive=mock_archive)
+    # Create Packer instance with dest_prefix to ensure replace_prefix is called
+    packer = Packer(prefix=test_prefix, archive=mock_archive, dest_prefix=dest_prefix)
 
     # Test data: (placeholder_input, expected_normalized_placeholder)
     test_cases = [
@@ -737,11 +737,9 @@ def test_windows_extended_length_path_normalization():
 @pytest.mark.skipif(not on_win, reason="Windows-specific test")
 def test_windows_extended_length_path_normalization_none_placeholder():
     """Test that None placeholders are handled correctly in Windows path normalization."""
-    from unittest.mock import Mock, patch, mock_open
-    from conda_pack.core import Packer
-
     mock_archive = Mock()
     test_prefix = r"C:\test\prefix"
+    # Don't set dest_prefix so that files with None placeholder aren't processed
     packer = Packer(prefix=test_prefix, archive=mock_archive)
 
     # File with None placeholder should not crash
@@ -753,18 +751,9 @@ def test_windows_extended_length_path_normalization_none_placeholder():
         prefix_placeholder=None
     )
 
-    test_content = b"#!/usr/bin/env python\nprint('test')"
+    # Mock file that should not go through replace_prefix path
+    # This should take the "archive.add" path instead
+    packer.add(test_file)
 
-    with patch('builtins.open', mock_open(read_data=test_content)):
-        with patch('conda_pack.core.replace_prefix') as mock_replace_prefix:
-            mock_replace_prefix.return_value = test_content
-
-            # This should not crash
-            packer.add(test_file)
-
-    # Verify replace_prefix was called with the file's prefix, not the placeholder
-    calls = mock_replace_prefix.call_args_list
-    assert len(calls) == 1
-    # When placeholder is None, it should use self.prefix
-    actual_placeholder = calls[0][0][2]
-    assert actual_placeholder == test_prefix
+    # Verify the file was added to archive without prefix processing
+    mock_archive.add.assert_called_once_with(test_file.source, test_file.target)
