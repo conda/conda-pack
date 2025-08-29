@@ -101,7 +101,8 @@ class TestUpdatePrefix:
 
     @pytest.mark.skipif(not on_win, reason="Windows-specific test")
     def test_powershell_extended_length_prefix_removal(self):
-        """Test that PowerShell files have extended-length prefixes removed from new_prefix."""
+        """Test that PowerShell files have extended-length prefixes removed from any new prefix
+        to be added."""
         # Create a temporary PowerShell file
         with tempfile.NamedTemporaryFile(mode='w+b', suffix='.ps1', delete=False) as temp_file:
             temp_file_path = temp_file.name
@@ -129,7 +130,7 @@ class TestUpdatePrefix:
 
     @pytest.mark.skipif(not on_win, reason="Windows-specific test")
     def test_powershell_normal_prefix_unchanged(self):
-        """Test that PowerShell files with normal prefixes are not modified."""
+        """Test that PowerShell files with no extended-length path prefixes are processed OK."""
         # Create a temporary PowerShell file
         with tempfile.NamedTemporaryFile(mode='w+b', suffix='.ps1', delete=False) as temp_file:
             temp_file_path = temp_file.name
@@ -156,7 +157,9 @@ class TestUpdatePrefix:
 
     @pytest.mark.skipif(not on_win, reason="Windows-specific test")
     def test_non_powershell_extended_length_prefix_preserved(self):
-        """Test that non-PowerShell files preserve extended-length prefixes in new_prefix."""
+        """Test that extended-length prefixes are preserved for non-PowerShell files.
+        Leave this test in for now, though could be argued that any Windows files with such
+        prefixes should be cleaned up -> not clear for now."""
         # Create a temporary Python file
         with tempfile.NamedTemporaryFile(mode='w+b', suffix='.py', delete=False) as temp_file:
             temp_file_path = temp_file.name
@@ -251,7 +254,7 @@ class TestUpdatePrefix:
 
         try:
             # Test with extended-length prefix in binary mode - should not be modified
-            new_prefix_with_extended = "//?/C:/new/prefix" if on_win else "//?/C:/new/prefix"
+            new_prefix_with_extended = "//?/C:/new/prefix"
             placeholder = "OLD_PREFIX"
 
             with patch('conda_pack.prefixes.replace_prefix') as mock_replace_prefix:

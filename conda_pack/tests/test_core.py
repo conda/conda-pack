@@ -772,7 +772,9 @@ def test_windows_extended_length_path_normalization_unknown_mode():
 
     # Test data: (prefix_input, expected_normalized_prefix)
     test_cases = [
+        # UNC path with backslashes should be normalized
         (r"\\?\C:\very\long\test\prefix", r"C:\very\long\test\prefix"),
+        # UNC path with forward slashes should be normalized
         (r"//?/C:\very\long\test\prefix", r"C:\very\long\test\prefix"),
     ]
 
