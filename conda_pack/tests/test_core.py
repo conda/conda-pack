@@ -5,7 +5,7 @@ import re
 import subprocess
 import tarfile
 from glob import glob
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
