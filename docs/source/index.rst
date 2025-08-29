@@ -181,7 +181,7 @@ This tool has a few caveats.
   on both build systems and target systems where ``conda-pack`` will be used.
   See Microsoft's docs:
   `Long path support <https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later>`_.
- 
+
 
 .. toctree::
     :hidden:

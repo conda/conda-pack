@@ -11,8 +11,7 @@ import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.compat import load_source, on_win
-from conda_pack.core import BIN_DIR, File, name_to_prefix
-from conda_pack.core import Packer
+from conda_pack.core import BIN_DIR, File, Packer, name_to_prefix
 
 from .conftest import (
     activate_scripts_path,
