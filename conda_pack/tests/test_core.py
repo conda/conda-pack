@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tarfile
 from glob import glob
 
@@ -316,10 +317,17 @@ def test_roundtrip(tmpdir, basic_python_env):
 
     # Check no prefix generated for python executable
     python_pattern = re.compile(r'bin/python\d.\d')
-    conda_unpack_mod = load_source('conda_unpack', conda_unpack_script)
-    pythons = [r for r in conda_unpack_mod._prefix_records
-               if python_pattern.match(r[0])]
-    assert not pythons
+
+    # Temporarily add the BIN_DIR to sys.path so the script can import conda_unpack_progress
+    bin_dir = os.path.join(extract_path, BIN_DIR)
+    sys.path.insert(0, bin_dir)
+    try:
+        conda_unpack_mod = load_source('conda_unpack', conda_unpack_script)
+        pythons = [r for r in conda_unpack_mod._prefix_records
+                   if python_pattern.match(r[0])]
+        assert not pythons
+    finally:
+        sys.path.remove(bin_dir)
 
     if on_win:
         command = (r"@call {path}\Scripts\activate.bat && "
@@ -530,9 +538,10 @@ def test_pack(tmpdir, basic_python_env):
 
     if on_win:
         fnames = ('conda-unpack.exe', 'conda-unpack-script.py',
-                  'activate.bat', 'deactivate.bat')
+                  'conda_unpack_progress.py', 'activate.bat', 'deactivate.bat')
     else:
-        fnames = ('conda-unpack', 'activate', 'deactivate', 'activate.fish')
+        fnames = ('conda-unpack', 'conda_unpack_progress.py', 
+                  'activate', 'deactivate', 'activate.fish')
     assert diff == {os.path.join(BIN_DIR_L, f) for f in fnames}
 
 
