@@ -540,8 +540,13 @@ def test_pack(tmpdir, basic_python_env):
         fnames = ('conda-unpack.exe', 'conda-unpack-script.py',
                   'conda_unpack_progress.py', 'activate.bat', 'deactivate.bat')
     else:
-        fnames = ('conda-unpack', 'conda_unpack_progress.py', 
-                  'activate', 'deactivate', 'activate.fish')
+        fnames = (
+            "conda-unpack",
+            "conda_unpack_progress.py",
+            "activate",
+            "deactivate",
+            "activate.fish",
+        )
     assert diff == {os.path.join(BIN_DIR_L, f) for f in fnames}
 
 
