@@ -5,12 +5,13 @@ import re
 import subprocess
 import tarfile
 from glob import glob
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.compat import load_source, on_win
-from conda_pack.core import BIN_DIR, File, name_to_prefix
+from conda_pack.core import BIN_DIR, File, Packer, name_to_prefix
 
 from .conftest import (
     activate_scripts_path,
@@ -674,3 +675,136 @@ def test_activate(tmpdir):
         except (subprocess.CalledProcessError, FileNotFoundError):
             # Skip fish test if fish shell is not available
             pytest.skip("fish shell not available")
+
+
+@pytest.mark.skipif(not on_win, reason="Windows-specific test")
+def test_windows_extended_length_path_normalization():
+    """Test that Windows extended-length paths are properly normalized in Packer.add()."""
+    # Create mock archive
+    mock_archive = Mock()
+    test_prefix = r"C:\test\prefix"
+    dest_prefix = r"C:\dest\prefix"  # Add dest_prefix to trigger replace_prefix
+
+    # Create Packer instance with dest_prefix to ensure replace_prefix is called
+    packer = Packer(prefix=test_prefix, archive=mock_archive, dest_prefix=dest_prefix)
+
+    # Test data: (placeholder_input, expected_normalized_placeholder)
+    test_cases = [
+        # UNC path with forward slashes should be normalized
+        (r"//?/C:\very\long\path\prefix", r"C:\very\long\path\prefix"),
+        # UNC path with backslashes should be normalized
+        (r"\\?\C:\very\long\path\prefix", r"C:\very\long\path\prefix"),
+        # Normal path should remain unchanged
+        (r"C:\normal\path\prefix", r"C:\normal\path\prefix"),
+        # Empty string should remain unchanged
+        ("", ""),
+    ]
+
+    # Mock file content
+    test_content = b"#!/usr/bin/env python\nprint('test')"
+
+    with patch('builtins.open', mock_open(read_data=test_content)):
+        with patch('conda_pack.core.replace_prefix') as mock_replace_prefix:
+            mock_replace_prefix.return_value = test_content
+
+            for i, (input_placeholder, expected_placeholder) in enumerate(test_cases):
+                # Create file with test placeholder
+                test_file = File(
+                    source=f"C:\\source\\file{i}.py",
+                    target=f"lib/python3.9/file{i}.py",
+                    is_conda=True,
+                    file_mode="text",
+                    prefix_placeholder=input_placeholder
+                )
+
+                # Add file to packer (triggers normalization logic)
+                packer.add(test_file)
+
+    # Verify replace_prefix was called with normalized placeholders
+    calls = mock_replace_prefix.call_args_list
+    assert len(calls) == len(test_cases)
+
+    for i, (_, expected_placeholder) in enumerate(test_cases):
+        # Check that the normalized placeholder was passed to replace_prefix
+        # replace_prefix signature: replace_prefix(data, file_mode, placeholder, dest)
+        actual_placeholder = calls[i][0][2]  # Third argument is the placeholder
+        assert actual_placeholder == expected_placeholder, (
+            f"Test case {i}: expected {expected_placeholder}, got {actual_placeholder}"
+        )
+
+
+@pytest.mark.skipif(not on_win, reason="Windows-specific test")
+def test_windows_extended_length_path_normalization_none_placeholder():
+    """Test that None placeholders are handled correctly in Windows path normalization."""
+    mock_archive = Mock()
+    test_prefix = r"C:\test\prefix"
+    # Don't set dest_prefix so that files with None placeholder aren't processed
+    packer = Packer(prefix=test_prefix, archive=mock_archive)
+
+    # File with None placeholder should not crash
+    test_file = File(
+        source=r"C:\source\file.py",
+        target="lib/python3.9/file.py",
+        is_conda=True,
+        file_mode="text",
+        prefix_placeholder=None
+    )
+
+    # Mock file that should not go through replace_prefix path
+    # This should take the "archive.add" path instead
+    packer.add(test_file)
+
+    # Verify the file was added to archive without prefix processing
+    mock_archive.add.assert_called_once_with(test_file.source, test_file.target)
+
+
+@pytest.mark.skipif(not on_win, reason="Windows-specific test")
+def test_windows_extended_length_path_normalization_unknown_mode():
+    """Test Windows extended-length path normalization for unknown file mode (self.prefix)."""
+    mock_archive = Mock()
+
+    # Use a prefix with extended-length path to test the second normalization block
+    test_prefix = r"\\?\C:\very\long\test\prefix"
+    dest_prefix = r"C:\dest\prefix"
+
+    packer = Packer(prefix=test_prefix, archive=mock_archive, dest_prefix=dest_prefix)
+
+    # Test data: (prefix_input, expected_normalized_prefix)
+    test_cases = [
+        # UNC path with backslashes should be normalized
+        (r"\\?\C:\very\long\test\prefix", r"C:\very\long\test\prefix"),
+        # UNC path with forward slashes should be normalized
+        (r"//?/C:\very\long\test\prefix", r"C:\very\long\test\prefix"),
+    ]
+
+    for i, (input_prefix, expected_prefix) in enumerate(test_cases):
+        # Update the packer's prefix for each test case
+        packer.prefix = input_prefix
+
+        # Use file_mode="unknown" to trigger the second normalization block (lines 1203-1207)
+        test_file = File(
+            source=f"C:\\source\\file{i}.exe",
+            target=f"Scripts/some_executable{i}.exe",  # Windows bin dir with executable
+            is_conda=True,
+            file_mode="unknown",  # This triggers the second code path
+            prefix_placeholder=None  # When None, it uses self.prefix
+        )
+
+        test_content = b"#!/usr/bin/env python\nprint('test')"
+
+        with patch('builtins.open', mock_open(read_data=test_content)):
+            with patch('conda_pack.core.replace_prefix') as mock_replace_prefix:
+                with patch('conda_pack.core.is_binary_file', return_value=False):  # Force text mode
+                    mock_replace_prefix.return_value = test_content
+
+                    packer.add(test_file)
+
+                    # Verify the normalized self.prefix was used (no \\?\ or //?/)
+                    calls = mock_replace_prefix.call_args_list
+                    assert len(calls) == 1, f"Expected 1 call, got {len(calls)}"
+
+                    # Check the call arguments
+                    actual_placeholder = calls[0][0][2]  # Third argument is the placeholder
+                    assert actual_placeholder == expected_prefix, (
+                        f"Test case {i}: expected {expected_prefix}, got {actual_placeholder}"
+                    )

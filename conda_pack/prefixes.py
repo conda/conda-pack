@@ -64,6 +64,10 @@ def update_prefix(path, new_prefix, placeholder, mode='text'):
         # escape backslashes replace with unix-style path separators
         new_prefix = new_prefix.replace('\\', '/')
 
+        # For PowerShell files, remove extended-length path prefix
+        if path.endswith('.ps1') and new_prefix.startswith('//?/'):
+            new_prefix = new_prefix[4:]
+
     file_changed = False
     with open(path, 'rb+') as fh:
         original_data = fh.read()
@@ -103,7 +107,17 @@ def replace_prefix(data, mode, placeholder, new_prefix):
 
 
 def text_replace(data, placeholder, new_prefix):
-    return data.replace(placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
+    # First do the standard replacement
+    data = data.replace(placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
+
+    # For Windows, also replace any extended-length path prefixes with normal paths
+    if on_win:
+        # Replace \\?\ with empty string (remove extended-length prefix)
+        data = data.replace(b'\\\\?\\', b'')
+        # Replace //?/ with empty string (Windows extended-length prefix with forward slashes)
+        data = data.replace(b'//?/', b'')
+
+    return data
 
 
 if on_win:
