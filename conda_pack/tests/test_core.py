@@ -49,7 +49,7 @@ def bad_conda_exe(tmpdir_factory, monkeypatch):
     fake_conda = os.path.join(tmpdir, 'conda.bat' if on_win else 'conda')
     with open(fake_conda, 'w') as f:
         f.write('ECHO Failed\r\nEXIT /B 1' if on_win else 'echo "Failed"\nexit 1')
-    os.chmod(fake_conda, os.stat(fake_conda).st_mode | 0o111)
+    os.chmod(fake_conda, os.stat(fake_conda).st_mode | 0o555)
 
     monkeypatch.setenv('PATH', tmpdir, prepend=os.pathsep)
     monkeypatch.delenv('CONDA_EXE', raising=False)
