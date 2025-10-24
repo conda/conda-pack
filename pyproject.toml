@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conda-pack"
+dynamic = ["version"]
+description = "Package conda environments for redistribution"
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+authors = [
+    {name = "Jim Crist", email = "jiminy.crist@gmail.com"}
+]
+maintainers = [
+    {name = "Jim Crist", email = "jiminy.crist@gmail.com"}
+]
+keywords = ["conda", "packaging"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Archiving :: Packaging",
+    "Topic :: System :: Software Distribution",
+    "Topic :: Software Development :: Build Tools",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "setuptools",
+]
+
+[project.urls]
+Homepage = "https://conda.github.io/conda-pack/"
+Repository = "https://github.com/conda/conda-pack"
+Documentation = "https://conda.github.io/conda-pack/"
+
+[project.scripts]
+conda-pack = "conda_pack.cli:main"
+
+[tool.setuptools]
+packages = ["conda_pack"]
+zip-safe = false
+
+[tool.setuptools.package-data]
+conda_pack = ["scripts/windows/*", "scripts/posix/*"]
+
+[tool.setuptools_scm]
+write_to = "conda_pack/_version.py"
+
+[tool.flake8]
+exclude = ["__init__.py"]
+max-line-length = 100
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
