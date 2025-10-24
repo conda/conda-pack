@@ -1,8 +1,0 @@
-include conda_pack/*.py
-include conda_pack/script/
-include setup.py
-include README.rst
-include LICENSE.txt
-include MANIFEST.in
-include versioneer.py
-include conda_pack/_version.py

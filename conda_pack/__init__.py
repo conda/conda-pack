@@ -1,4 +1,6 @@
-from . import _version
-from .core import CondaEnv, CondaPackException, File, pack
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
 
-__version__ = _version.get_versions()['version']
+from .core import CondaEnv, CondaPackException, File, pack  # noqa: F401
