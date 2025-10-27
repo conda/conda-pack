@@ -42,7 +42,7 @@ jobs:
     - name: Reduce the size of the build artifact
       run: rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
     - name: Upload the build artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
@@ -120,7 +120,7 @@ jobs:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Download the build artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: package-${{ github.sha }}
         path: conda-bld
@@ -149,7 +149,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Download the build artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: package-${{ github.sha }}
         path: conda-bld
