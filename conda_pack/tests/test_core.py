@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tarfile
 from glob import glob
 from unittest.mock import Mock, mock_open, patch
@@ -49,7 +50,7 @@ def bad_conda_exe(tmpdir_factory, monkeypatch):
     fake_conda = os.path.join(tmpdir, 'conda.bat' if on_win else 'conda')
     with open(fake_conda, 'w') as f:
         f.write('ECHO Failed\r\nEXIT /B 1' if on_win else 'echo "Failed"\nexit 1')
-    os.chmod(fake_conda, os.stat(fake_conda).st_mode | 0o111)
+    os.chmod(fake_conda, os.stat(fake_conda).st_mode | 0o555)
 
     monkeypatch.setenv('PATH', tmpdir, prepend=os.pathsep)
     monkeypatch.delenv('CONDA_EXE', raising=False)
@@ -103,9 +104,13 @@ def test_errors_editable_packages():
 
 
 def test_ignore_errors_editable_packages():
-    # The ignore_editable_packages flag doesn't help with conda/pip conflicts
-    # We need to ignore missing files instead
-    CondaEnv.from_prefix(basic_python_editable_path, ignore_missing_files=True)
+    # The environment has both editable packages and missing conda-managed files
+    # (because pip replaced the conda installation), so we need to ignore both
+    CondaEnv.from_prefix(
+        basic_python_editable_path,
+        ignore_editable_packages=True,
+        ignore_missing_files=True,
+    )
 
 
 def test_errors_when_target_directory_not_exists_and_not_force(
@@ -317,10 +322,17 @@ def test_roundtrip(tmpdir, basic_python_env):
 
     # Check no prefix generated for python executable
     python_pattern = re.compile(r'bin/python\d.\d')
-    conda_unpack_mod = load_source('conda_unpack', conda_unpack_script)
-    pythons = [r for r in conda_unpack_mod._prefix_records
-               if python_pattern.match(r[0])]
-    assert not pythons
+
+    # Temporarily add the BIN_DIR to sys.path so the script can import conda_unpack_progress
+    bin_dir = os.path.join(extract_path, BIN_DIR)
+    sys.path.insert(0, bin_dir)
+    try:
+        conda_unpack_mod = load_source('conda_unpack', conda_unpack_script)
+        pythons = [r for r in conda_unpack_mod._prefix_records
+                   if python_pattern.match(r[0])]
+        assert not pythons
+    finally:
+        sys.path.remove(bin_dir)
 
     if on_win:
         command = (r"@call {path}\Scripts\activate.bat && "
@@ -531,9 +543,15 @@ def test_pack(tmpdir, basic_python_env):
 
     if on_win:
         fnames = ('conda-unpack.exe', 'conda-unpack-script.py',
-                  'activate.bat', 'deactivate.bat')
+                  'conda_unpack_progress.py', 'activate.bat', 'deactivate.bat')
     else:
-        fnames = ('conda-unpack', 'activate', 'deactivate', 'activate.fish')
+        fnames = (
+            "conda-unpack",
+            "conda_unpack_progress.py",
+            "activate",
+            "deactivate",
+            "activate.fish",
+        )
     assert diff == {os.path.join(BIN_DIR_L, f) for f in fnames}
 
 

@@ -659,22 +659,27 @@ def find_site_packages(prefix):
 
 
 def check_no_editable_packages(prefix, site_packages):
-    pth_files = glob.glob(os.path.join(prefix, site_packages, '*.pth'))
     editable_packages = set()
-    for pth_fil in pth_files:
-        dirname = os.path.dirname(pth_fil)
-        with open(pth_fil) as pth:
-            for line in pth:
-                line = line.rstrip()
-                # Blank lines are skipped
-                # Lines starting with "#" are skipped
-                # Lines starting with "import" are executed
-                if not line or line.startswith('#') or line.startswith('import'):
-                    continue
-                # All other lines are relative paths
-                location = os.path.normpath(os.path.join(dirname, line))
-                if not location.startswith(prefix):
-                    editable_packages.add(line)
+
+    # Check for modern editable packages (pip >= 20.0)
+    # Look for *.dist-info/direct_url.json files with editable=True
+    dist_info_dirs = glob.glob(os.path.join(prefix, site_packages, "*.dist-info"))
+    for dist_info_dir in dist_info_dirs:
+        direct_url_path = os.path.join(dist_info_dir, "direct_url.json")
+        if os.path.exists(direct_url_path):
+            try:
+                with open(direct_url_path) as f:
+                    direct_url_data = json.load(f)
+                if direct_url_data.get("dir_info", {}).get("editable") is True:
+                    # Extract package name from dist-info directory name
+                    # e.g., "package_name-1.0.0.dist-info" -> "package_name"
+                    dist_info_name = os.path.basename(dist_info_dir)
+                    package_name = dist_info_name.split("-")[0]
+                    editable_packages.add(package_name)
+            except (json.JSONDecodeError, KeyError, IndexError):
+                # Skip malformed direct_url.json files
+                continue
+
     if editable_packages:
         msg = ("Cannot pack an environment with editable packages\n"
                "installed (e.g. from `python setup.py develop` or\n "
@@ -1088,6 +1093,9 @@ _parcel_package_template = """\
 
 _conda_unpack_template = """\
 {shebang}
+# Import progress bar to display unpack progress
+from conda_unpack_progress import progressbar
+
 {prefixes_py}
 
 _prefix_records = [
@@ -1104,6 +1112,9 @@ if __name__ == '__main__':
     parser.add_argument('--version',
                         action='store_true',
                         help='Show version then exit')
+    parser.add_argument('--verbose', '-v',
+                        action='store_true',
+                        help='Show progress bar during unpacking')
     args = parser.parse_args()
     # Manually handle version printing to output to stdout in python < 3.4
     if args.version:
@@ -1111,11 +1122,21 @@ if __name__ == '__main__':
     else:
         script_dir = os.path.dirname(__file__)
         new_prefix = os.path.abspath(os.path.dirname(script_dir))
-        for path, placeholder, mode in _prefix_records:
-            new_path = os.path.join(new_prefix, path)
-            if on_win:
-                new_path = new_path.replace('\\\\', '/')
-            update_prefix(new_path, new_prefix, placeholder, mode=mode)
+
+        if args.verbose and _prefix_records:
+            print("Unpacking environment...")
+            with progressbar(_prefix_records, enabled=True) as records:
+                for path, placeholder, mode in records:
+                    new_path = os.path.join(new_prefix, path)
+                    if on_win:
+                        new_path = new_path.replace('\\\\', '/')
+                    update_prefix(new_path, new_prefix, placeholder, mode=mode)
+        else:
+            for path, placeholder, mode in _prefix_records:
+                new_path = os.path.join(new_prefix, path)
+                if on_win:
+                    new_path = new_path.replace('\\\\', '/')
+                update_prefix(new_path, new_prefix, placeholder, mode=mode)
 """
 
 
@@ -1234,7 +1255,7 @@ class Packer:
             fil.close()
             st = os.stat(fil.name)
             if executable:
-                os.chmod(fil.name, st.st_mode | 0o111)
+                os.chmod(fil.name, st.st_mode | 0o555)
             self.archive.add(fil.name, fpath)
         finally:
             os.unlink(fil.name)
@@ -1279,6 +1300,12 @@ class Packer:
             else:
                 shebang = "#!/usr/bin/env python"
                 python_pattern = re.compile(BIN_DIR + "/python")
+
+            # Write the progress module alongside conda-unpack
+            progress_module_path = os.path.join(BIN_DIR, "conda_unpack_progress.py")
+            with open(os.path.join(_current_dir, "_progress.py")) as fil:
+                progress_content = fil.read()
+            self._write_text_file(progress_module_path, progress_content, False)
 
             # We skip prefix rewriting in python executables (if needed)
             # to avoid editing a running file.
