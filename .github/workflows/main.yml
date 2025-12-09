@@ -60,7 +60,9 @@ jobs:
     - name: Retrieve the source code
       uses: actions/checkout@v5
     - uses: conda-incubator/setup-miniconda@v3.2.0
-      if: matrix.os == 'macos-14'
+      with:
+        auto-update-conda: true
+        python-version: '3.9'
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
