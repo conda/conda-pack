@@ -90,7 +90,12 @@ jobs:
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Verify or create the testbed
       if: steps.cache-key.outputs.cache-hit != 'true'
-      run: testing/setup_envs.sh purge-packages
+      run: |
+        source $CONDA/etc/profile.d/conda.sh
+        conda config --add channels defaults
+        conda config --add channels conda-forge
+        export CONDA_EXE=$CONDA/bin/conda
+        testing/setup_envs.sh purge-packages
   tests:
     defaults:
       run:
