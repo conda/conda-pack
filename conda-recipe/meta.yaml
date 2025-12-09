@@ -1,8 +1,14 @@
 {% set data = load_setup_py_data() %}
+{% set version_raw = data.get('version') if data else None %}
+{% if version_raw %}
+  {% set version = version_raw.lstrip('v') %}
+{% else %}
+  {% set version = "0.0.0" %}
+{% endif %}
 
 package:
   name: conda-pack
-  version: {{ data.get('version').lstrip('v') }}
+  version: {{ version }}
 
 source:
   path: ../
@@ -19,6 +25,9 @@ requirements:
   host:
     - python >=3.9
     - pip
+    - setuptools >=61.0
+    - wheel
+    - setuptools-scm >=6.2
   run:
     - python >=3.9
     - setuptools
