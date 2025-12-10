@@ -150,7 +150,7 @@ def main(args=None, pack=pack):
         sys.exit(0)
 
     try:
-        with context.set_cli():
+        with context.set_cli(quiet=args.quiet):
             pack(name=args.name,
                  prefix=args.prefix,
                  output=args.output,
