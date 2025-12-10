@@ -71,7 +71,7 @@ fi
 echo Creating py310 environment
 env=$envs/py310
 conda env create -f $ymls/py310.yml -p $env
-# Remove this package from the cache for testing
+# Remove this package from the cache for testing -> test_missing_package_cache
 rm -rf $croot/pkgs/conda_pack_test_lib2*py310*
 
 echo Creating baisc_python_editable environment
@@ -109,6 +109,5 @@ else
     cp $cwd/extra_scripts/conda_pack_test_deactivate.sh $env/etc/conda/deactivate.d
 fi
 
-rm -f $croot/pkgs/{*.tar.bz2,*.conda}
 conda info
 ls -l $croot/envs
