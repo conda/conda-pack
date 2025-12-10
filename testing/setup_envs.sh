@@ -34,8 +34,8 @@ if [ -d $croot/envs/activate_scripts/conda-meta ]; then
 fi
 
 mkdir -p $envs
-# Make sure the local package cache is used
-rm -rf $croot/pkgs
+# Ensure package cache directory exists (but don't remove it - packages need to persist)
+mkdir -p $croot/pkgs
 
 echo Creating basic_python environment
 env=$envs/basic_python
@@ -61,11 +61,6 @@ if [ -f $env/python.exe ]; then
     rm $env/lib/site-packages/toolz/*.py
 else
     rm $env/lib/python3.9/site-packages/toolz/*.py
-fi
-
-# Only do this when the developer has agreed to it, this might otherwise break things in his system.
-if [[ "$CONDA_CLEAN_P" == "purge-packages" ]]; then
-  conda clean -apfy
 fi
 
 echo Creating py310 environment
