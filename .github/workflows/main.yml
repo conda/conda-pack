@@ -95,7 +95,7 @@ jobs:
         conda config --add channels defaults
         conda config --add channels conda-forge
         export CONDA_EXE=$CONDA/bin/conda
-        testing/setup_envs.sh purge-packages
+        testing/setup_envs.sh
   tests:
     defaults:
       run:
