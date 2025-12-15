@@ -145,6 +145,5 @@ def test_keyboard_interrupt(capsys, tmpdir):
 
     assert exc.value.code == 1
     out, err = capsys.readouterr()
-    # The error should end with "Interrupted\n" (warnings may appear before it in CI)
-    assert err.endswith("Interrupted\n")
+    assert err == "Interrupted\n"
     assert not os.path.exists(out_path)

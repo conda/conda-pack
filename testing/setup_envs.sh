@@ -8,7 +8,8 @@ CONDA_CLEAN_P=$1
 
 # GitHub action specific items. These are no-ops locally
 [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
-[ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
+# Use $HOME/.pkgs for all platforms to ensure consistent package cache behavior
+export CONDA_PKGS_DIRS="$HOME/.pkgs"
 
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
@@ -25,7 +26,6 @@ if [ ! -d $croot/conda-meta ]; then
 fi
 
 source $croot/etc/profile.d/conda.sh
-export CONDA_PKGS_DIRS=$croot/pkgs
 
 if [ -d $croot/envs/activate_scripts/conda-meta ]; then
     conda info
@@ -34,8 +34,6 @@ if [ -d $croot/envs/activate_scripts/conda-meta ]; then
 fi
 
 mkdir -p $envs
-# Ensure package cache directory exists (but don't remove it - packages need to persist)
-mkdir -p $croot/pkgs
 
 echo Creating basic_python environment
 env=$envs/basic_python
@@ -67,7 +65,7 @@ echo Creating py310 environment
 env=$envs/py310
 conda env create -f $ymls/py310.yml -p $env
 # Remove this package from the cache for testing -> test_missing_package_cache
-rm -rf $croot/pkgs/conda_pack_test_lib2*py310*
+rm -rf "$HOME/.pkgs/conda_pack_test_lib2"*py310*
 
 echo Creating baisc_python_editable environment
 env=$envs/basic_python_editable
