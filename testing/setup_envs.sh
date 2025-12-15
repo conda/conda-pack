@@ -8,8 +8,10 @@ CONDA_CLEAN_P=$1
 
 # GitHub action specific items. These are no-ops locally
 [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
-# Use $HOME/.pkgs for all platforms to ensure consistent package cache behavior
+# Use $HOME/.pkgs for all platforms - set BEFORE any conda operations
+# This ensures packages persist outside the testbed cache, similar to how macOS worked before
 export CONDA_PKGS_DIRS="$HOME/.pkgs"
+mkdir -p "$HOME/.pkgs"
 
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
