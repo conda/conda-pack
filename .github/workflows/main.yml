@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.1
       with:
         fetch-depth: 0
     - name: Install build dependencies
@@ -42,7 +42,7 @@ jobs:
     - name: Reduce the size of the build artifact
       run: rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
     - name: Upload the build artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: package-${{ github.sha }}
         path: /usr/share/miniconda/conda-bld
@@ -58,7 +58,7 @@ jobs:
         os: [ubuntu-latest,macos-14,windows-latest]
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.1
     - uses: conda-incubator/setup-miniconda@v3.2.0
       if: matrix.os == 'macos-14'
     - id: conda-root
@@ -72,13 +72,13 @@ jobs:
     # have already built the testbed. Any small file will do
     - id: cache-key
       name: Retrieve cache key
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: LICENSE.txt
         key: key-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Retrieve or create the testbed cache
       if: steps.cache-key.outputs.cache-hit != 'true'
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
@@ -106,7 +106,7 @@ jobs:
             conda_deps: ""
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.1
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
@@ -115,12 +115,12 @@ jobs:
           echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
           echo "CONDA_ROOT: $CONDA_ROOT"
     - name: Retrieve the testbed cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Download the build artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         name: package-${{ github.sha }}
         path: conda-bld
@@ -145,11 +145,11 @@ jobs:
     if: github.event_name == 'push'
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.1
       with:
         fetch-depth: 0
     - name: Download the build artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         name: package-${{ github.sha }}
         path: conda-bld
