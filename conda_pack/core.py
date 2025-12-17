@@ -50,27 +50,21 @@ else:
 class _Context:
     def __init__(self):
         self.is_cli = False
-        self.quiet = False
 
     def warn(self, msg):
-        if self.quiet:
-            return
         if self.is_cli:
             print(msg + "\n", file=sys.stderr)
         else:
             warnings.warn(msg)
 
     @contextmanager
-    def set_cli(self, quiet=False):
-        old_is_cli = self.is_cli
-        old_quiet = self.quiet
+    def set_cli(self):
+        old = self.is_cli
         try:
             self.is_cli = True
-            self.quiet = quiet
             yield
         finally:
-            self.is_cli = old_is_cli
-            self.quiet = old_quiet
+            self.is_cli = old
 
 
 context = _Context()
