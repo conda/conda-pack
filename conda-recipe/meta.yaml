@@ -1,14 +1,8 @@
-{% set data = load_setup_py_data() %}
-{% set version_raw = data.get('version') if data else None %}
-{% if version_raw %}
-  {% set version = version_raw.lstrip('v') %}
-{% else %}
-  {% set version = "0.9.0" %}
-{% endif %}
+{% set version_base = environ.get("VERSION_OVERRIDE") or GIT_DESCRIBE_TAG %}
 
 package:
   name: conda-pack
-  version: {{ version }}
+  version: {{ version_base }}.{{ GIT_DESCRIBE_NUMBER }}+{{ GIT_DESCRIBE_HASH }}
 
 source:
   path: ../
