@@ -73,7 +73,9 @@ jobs:
           CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
           echo "value=$(dirname $GITHUB_WORKSPACE)/conda" >> $GITHUB_OUTPUT
           echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
+          echo "CONDA_PKGS_DIRS=$CONDA_ROOT/pkgs" >> $GITHUB_ENV
           echo "CONDA_ROOT: $CONDA_ROOT"
+          echo "CONDA_PKGS_DIRS: $CONDA_ROOT/pkgs"
     # Use a smaller cache entry to enable a quicker exit if we
     # have already built the testbed. Any small file will do
     - id: cache-key
@@ -126,7 +128,9 @@ jobs:
           CONDA_ROOT=$(dirname $GITHUB_WORKSPACE)/conda
           echo "value=$(dirname $GITHUB_WORKSPACE)/conda" >> $GITHUB_OUTPUT
           echo "CONDA_ROOT=$CONDA_ROOT" >> $GITHUB_ENV
+          echo "CONDA_PKGS_DIRS=$CONDA_ROOT/pkgs" >> $GITHUB_ENV
           echo "CONDA_ROOT: $CONDA_ROOT"
+          echo "CONDA_PKGS_DIRS: $CONDA_ROOT/pkgs"
     - name: Retrieve the testbed cache
       uses: actions/cache@v4
       with:

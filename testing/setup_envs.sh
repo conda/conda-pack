@@ -8,10 +8,6 @@ CONDA_CLEAN_P=$1
 
 # GitHub action specific items. These are no-ops locally
 [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
-# Use $HOME/.pkgs for all platforms - set BEFORE any conda operations
-# This ensures packages persist outside the testbed cache, similar to how macOS worked before
-export CONDA_PKGS_DIRS="$HOME/.pkgs"
-mkdir -p "$HOME/.pkgs"
 
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
@@ -22,6 +18,14 @@ else
     croot=$cwd/conda
 fi
 envs=$croot/envs
+
+# Use $croot/pkgs so package cache is included in testbed cache
+# Set this BEFORE any conda operations to ensure packages go to the right location
+# If CONDA_PKGS_DIRS is already set (e.g., from workflow), use that, otherwise use $croot/pkgs
+if [ -z "$CONDA_PKGS_DIRS" ]; then
+    export CONDA_PKGS_DIRS="$croot/pkgs"
+fi
+mkdir -p "$CONDA_PKGS_DIRS"
 
 if [ ! -d $croot/conda-meta ]; then
     ${CONDA_EXE:-conda} create -y -p $croot conda python=3.9
@@ -67,7 +71,7 @@ echo Creating py310 environment
 env=$envs/py310
 conda env create -f $ymls/py310.yml -p $env
 # Remove this package from the cache for testing -> test_missing_package_cache
-rm -rf "$HOME/.pkgs/conda_pack_test_lib2"*py310*
+rm -rf "$CONDA_PKGS_DIRS/conda_pack_test_lib2"*py310*
 
 echo Creating baisc_python_editable environment
 env=$envs/basic_python_editable
