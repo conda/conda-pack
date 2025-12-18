@@ -8,7 +8,8 @@ on:
   pull_request:
     branches:
       - main
-
+env:
+  CONDA_PLUGINS_AUTO_ACCEPT_TOS: yes
 concurrency:
   # Concurrency group that uses the workflow name and PR number if available
   # or commit SHA as a fallback. If a new build is triggered under that
@@ -52,8 +53,6 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ matrix.os }}
-    env:
-      CONDA_PLUGINS_AUTO_ACCEPT_TOS: yes
     strategy:
       fail-fast: false
       matrix:
@@ -65,8 +64,6 @@ jobs:
       with:
         auto-update-conda: true
         python-version: '3.9'
-      env:
-        CONDA_PLUGINS_AUTO_ACCEPT_TOS: yes
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
@@ -94,7 +91,6 @@ jobs:
       if: steps.cache-key.outputs.cache-hit != 'true'
       run: |
         source $CONDA/etc/profile.d/conda.sh
-        conda config --add channels defaults
         conda config --add channels conda-forge
         export CONDA_EXE=$CONDA/bin/conda
         testing/setup_envs.sh
@@ -104,8 +100,6 @@ jobs:
         shell: bash
     runs-on: ${{ matrix.os }}
     needs: [package,testbed]
-    env:
-      CONDA_PLUGINS_AUTO_ACCEPT_TOS: yes
     strategy:
       fail-fast: false
       matrix:
