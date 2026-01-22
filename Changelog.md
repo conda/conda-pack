@@ -1,3 +1,30 @@
+## 0.9.0 (2026-01-05)
+
+### Enhancements
+
+* Replaced deprecated `pkg_resources` with `importlib.resources`. (#391 via #424)
+* Add Simple Contribution Guide. (#416 via #415)
+* Add optional progress bar to conda-unpack for better user feedback (#430)
+
+### Bug fixes
+
+* Fix issue with extended path format on Windows. (#398 via #432)
+* Fix executables for all users. (#355 via #438)
+
+### Other
+
+* Update Python supported versions. (#414 via #417)
+* Various dependency updates and CI improvements (#418 via #419, #420)
+
+### Contributors
+
+* @AidanShipperley
+* @Dave-Karetnyk-TFS
+* @ryanskeith
+* @tan-i-ham
+* @xhochy
+
+
 # 0.8.1 (2024-11-15)
 
 ## What's Changed

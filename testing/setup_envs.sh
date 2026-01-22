@@ -8,7 +8,6 @@ CONDA_CLEAN_P=$1
 
 # GitHub action specific items. These are no-ops locally
 [ "$RUNNER_OS" == "Windows" ] && CONDA_EXE="$CONDA/Scripts/conda.exe"
-[ "$RUNNER_OS" == "macOS" ] && export CONDA_PKGS_DIRS=~/.pkgs
 
 cwd=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 ymls=$cwd/env_yamls
@@ -20,12 +19,22 @@ else
 fi
 envs=$croot/envs
 
+# Use $croot/pkgs so package cache is included in testbed cache
+# Set this BEFORE any conda operations to ensure packages go to the right location
+# If CONDA_PKGS_DIRS is already set (e.g., from workflow), use that, otherwise use $croot/pkgs
+if [ -z "$CONDA_PKGS_DIRS" ]; then
+    export CONDA_PKGS_DIRS="$croot/pkgs"
+fi
+# CONDA_PKGS_DIRS may contain multiple directories separated by : (Unix) or ; (Windows)
+# Extract the first directory only
+FIRST_CONDA_PKG_DIR=$(echo "$CONDA_PKGS_DIRS" | cut -d':' -d';' -f1)
+mkdir -p "$FIRST_CONDA_PKG_DIR"
+
 if [ ! -d $croot/conda-meta ]; then
     ${CONDA_EXE:-conda} create -y -p $croot conda python=3.9
 fi
 
 source $croot/etc/profile.d/conda.sh
-export CONDA_PKGS_DIRS=$croot/pkgs
 
 if [ -d $croot/envs/activate_scripts/conda-meta ]; then
     conda info
@@ -34,8 +43,6 @@ if [ -d $croot/envs/activate_scripts/conda-meta ]; then
 fi
 
 mkdir -p $envs
-# Make sure the local package cache is used
-rm -rf $croot/pkgs
 
 echo Creating basic_python environment
 env=$envs/basic_python
@@ -63,16 +70,11 @@ else
     rm $env/lib/python3.9/site-packages/toolz/*.py
 fi
 
-# Only do this when the developer has agreed to it, this might otherwise break things in his system.
-if [[ "$CONDA_CLEAN_P" == "purge-packages" ]]; then
-  conda clean -apfy
-fi
-
 echo Creating py310 environment
 env=$envs/py310
 conda env create -f $ymls/py310.yml -p $env
-# Remove this package from the cache for testing
-rm -rf $croot/pkgs/conda_pack_test_lib2*py310*
+# Remove this package from the cache for testing -> test_missing_package_cache
+rm -rf "$FIRST_CONDA_PKG_DIR/conda_pack_test_lib2"*py310* 2>/dev/null || true
 
 echo Creating baisc_python_editable environment
 env=$envs/basic_python_editable
@@ -109,6 +111,5 @@ else
     cp $cwd/extra_scripts/conda_pack_test_deactivate.sh $env/etc/conda/deactivate.d
 fi
 
-rm -f $croot/pkgs/{*.tar.bz2,*.conda}
 conda info
 ls -l $croot/envs

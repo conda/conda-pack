@@ -1,8 +1,8 @@
-{% set data = load_setup_py_data() %}
+{% set version_base = environ.get("VERSION_OVERRIDE") or GIT_DESCRIBE_TAG %}
 
 package:
   name: conda-pack
-  version: {{ data.get('version').lstrip('v') }}
+  version: {{ version_base }}.{{ GIT_DESCRIBE_NUMBER }}+{{ GIT_DESCRIBE_HASH }}
 
 source:
   path: ../
@@ -19,6 +19,9 @@ requirements:
   host:
     - python >=3.9
     - pip
+    - setuptools >=61.0
+    - wheel
+    - setuptools-scm >=6.2
   run:
     - python >=3.9
     - setuptools
