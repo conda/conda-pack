@@ -22,7 +22,7 @@ repos:
         exclude: conda-recipe/meta.yaml
       - id: check-merge-conflict
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: ["--py39-plus"]
@@ -41,7 +41,7 @@ repos:
       - id: flake8
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.34.1
+    rev: 0.36.0
     hooks:
       - id: check-dependabot
       - id: check-github-workflows
