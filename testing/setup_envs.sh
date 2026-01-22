@@ -25,7 +25,10 @@ envs=$croot/envs
 if [ -z "$CONDA_PKGS_DIRS" ]; then
     export CONDA_PKGS_DIRS="$croot/pkgs"
 fi
-mkdir -p "$CONDA_PKGS_DIRS"
+# CONDA_PKGS_DIRS may contain multiple directories separated by : (Unix) or ; (Windows)
+# Extract the first directory only
+FIRST_CONDA_PKG_DIR=$(echo "$CONDA_PKGS_DIRS" | cut -d':' -d';' -f1)
+mkdir -p "$FIRST_CONDA_PKG_DIR"
 
 if [ ! -d $croot/conda-meta ]; then
     ${CONDA_EXE:-conda} create -y -p $croot conda python=3.9
@@ -71,7 +74,7 @@ echo Creating py310 environment
 env=$envs/py310
 conda env create -f $ymls/py310.yml -p $env
 # Remove this package from the cache for testing -> test_missing_package_cache
-rm -rf "$CONDA_PKGS_DIRS/conda_pack_test_lib2"*py310*
+rm -rf "$FIRST_CONDA_PKG_DIR/conda_pack_test_lib2"*py310* 2>/dev/null || true
 
 echo Creating baisc_python_editable environment
 env=$envs/basic_python_editable
