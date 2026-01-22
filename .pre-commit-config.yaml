@@ -39,7 +39,6 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
-        args: ["--max-line-length=100"]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.34.1
