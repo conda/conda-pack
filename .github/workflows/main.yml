@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
     - name: Install build dependencies
@@ -59,7 +59,7 @@ jobs:
         os: [ubuntu-latest,macos-14,windows-latest]
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
     - uses: conda-incubator/setup-miniconda@v3.3.0
       with:
         auto-update-conda: true
@@ -115,7 +115,7 @@ jobs:
             conda_deps: ""
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
     - id: conda-root
       name: Set CONDA_ROOT
       run: |
@@ -156,7 +156,7 @@ jobs:
     if: github.event_name == 'push'
     steps:
     - name: Retrieve the source code
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
     - name: Download the build artifacts
