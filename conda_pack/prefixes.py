@@ -107,15 +107,17 @@ def replace_prefix(data, mode, placeholder, new_prefix):
 
 
 def text_replace(data, placeholder, new_prefix):
-    # First do the standard replacement
-    data = data.replace(placeholder.encode('utf-8'), new_prefix.encode('utf-8'))
+    placeholder_bytes = placeholder.encode('utf-8')
+    new_prefix_bytes = new_prefix.encode('utf-8')
 
-    # For Windows, also replace any extended-length path prefixes with normal paths
     if on_win:
-        # Replace \\?\ with empty string (remove extended-length prefix)
-        data = data.replace(b'\\\\?\\', b'')
-        # Replace //?/ with empty string (Windows extended-length prefix with forward slashes)
-        data = data.replace(b'//?/', b'')
+        # Replace extended-prefix + placeholder as a unit FIRST,
+        # so the prefix doesn't dangle after the standard replacement.
+        data = data.replace(b'\\\\?\\' + placeholder_bytes, new_prefix_bytes)
+        data = data.replace(b'//?/' + placeholder_bytes, new_prefix_bytes)
+
+    # Standard replacement
+    data = data.replace(placeholder_bytes, new_prefix_bytes)
 
     return data
 

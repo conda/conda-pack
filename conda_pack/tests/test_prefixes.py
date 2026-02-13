@@ -23,63 +23,116 @@ class TestTextReplace:
 
     @pytest.mark.skipif(not on_win, reason="Windows-specific test")
     def test_windows_extended_length_path_cleanup(self):
-        """Test that Windows extended-length paths are cleaned up in text replacement."""
-        # Test data with various extended-length path patterns
-        test_data = b"#!/usr/bin/env python\npath1=\\\\?\\C:\\long\\path\npath2=//?/C:/long/path"
+        """Test that Windows extended-length paths before the placeholder are cleaned up."""
         placeholder = "/old/prefix"
         new_prefix = "/new/prefix"
 
-        result = text_replace(test_data, placeholder, new_prefix)
+        # \\?\ immediately before placeholder gets replaced
+        data = b"path=\\\\?\\/old/prefix/lib"
+        result = text_replace(data, placeholder, new_prefix)
+        assert result == b"path=/new/prefix/lib"
 
-        # Verify that extended-length prefixes are removed
-        assert b'\\\\?\\' not in result
-        assert b'//?/' not in result
+        # //?/ immediately before placeholder gets replaced
+        data = b"path=//?//old/prefix/lib"
+        result = text_replace(data, placeholder, new_prefix)
+        assert result == b"path=/new/prefix/lib"
 
-        # The paths should now be clean
-        expected = b"#!/usr/bin/env python\npath1=C:\\long\\path\npath2=C:/long/path"
-        assert result == expected
+        # Standalone \\?\ NOT followed by placeholder is preserved
+        data = b"path=\\\\?\\C:\\long\\path"
+        result = text_replace(data, placeholder, new_prefix)
+        assert b'\\\\?\\' in result
+        assert result == b"path=\\\\?\\C:\\long\\path"
 
     @pytest.mark.skipif(not on_win, reason="Windows-specific test")
     def test_windows_extended_length_path_with_placeholder_replacement(self):
         """Test extended-length path cleanup combined with placeholder replacement."""
-        # Data containing both placeholder and extended-length paths
-        test_data = b"#!/usr/bin/env python\nOLD_PREFIX=/old/prefix\npath=\\\\?\\C:\\long\\path"
         placeholder = "/old/prefix"
         new_prefix = "/new/prefix"
 
+        # Data with both a standard placeholder and an extended-prefix + placeholder
+        test_data = (
+            b"#!/usr/bin/env python\n"
+            b"OLD_PREFIX=/old/prefix\n"
+            b"path=\\\\?\\/old/prefix/lib"
+        )
+
         result = text_replace(test_data, placeholder, new_prefix)
 
-        # Both placeholder replacement and extended-length cleanup should occur
+        # Placeholder should be replaced everywhere
         assert b'/old/prefix' not in result
         assert b'/new/prefix' in result
-        assert b'\\\\?\\' not in result
 
-        expected = b"#!/usr/bin/env python\nOLD_PREFIX=/new/prefix\npath=C:\\long\\path"
+        # \\?\ before placeholder should be stripped
+        expected = (
+            b"#!/usr/bin/env python\n"
+            b"OLD_PREFIX=/new/prefix\n"
+            b"path=/new/prefix/lib"
+        )
         assert result == expected
 
     @pytest.mark.skipif(not on_win, reason="Windows-specific test")
     def test_windows_multiple_extended_length_patterns(self):
-        """Test cleanup of multiple different extended-length path patterns."""
+        """Test that extended-length prefixes NOT followed by the placeholder are preserved."""
+        placeholder = "/dummy"
+        new_prefix = "/dummy"
+
+        # None of these extended-length prefixes are followed by the placeholder,
+        # so they should all be preserved unchanged.
         test_data = (
             b"path1=\\\\?\\C:\\first\\path\n"
             b"path2=//?/D:/second/path\n"
             b"path3=\\\\?\\E:\\third\\path\n"
             b"path4=//?/F:/fourth/path"
         )
-        placeholder = "/dummy"
-        new_prefix = "/dummy"
 
         result = text_replace(test_data, placeholder, new_prefix)
 
-        # All extended-length prefixes should be removed
-        assert b'\\\\?\\' not in result
-        assert b'//?/' not in result
+        # Extended-length prefixes should be preserved since they don't precede the placeholder
+        assert result == test_data
 
+    @pytest.mark.skipif(not on_win, reason="Windows-specific test")
+    def test_windows_source_code_not_corrupted(self):
+        """Regression test for issue #461: source code containing \\\\?\\ as a string
+        literal should not be corrupted when the placeholder is not present."""
+        # Source code containing \\?\ as a string literal (NOT a path prefix)
+        test_data = b'and not os.path.abspath(lock_path).startswith("\\\\\\\\?\\\\")'
+        placeholder = "C:/old/prefix"
+        new_prefix = "C:/new/prefix"
+        result = text_replace(test_data, placeholder, new_prefix)
+        # The source code should be UNCHANGED since it doesn't contain the placeholder
+        assert result == test_data
+
+    @pytest.mark.skipif(not on_win, reason="Windows-specific test")
+    def test_windows_targeted_extended_prefix_replacement(self):
+        """Test that extended prefixes adjacent to the placeholder ARE correctly removed."""
+        placeholder = "C:/envs/myenv"
+        new_prefix = "C:/dest/prefix"
+
+        # Data with \\?\ prefix before the placeholder path
+        data = b'path=\\\\?\\C:/envs/myenv/lib/site-packages'
+        result = text_replace(data, placeholder, new_prefix)
+        assert result == b'path=C:/dest/prefix/lib/site-packages'
+
+        # Data with //?/ prefix before the placeholder path
+        data = b'path=//?/C:/envs/myenv/lib/site-packages'
+        result = text_replace(data, placeholder, new_prefix)
+        assert result == b'path=C:/dest/prefix/lib/site-packages'
+
+    @pytest.mark.skipif(not on_win, reason="Windows-specific test")
+    def test_windows_mixed_extended_and_standard_paths(self):
+        """Test a file with BOTH extended-prefix paths AND standard paths with the placeholder."""
+        placeholder = "C:/envs/myenv"
+        new_prefix = "C:/dest/prefix"
+        data = (
+            b'line1=//?/C:/envs/myenv/lib\n'
+            b'line2=C:/envs/myenv/bin\n'
+            b'line3=\\\\?\\C:/envs/myenv/share\n'
+        )
+        result = text_replace(data, placeholder, new_prefix)
         expected = (
-            b"path1=C:\\first\\path\n"
-            b"path2=D:/second/path\n"
-            b"path3=E:\\third\\path\n"
-            b"path4=F:/fourth/path"
+            b'line1=C:/dest/prefix/lib\n'
+            b'line2=C:/dest/prefix/bin\n'
+            b'line3=C:/dest/prefix/share\n'
         )
         assert result == expected
 
