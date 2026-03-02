@@ -27,7 +27,7 @@ repos:
       - id: pyupgrade
         args: ["--py39-plus"]
   - repo: https://github.com/PyCQA/isort
-    rev: 8.0.0
+    rev: 8.0.1
     hooks:
       - id: isort
   - repo: https://github.com/akaihola/darker
@@ -41,7 +41,7 @@ repos:
       - id: flake8
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.36.2
+    rev: 0.37.0
     hooks:
       - id: check-dependabot
       - id: check-github-workflows
