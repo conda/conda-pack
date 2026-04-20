@@ -147,7 +147,7 @@ jobs:
         conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov defaults::python=${{ matrix.pyver }} zstandard>=0.23.0 ${{ matrix.conda_deps }}
         conda activate cptest
         pytest -v -ss --cov=conda_pack --cov-branch --cov-report=xml conda_pack/tests
-    - uses: codecov/codecov-action@v5
+    - uses: codecov/codecov-action@v6
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
   upload:
@@ -175,7 +175,7 @@ jobs:
     - name: Deploy the documentation
       if: startsWith(github.ref, 'refs/tags/')
       id: deployment
-      uses: actions/upload-pages-artifact@v4
+      uses: actions/upload-pages-artifact@v5
       with:
         path: ./docs/build/html
     - name: Upload to anaconda.org
@@ -206,4 +206,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # or specific "vX.X.X" version tag for this action
+        uses: actions/deploy-pages@v5 # or specific "vX.X.X" version tag for this action
