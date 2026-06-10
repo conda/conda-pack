@@ -147,7 +147,7 @@ jobs:
         conda create -n cptest local::conda-pack conda-forge::pytest conda-forge::pytest-cov defaults::python=${{ matrix.pyver }} zstandard>=0.23.0 ${{ matrix.conda_deps }}
         conda activate cptest
         pytest -v -ss --cov=conda_pack --cov-branch --cov-report=xml conda_pack/tests
-    - uses: codecov/codecov-action@v6
+    - uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
   upload:
