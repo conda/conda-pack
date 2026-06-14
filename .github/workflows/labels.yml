@@ -15,16 +15,21 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.repository }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   sync:
+    name: Sync labels
     if: '!github.event.repository.fork'
     runs-on: ubuntu-slim
     permissions:
       contents: read
-      issues: write
+      issues: write  # Required to create, update, and delete repository issue labels.
     env:
       GLOBAL: https://raw.githubusercontent.com/conda/infra/main/.github/global.yml
       LOCAL: .github/labels.yml
