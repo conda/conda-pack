@@ -77,13 +77,13 @@ jobs:
     # have already built the testbed. Any small file will do
     - id: cache-key
       name: Retrieve cache key
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: LICENSE.txt
         key: key-${{ matrix.os }}-${{ hashFiles('testing') }}-5
     - name: Retrieve or create the testbed cache
       if: steps.cache-key.outputs.cache-hit != 'true'
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
@@ -126,7 +126,7 @@ jobs:
           echo "CONDA_ROOT: $CONDA_ROOT"
           echo "CONDA_PKGS_DIRS: $CONDA_ROOT/pkgs"
     - name: Retrieve the testbed cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ${{ steps.conda-root.outputs.value }}
         key: testbed-${{ matrix.os }}-${{ hashFiles('testing') }}-5
