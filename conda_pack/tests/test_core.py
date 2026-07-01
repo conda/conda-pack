@@ -12,7 +12,7 @@ import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.compat import load_source, on_win
-from conda_pack.core import BIN_DIR, File, Packer, name_to_prefix
+from conda_pack.core import BIN_DIR, File, Packer, name_to_prefix, _SH_ACTIVATE_TEMPLATE, _SH_DEACTIVATE_TEMPLATE
 
 from .conftest import (
     activate_scripts_path,
@@ -21,10 +21,13 @@ from .conftest import (
     basic_python_missing_files_path,
     basic_python_path,
     env_dir,
+    test_dir,
     has_conda_path,
     nopython_path,
     py310_path,
+    env_vars_path,
 )
+
 
 BIN_DIR_L = BIN_DIR.lower()
 SP = "Lib\\site-packages" if on_win else "lib/python3.9/site-packages"
@@ -830,3 +833,48 @@ def test_windows_extended_length_path_normalization_unknown_mode():
                     assert actual_placeholder == expected_prefix, (
                         f"Test case {i}: expected {expected_prefix}, got {actual_placeholder}"
                     )
+
+
+@pytest.mark.skipif(on_win, reason="posix only")
+def test_env_vars_activate_deactivate(tmpdir):
+    """Verifies core.py reads conda-meta/state, escapes values,
+    and writes correct scripts in a full activate/deactivate cycle:
+    - pre-existing var is overridden then restored
+    - non-existing var with special chars is set then unset
+    """
+    existing_key, existing_val = "MY_EXISTING_VAR", "hello"
+    special_key, special_val = "MY_SPECIAL_VAR", "red=b!%&#$=12'3"
+
+    out_path = os.path.join(str(tmpdir), "env_vars.tar")
+    extract_path = str(tmpdir.join("env"))
+    CondaEnv.from_prefix(env_vars_path).pack(out_path)
+
+    with tarfile.open(out_path) as fil:
+        fil.extractall(extract_path)
+
+    command = " && ".join([
+        f"export {existing_key}=preexisting",
+        f". {extract_path}/bin/activate",
+        f'test "${existing_key}" = "{existing_val}"',
+        f'test "${special_key}" = "{special_val}"',
+        f". {extract_path}/bin/deactivate",
+        f'test "${existing_key}" = preexisting',
+        f'test -z "${{{special_key}+x}}"',
+        "echo 'Done'",
+    ])
+    out = subprocess.check_output(
+        ["/usr/bin/env", "bash", "-c", command], stderr=subprocess.STDOUT
+    ).decode()
+    assert out.strip() == "Done"
+
+
+@pytest.mark.skipif(on_win, reason="posix only")
+def test_no_env_vars_scripts_without_state(tmpdir):
+    """Envs without env_vars in conda-meta/state produce no env var scripts."""
+    out_path = os.path.join(str(tmpdir), "basic_python.tar")
+    CondaEnv.from_prefix(basic_python_path).pack(out_path)
+    with tarfile.open(out_path) as fil:
+        names = fil.getnames()
+    assert "conda-meta/activate_env_vars.sh" not in names
+    assert "conda-meta/deactivate_env_vars.sh" not in names
+    assert "conda-meta/state" not in names

@@ -965,6 +965,18 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
             )
         )
 
+    if os.path.exists(os.path.join(conda_meta, "state")):
+        managed.add(os.path.join("conda-meta", "state"))
+        files.append(
+            File(
+                os.path.join(conda_meta, "state"),
+                os.path.join("conda-meta", "state"),
+                is_conda=True,
+                prefix_placeholder=None,
+                file_mode=None,
+            )
+        )
+
     if missing_files and not ignore_missing_files:
         packages = []
         for key, value in missing_files.items():
@@ -1150,6 +1162,23 @@ def is_binary_file(data):
         return True
 
 
+_SH_ACTIVATE_TEMPLATE = """\
+if [ -n "${{{key}+x}}" ]; then
+  export _CONDA_PACK_OLD_{key}="${{{key}}}";
+fi
+export {key}='{val}'
+"""
+
+_SH_DEACTIVATE_TEMPLATE = """\
+if [ -n "${{_CONDA_PACK_OLD_{key}+x}}" ]; then
+  export {key}="${{_CONDA_PACK_OLD_{key}}}";
+  unset _CONDA_PACK_OLD_{key};
+else
+  unset {key};
+fi
+"""
+
+
 class Packer:
     def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
         self.prefix = prefix
@@ -1289,6 +1318,26 @@ class Packer:
         if not (self.has_dest and has_conda):
             for source, target in _scripts:
                 self.archive.add(source, target)
+
+        # Write env vars if present
+        state_path = os.path.join(self.prefix, "conda-meta", "state")
+        if os.path.exists(state_path):
+            with open(state_path) as f:
+                env_vars = json.load(f).get("env_vars", {})
+            if env_vars:
+                escaped_vars = {k: str(v).replace("'", "'\\''") for k, v in env_vars.items()}
+                activate_lines = [
+                    _SH_ACTIVATE_TEMPLATE.format(key=k, val=v)
+                    for k, v in escaped_vars.items()
+                ]
+                self._write_text_file(
+                    os.path.join("conda-meta", "activate_env_vars.sh"),
+                    "".join(activate_lines)
+                )
+                self._write_text_file(
+                    os.path.join("conda-meta", "deactivate_env_vars.sh"),
+                    "".join(_SH_DEACTIVATE_TEMPLATE.format(key=k) for k in env_vars),
+                )
 
         # No `conda-unpack` command if dest-prefix specified
         if not self.has_dest:

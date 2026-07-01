@@ -35,6 +35,8 @@ jobs:
         cd docs
         make html
     - name: Build the package
+      env:
+        VERSION_OVERRIDE: 0.10.0
       run: conda build conda-recipe --no-test
     - name: Reduce the size of the build artifact
       run: rm -rf /usr/share/miniconda/conda-bld/{git_cache,work,conda-pack*,*/.cache}
@@ -149,7 +151,7 @@ jobs:
   upload:
     needs: tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v7.0.1

@@ -56,6 +56,12 @@ _conda_pack_activate() {
         *) hash -r;;
     esac
 
+    # Source env vars script
+    local _env_vars="${full_path_env}/conda-meta/activate_env_vars.sh"
+    if [ -f "$_env_vars" ]; then
+        . "$_env_vars";
+    fi
+
     # Run the activate scripts
     local _script_dir="${full_path_env}/etc/conda/activate.d"
     if [ -d "$_script_dir" ] && [ -n "$(ls -A "$_script_dir")" ]; then

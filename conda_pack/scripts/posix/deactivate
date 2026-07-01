@@ -1,4 +1,4 @@
-_conda_pack_deactivate () {
+_conda_pack_deactivate() {
     # If there's an active environment
     if [ -n "$CONDA_PREFIX" ]; then
         # First run the deactivate scripts
@@ -10,14 +10,19 @@ _conda_pack_deactivate () {
             done
         fi
 
-        # Remove env/bin from path
+        # Restore environment variables that were set during activation
+        local _env_vars="${CONDA_PREFIX}/conda-meta/deactivate_env_vars.sh"
+        if [ -f "$_env_vars" ]; then
+            . "$_env_vars";
+        fi
+
+        # Remove env/bin from PATH
         local IFS=':'
         local _target="$CONDA_PREFIX/bin"
         local _newpath
         local _path
-
         for _path in $PATH; do
-            if [ "$_path" != "$_target" ] ; then
+            if [ "$_path" != "$_target" ]; then
                 _newpath=${_newpath:+$_newpath:}$_path
             fi
         done
