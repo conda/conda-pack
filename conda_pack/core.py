@@ -1178,6 +1178,24 @@ else
 fi
 """
 
+_BAT_ACTIVATE_TEMPLATE = """\
+@IF DEFINED {key} (
+    @SET "_CONDA_PACK_OLD_{key}=%{key}%"
+) ELSE (
+    @SET "_CONDA_PACK_OLD_{key}="
+)
+@SET "{key}={val}"
+"""
+
+_BAT_DEACTIVATE_TEMPLATE = """\
+@IF DEFINED _CONDA_PACK_OLD_{key} (
+    @SET "{key}=%_CONDA_PACK_OLD_{key}%"
+) ELSE (
+    @SET "{key}="
+)
+@SET "_CONDA_PACK_OLD_{key}="
+"""
+
 
 class Packer:
     def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
@@ -1325,19 +1343,37 @@ class Packer:
             with open(state_path) as f:
                 env_vars = json.load(f).get("env_vars", {})
             if env_vars:
-                escaped_vars = {k: str(v).replace("'", "'\\''") for k, v in env_vars.items()}
-                activate_lines = [
-                    _SH_ACTIVATE_TEMPLATE.format(key=k, val=v)
-                    for k, v in escaped_vars.items()
-                ]
-                self._write_text_file(
-                    os.path.join("conda-meta", "activate_env_vars.sh"),
-                    "".join(activate_lines)
-                )
-                self._write_text_file(
-                    os.path.join("conda-meta", "deactivate_env_vars.sh"),
-                    "".join(_SH_DEACTIVATE_TEMPLATE.format(key=k) for k in env_vars),
-                )
+                if on_win:
+                    activate_lines = [
+                        _BAT_ACTIVATE_TEMPLATE.format(key=k, val=str(v).replace('%', '%%'))
+                        for k, v in env_vars.items()
+                    ]
+                    self._write_text_file(
+                        os.path.join("etc", "conda", "activate.d", "activate_env_vars.bat"),
+                        "".join(activate_lines)
+                    )
+                    deactivate_lines = [
+                        _BAT_DEACTIVATE_TEMPLATE.format(key=k)
+                        for k in env_vars
+                    ]
+                    self._write_text_file(
+                        os.path.join("etc", "conda", "deactivate.d", "deactivate_env_vars.bat"),
+                        "".join(deactivate_lines)
+                    )
+                else:
+                    escaped_vars = {k: str(v).replace("'", "'\\''") for k, v in env_vars.items()}
+                    activate_lines = [
+                        _SH_ACTIVATE_TEMPLATE.format(key=k, val=v)
+                        for k, v in escaped_vars.items()
+                    ]
+                    self._write_text_file(
+                        os.path.join("etc", "conda", "activate.d", "activate_env_vars.sh"),
+                        "".join(activate_lines)
+                    )
+                    self._write_text_file(
+                        os.path.join("etc", "conda", "deactivate.d", "deactivate_env_vars.sh"),
+                        "".join(_SH_DEACTIVATE_TEMPLATE.format(key=k) for k in env_vars),
+                    )
 
         # No `conda-unpack` command if dest-prefix specified
         if not self.has_dest:

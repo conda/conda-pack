@@ -10,12 +10,6 @@ _conda_pack_deactivate() {
             done
         fi
 
-        # Restore environment variables that were set during activation
-        local _env_vars="${CONDA_PREFIX}/conda-meta/deactivate_env_vars.sh"
-        if [ -f "$_env_vars" ]; then
-            . "$_env_vars";
-        fi
-
         # Remove env/bin from PATH
         local IFS=':'
         local _target="$CONDA_PREFIX/bin"

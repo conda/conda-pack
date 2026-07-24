@@ -8,4 +8,5 @@ dependencies:
 
 variables:
   MY_EXISTING_VAR: hello
-  MY_SPECIAL_VAR: "red=b!%&#$=12'3"
+  MY_SPECIAL_VAR: "red=|<>!&^'%123"
+  MY_QUOTED_VAR: 'say "hello"'

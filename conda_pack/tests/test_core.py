@@ -835,15 +835,67 @@ def test_windows_extended_length_path_normalization_unknown_mode():
                     )
 
 
-@pytest.mark.skipif(on_win, reason="posix only")
-def test_env_vars_activate_deactivate(tmpdir):
+@pytest.mark.skipif(not on_win, reason="Windows-specific test")
+@pytest.mark.parametrize("special_key,special_val", [
+    ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
+    ("MY_QUOTED_VAR", 'say "hello"')
+])
+def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     """Verifies core.py reads conda-meta/state, escapes values,
     and writes correct scripts in a full activate/deactivate cycle:
     - pre-existing var is overridden then restored
     - non-existing var with special chars is set then unset
     """
     existing_key, existing_val = "MY_EXISTING_VAR", "hello"
-    special_key, special_val = "MY_SPECIAL_VAR", "red=b!%&#$=12'3"
+
+    out_path = os.path.join(str(tmpdir), "env_vars.tar")
+    extract_path = str(tmpdir.join("env"))
+    CondaEnv.from_prefix(env_vars_path).pack(out_path)
+
+    with tarfile.open(out_path) as fil:
+        fil.extractall(extract_path)
+
+    commands = "\r\n".join([
+        "@ECHO OFF",
+        f'@SET "{special_key}="',
+        f'@SET "{existing_key}=preexisting"',
+        rf'@CALL "{extract_path}\Scripts\activate.bat"',
+        f"@SET {existing_key}",
+        f"@SET {special_key}",
+        rf'@CALL "{extract_path}\Scripts\deactivate.bat"',
+        "@ECHO DEACTIVATED",
+        f"@SET",
+    ])
+
+    script = tmpdir.join('test_env_vars.bat')
+    script.write(commands)
+
+    out = subprocess.check_output(['cmd.exe', '/c', str(script)], stderr=subprocess.STDOUT).decode()
+
+    lines = out.splitlines()
+    deactivated = lines[lines.index("DEACTIVATED") + 1:]
+
+    assert f"{existing_key}={existing_val}" in lines
+    assert f"{special_key}={special_val}" in lines
+
+    assert f"{existing_key}=preexisting" in deactivated
+    assert not any(
+        line.startswith(f"{special_key}=") 
+        for line in deactivated
+    )
+
+@pytest.mark.skipif(on_win, reason="posix only")
+@pytest.mark.parametrize("special_key,special_val", [
+    ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
+    ("MY_QUOTED_VAR", 'say "hello"')
+])
+def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
+    """Verifies core.py reads conda-meta/state, escapes values,
+    and writes correct scripts in a full activate/deactivate cycle:
+    - pre-existing var is overridden then restored
+    - non-existing var with special chars is set then unset
+    """
+    existing_key, existing_val = "MY_EXISTING_VAR", "hello"
 
     out_path = os.path.join(str(tmpdir), "env_vars.tar")
     extract_path = str(tmpdir.join("env"))
@@ -853,28 +905,34 @@ def test_env_vars_activate_deactivate(tmpdir):
         fil.extractall(extract_path)
 
     command = " && ".join([
-        f"export {existing_key}=preexisting",
-        f". {extract_path}/bin/activate",
-        f'test "${existing_key}" = "{existing_val}"',
-        f'test "${special_key}" = "{special_val}"',
-        f". {extract_path}/bin/deactivate",
-        f'test "${existing_key}" = preexisting',
-        f'test -z "${{{special_key}+x}}"',
-        "echo 'Done'",
+        f"unset {special_key}",
+        f'export {existing_key}=preexisting',
+        f'. "{extract_path}/bin/activate"',
+        f"""printf '{existing_key}=%s\\n' "${{{existing_key}}}" """,
+        f"""printf '{special_key}=%s\\n' "${{{special_key}}}" """,
+        f'. "{extract_path}/bin/deactivate"',
+        f"""printf '{existing_key}=%s\\n' "${{{existing_key}}}" """,
+        f"""printf '{special_key}=%s\\n' "${{{special_key}}}" """,
     ])
+
     out = subprocess.check_output(
-        ["/usr/bin/env", "bash", "-c", command], stderr=subprocess.STDOUT
+        ["/usr/bin/env", "bash", "-c", command],
+        stderr=subprocess.STDOUT,
     ).decode()
-    assert out.strip() == "Done"
 
+    lines = out.splitlines()
 
-@pytest.mark.skipif(on_win, reason="posix only")
+    assert f"{existing_key}={existing_val}" in lines
+    assert f"{existing_key}=preexisting" in lines
+    assert f"{special_key}={special_val}" in lines
+    assert f"{special_key}=" in lines
+
 def test_no_env_vars_scripts_without_state(tmpdir):
-    """Envs without env_vars in conda-meta/state produce no env var scripts."""
+    """Envs without conda-meta/state produce no env var scripts."""
     out_path = os.path.join(str(tmpdir), "basic_python.tar")
     CondaEnv.from_prefix(basic_python_path).pack(out_path)
     with tarfile.open(out_path) as fil:
         names = fil.getnames()
-    assert "conda-meta/activate_env_vars.sh" not in names
-    assert "conda-meta/deactivate_env_vars.sh" not in names
     assert "conda-meta/state" not in names
+    assert not any("activate_env_vars" in n for n in names)
+    assert not any("deactivate_env_vars" in n for n in names)
