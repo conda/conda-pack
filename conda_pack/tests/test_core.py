@@ -947,16 +947,16 @@ def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     with tarfile.open(out_path) as fil:
         fil.extractall(extract_path)
 
-    command = " && ".join([
-        f"set -e {special_key}",
-        f'set -gx {existing_key} preexisting',
-        f'. "{extract_path}/bin/activate.fish"',
-        f'printf "{existing_key}=%s\\n" "${existing_key}"',
-        f'printf "{special_key}=%s\\n" "${special_key}"',
-        "deactivate",
-        f'printf "{existing_key}=%s\\n" "${existing_key}"',
-        f'printf "{special_key}=%s\\n" "${special_key}"',
-    ])
+    command = (
+        f"set -e {special_key}; "
+        f'set -gx {existing_key} preexisting; '
+        f'. "{extract_path}/bin/activate.fish" && '
+        f'printf "{existing_key}=%s\\n" "${existing_key}" && '
+        f'printf "{special_key}=%s\\n" "${special_key}" && '
+        "deactivate && "
+        f'printf "{existing_key}=%s\\n" "${existing_key}" && '
+        f'printf "{special_key}=%s\\n" "${special_key}"'
+    )
 
     out = subprocess.check_output(
         ["/usr/bin/env", "fish", "-c", command],
