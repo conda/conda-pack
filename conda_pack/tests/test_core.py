@@ -2,6 +2,7 @@ import filecmp
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -905,7 +906,6 @@ def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
         fil.extractall(extract_path)
 
     command = " && ".join([
-        f"unset {special_key}",
         f'export {existing_key}=preexisting',
         f'. "{extract_path}/bin/activate"',
         f"""printf '{existing_key}=%s\\n' "${{{existing_key}}}" """,
@@ -917,6 +917,46 @@ def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
 
     out = subprocess.check_output(
         ["/usr/bin/env", "bash", "-c", command],
+        stderr=subprocess.STDOUT,
+    ).decode()
+
+    lines = out.splitlines()
+
+    assert f"{existing_key}={existing_val}" in lines
+    assert f"{existing_key}=preexisting" in lines
+    assert f"{special_key}={special_val}" in lines
+    assert f"{special_key}=" in lines
+
+
+@pytest.mark.skipif(on_win, reason="posix only")
+@pytest.mark.skipif(shutil.which("fish") is None, reason="fish shell not available")
+@pytest.mark.parametrize("special_key,special_val", [
+    ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
+    ("MY_QUOTED_VAR", 'say "hello"')
+])
+def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
+    """Same as test_env_vars_activate_deactivate, but for fish shell"""
+    existing_key, existing_val = "MY_EXISTING_VAR", "hello"
+
+    out_path = os.path.join(str(tmpdir), "env_vars_fish.tar")
+    extract_path = str(tmpdir.join("env"))
+    CondaEnv.from_prefix(env_vars_path).pack(out_path)
+
+    with tarfile.open(out_path) as fil:
+        fil.extractall(extract_path)
+
+    command = " && ".join([
+        f'. "{extract_path}/bin/activate.fish"',
+        f'set -gx {existing_key} preexisting',
+        f'printf "{existing_key}=%s\\n" "${existing_key}"',
+        f'printf "{special_key}=%s\\n" "${special_key}"',
+        "deactivate",
+        f'printf "{existing_key}=%s\\n" "${existing_key}"',
+        f'printf "{special_key}=%s\\n" "${special_key}"',
+    ])
+
+    out = subprocess.check_output(
+        ["/usr/bin/env", "fish", "-c", command],
         stderr=subprocess.STDOUT,
     ).decode()
 
