@@ -13,7 +13,12 @@ import pytest
 
 from conda_pack import CondaEnv, CondaPackException, pack
 from conda_pack.compat import load_source, on_win
-from conda_pack.core import BIN_DIR, File, Packer, name_to_prefix, _SH_ACTIVATE_TEMPLATE, _SH_DEACTIVATE_TEMPLATE
+from conda_pack.core import (
+    BIN_DIR,
+    File,
+    Packer,
+    name_to_prefix,
+)
 
 from .conftest import (
     activate_scripts_path,
@@ -22,13 +27,11 @@ from .conftest import (
     basic_python_missing_files_path,
     basic_python_path,
     env_dir,
-    test_dir,
+    env_vars_path,
     has_conda_path,
     nopython_path,
     py310_path,
-    env_vars_path,
 )
-
 
 BIN_DIR_L = BIN_DIR.lower()
 SP = "Lib\\site-packages" if on_win else "lib/python3.9/site-packages"
@@ -856,17 +859,20 @@ def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     with tarfile.open(out_path) as fil:
         fil.extractall(extract_path)
 
-    commands = "\r\n".join([
-        "@ECHO OFF",
-        f'@SET "{special_key}="',
-        f'@SET "{existing_key}=preexisting"',
-        rf'@CALL "{extract_path}\Scripts\activate.bat"',
-        f"@SET {existing_key}",
-        f"@SET {special_key}",
-        rf'@CALL "{extract_path}\Scripts\deactivate.bat"',
-        "@ECHO DEACTIVATED",
-        f"@SET",
-    ])
+    commands = "\r\n".join(
+        [
+            "@ECHO OFF",
+            f'@SET "{special_key}="',
+            f'@SET "{existing_key}=preexisting"',
+            rf'@CALL "{extract_path}\Scripts\activate.bat"',
+            f"@SET {existing_key}",
+            f"@SET {special_key}",
+            rf'@CALL "{extract_path}\Scripts\deactivate.bat"',
+            "@ECHO DEACTIVATED",
+            f"@SET {existing_key}",
+            f"@SET {special_key}",
+        ]
+    )
 
     script = tmpdir.join('test_env_vars.bat')
     script.write(commands)
@@ -880,10 +886,7 @@ def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     assert f"{special_key}={special_val}" in lines
 
     assert f"{existing_key}=preexisting" in deactivated
-    assert not any(
-        line.startswith(f"{special_key}=") 
-        for line in deactivated
-    )
+    assert not any(line.startswith(f"{special_key}=") for line in deactivated)
 
 
 @pytest.mark.skipif(on_win, reason="posix only")

@@ -1322,17 +1322,17 @@ class Packer:
             self.archive.add(fil.name, fpath)
         finally:
             os.unlink(fil.name)
-    
-    def _write_env_var_scripts(self, env_vars, escape_function, activate_tmpl, deactivate_tmpl, ext):
-            escaped_vars = {k: escape_function(str(v)) for k, v in env_vars.items()}
-            self._write_text_file(
-                os.path.join("etc", "conda", "activate.d", f"activate_env_vars.{ext}"),
-                "".join(activate_tmpl.format(key=k, val=v) for k, v in escaped_vars.items()),
-            )
-            self._write_text_file(
-                os.path.join("etc", "conda", "deactivate.d", f"deactivate_env_vars.{ext}"),
-                "".join(deactivate_tmpl.format(key=k) for k in env_vars),
-            )
+
+    def _write_env_var_scripts(self, env_vars, escape_fn, activate_tmpl, deactivate_tmpl, ext):
+        escaped_vars = {k: escape_fn(str(v)) for k, v in env_vars.items()}
+        self._write_text_file(
+            os.path.join("etc", "conda", "activate.d", f"activate_env_vars.{ext}"),
+            "".join(activate_tmpl.format(key=k, val=v) for k, v in escaped_vars.items()),
+        )
+        self._write_text_file(
+            os.path.join("etc", "conda", "deactivate.d", f"deactivate_env_vars.{ext}"),
+            "".join(deactivate_tmpl.format(key=k) for k in env_vars),
+        )
 
     def finish(self):
         from . import __version__  # local import to avoid circular imports
