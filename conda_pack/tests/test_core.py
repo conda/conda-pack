@@ -885,6 +885,7 @@ def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
         for line in deactivated
     )
 
+
 @pytest.mark.skipif(on_win, reason="posix only")
 @pytest.mark.parametrize("special_key,special_val", [
     ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
@@ -906,6 +907,7 @@ def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
         fil.extractall(extract_path)
 
     command = " && ".join([
+        f"unset {special_key}",
         f'export {existing_key}=preexisting',
         f'. "{extract_path}/bin/activate"',
         f"""printf '{existing_key}=%s\\n' "${{{existing_key}}}" """,
@@ -946,8 +948,9 @@ def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
         fil.extractall(extract_path)
 
     command = " && ".join([
-        f'. "{extract_path}/bin/activate.fish"',
+        f"set -e {special_key}",
         f'set -gx {existing_key} preexisting',
+        f'. "{extract_path}/bin/activate.fish"',
         f'printf "{existing_key}=%s\\n" "${existing_key}"',
         f'printf "{special_key}=%s\\n" "${special_key}"',
         "deactivate",
@@ -966,6 +969,7 @@ def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     assert f"{existing_key}=preexisting" in lines
     assert f"{special_key}={special_val}" in lines
     assert f"{special_key}=" in lines
+
 
 def test_no_env_vars_scripts_without_state(tmpdir):
     """Envs without conda-meta/state produce no env var scripts."""
