@@ -870,7 +870,7 @@ def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
             rf'@CALL "{extract_path}\Scripts\deactivate.bat"',
             "@ECHO DEACTIVATED",
             f"@SET {existing_key}",
-            f"@SET {special_key}",
+            f"@SET {special_key} 2>NUL || VER >NUL",
         ]
     )
 
