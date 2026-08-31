@@ -965,6 +965,18 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
             )
         )
 
+    if os.path.exists(os.path.join(conda_meta, "state")):
+        managed.add(os.path.join("conda-meta", "state"))
+        files.append(
+            File(
+                os.path.join(conda_meta, "state"),
+                os.path.join("conda-meta", "state"),
+                is_conda=True,
+                prefix_placeholder=None,
+                file_mode=None,
+            )
+        )
+
     if missing_files and not ignore_missing_files:
         packages = []
         for key, value in missing_files.items():
@@ -1150,6 +1162,57 @@ def is_binary_file(data):
         return True
 
 
+_SH_ACTIVATE_TEMPLATE = """\
+if [ -n "${{{key}+x}}" ]; then
+  export _CONDA_PACK_OLD_{key}="${{{key}}}";
+fi
+export {key}='{val}'
+"""
+
+_SH_DEACTIVATE_TEMPLATE = """\
+if [ -n "${{_CONDA_PACK_OLD_{key}+x}}" ]; then
+  export {key}="${{_CONDA_PACK_OLD_{key}}}";
+  unset _CONDA_PACK_OLD_{key};
+else
+  unset {key};
+fi
+"""
+
+_BAT_ACTIVATE_TEMPLATE = """\
+@IF DEFINED {key} (
+    @SET "_CONDA_PACK_OLD_{key}=%{key}%"
+) ELSE (
+    @SET "_CONDA_PACK_OLD_{key}="
+)
+@SET "{key}={val}"
+"""
+
+_BAT_DEACTIVATE_TEMPLATE = """\
+@IF DEFINED _CONDA_PACK_OLD_{key} (
+    @SET "{key}=%_CONDA_PACK_OLD_{key}%"
+) ELSE (
+    @SET "{key}="
+)
+@SET "_CONDA_PACK_OLD_{key}="
+"""
+
+_FISH_ACTIVATE_TEMPLATE = """\
+if set -q {key}
+    set -gx _CONDA_PACK_OLD_{key} ${key}
+end
+set -gx {key} '{val}'
+"""
+
+_FISH_DEACTIVATE_TEMPLATE = """\
+if set -q _CONDA_PACK_OLD_{key}
+    set -gx {key} $_CONDA_PACK_OLD_{key}
+    set -e _CONDA_PACK_OLD_{key}
+else
+    set -e {key}
+end
+"""
+
+
 class Packer:
     def __init__(self, prefix, archive, dest_prefix=None, parcel=None):
         self.prefix = prefix
@@ -1260,6 +1323,17 @@ class Packer:
         finally:
             os.unlink(fil.name)
 
+    def _write_env_var_scripts(self, env_vars, escape_fn, activate_tmpl, deactivate_tmpl, ext):
+        escaped_vars = {k: escape_fn(str(v)) for k, v in env_vars.items()}
+        self._write_text_file(
+            os.path.join("etc", "conda", "activate.d", f"activate_env_vars.{ext}"),
+            "".join(activate_tmpl.format(key=k, val=v) for k, v in escaped_vars.items()),
+        )
+        self._write_text_file(
+            os.path.join("etc", "conda", "deactivate.d", f"deactivate_env_vars.{ext}"),
+            "".join(deactivate_tmpl.format(key=k) for k in env_vars),
+        )
+
     def finish(self):
         from . import __version__  # local import to avoid circular imports
         from .formats import SquashFSArchive
@@ -1289,6 +1363,36 @@ class Packer:
         if not (self.has_dest and has_conda):
             for source, target in _scripts:
                 self.archive.add(source, target)
+
+        # Write env vars if present
+        state_path = os.path.join(self.prefix, "conda-meta", "state")
+        if os.path.exists(state_path):
+            with open(state_path) as f:
+                env_vars = json.load(f).get("env_vars", {})
+            if env_vars:
+                if on_win:
+                    self._write_env_var_scripts(
+                        env_vars,
+                        lambda v: v.replace("%", "%%"),
+                        _BAT_ACTIVATE_TEMPLATE,
+                        _BAT_DEACTIVATE_TEMPLATE,
+                        "bat"
+                    )
+                else:
+                    self._write_env_var_scripts(
+                        env_vars,
+                        lambda v: v.replace("'", "'\\''"),
+                        _SH_ACTIVATE_TEMPLATE,
+                        _SH_DEACTIVATE_TEMPLATE,
+                        "sh"
+                    )
+                    self._write_env_var_scripts(
+                        env_vars,
+                        lambda v: v.replace("\\", "\\\\").replace("'", "\\'"),
+                        _FISH_ACTIVATE_TEMPLATE,
+                        _FISH_DEACTIVATE_TEMPLATE,
+                        "fish"
+                    )
 
         # No `conda-unpack` command if dest-prefix specified
         if not self.has_dest:

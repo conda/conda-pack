@@ -5,7 +5,7 @@
 @REM If there's no active environment, there's nothing to do
 @IF "%CONDA_PREFIX%" == "" @GOTO skipdeactivate
 
-@REM Run any activate scripts
+@REM Run any deactivate scripts
 @REM Do this before running setlocal so that variables are cleared properly
 @IF EXIST "%CONDA_PREFIX%\etc\conda\deactivate.d" (
     @PUSHD "%CONDA_PREFIX%\etc\conda\deactivate.d"

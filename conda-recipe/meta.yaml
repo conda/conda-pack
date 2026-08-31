@@ -2,7 +2,7 @@
 
 package:
   name: conda-pack
-  version: {{ version_base }}.{{ GIT_DESCRIBE_NUMBER }}+{{ GIT_DESCRIBE_HASH }}
+  version: {{ version_base }}
 
 source:
   path: ../
