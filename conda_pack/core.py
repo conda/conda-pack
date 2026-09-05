@@ -37,7 +37,11 @@ if on_win:
     _scripts = [(os.path.join(_current_dir, 'scripts', 'windows', 'activate.bat'),
                  os.path.join(BIN_DIR, 'activate.bat')),
                 (os.path.join(_current_dir, 'scripts', 'windows', 'deactivate.bat'),
-                 os.path.join(BIN_DIR, 'deactivate.bat'))]
+                 os.path.join(BIN_DIR, 'deactivate.bat')),
+                (os.path.join(_current_dir, 'scripts', 'windows', 'activate.ps1'),
+                 os.path.join(BIN_DIR, 'activate.ps1')),
+                (os.path.join(_current_dir, 'scripts', 'windows', 'deactivate.ps1'),
+                 os.path.join(BIN_DIR, 'deactivate.ps1'))]
 else:
     _scripts = [(os.path.join(_current_dir, 'scripts', 'posix', 'activate'),
                  os.path.join(BIN_DIR, 'activate')),
@@ -982,8 +986,9 @@ def load_environment(prefix, on_missing_cache='warn', ignore_editable_packages=F
     # scripts into child environments upon activation. Remove these
     fnames = ('conda', 'activate', 'deactivate')
     if on_win:
-        # Windows includes the POSIX and .bat versions of each
-        fnames = fnames + ('conda.bat', 'activate.bat', 'deactivate.bat')
+        # Windows includes the POSIX, .bat, and PowerShell versions of each
+        fnames = fnames + ('conda.bat', 'activate.bat', 'deactivate.bat',
+                           'activate.ps1', 'deactivate.ps1')
     unmanaged -= {os.path.join(BIN_DIR, f) for f in fnames}
 
     files.extend(File(os.path.join(prefix, p),
