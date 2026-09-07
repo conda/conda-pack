@@ -2,6 +2,7 @@ import filecmp
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -547,7 +548,8 @@ def test_pack(tmpdir, basic_python_env):
 
     if on_win:
         fnames = ('conda-unpack.exe', 'conda-unpack-script.py',
-                  'conda_unpack_progress.py', 'activate.bat', 'deactivate.bat')
+                  'conda_unpack_progress.py', 'activate.bat', 'deactivate.bat',
+                  'activate.ps1', 'deactivate.ps1')
     else:
         fnames = (
             "conda-unpack",
@@ -697,6 +699,45 @@ def test_activate(tmpdir):
         except (subprocess.CalledProcessError, FileNotFoundError):
             # Skip fish test if fish shell is not available
             pytest.skip("fish shell not available")
+
+
+@pytest.mark.skipif(not on_win, reason="PowerShell is only available on Windows")
+def test_activate_powershell(tmpdir):
+    """The PowerShell scripts activate and deactivate a packed environment."""
+    env_path = tmpdir.mkdir('env')
+    scripts_path = env_path.mkdir('Scripts')
+    source_dir = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'windows')
+    for filename in ('activate.ps1', 'deactivate.ps1'):
+        shutil.copyfile(
+            os.path.join(source_dir, filename),
+            str(scripts_path.join(filename)),
+        )
+
+    command = (
+        "$env:PATH = 'C:\\base'; "
+        ". '{path}\\Scripts\\activate.ps1'; "
+        "Write-Output ('ACTIVE=' + $env:CONDA_PREFIX); "
+        "Write-Output ('PATH=' + $env:PATH); "
+        ". '{path}\\Scripts\\deactivate.ps1'; "
+        "Write-Output ('DEACTIVE=' + $env:CONDA_PREFIX); "
+        "Write-Output ('PATH2=' + $env:PATH)"
+    ).format(path=str(env_path))
+    script = tmpdir.join('powershell_test.ps1')
+    script.write(command)
+
+    try:
+        out = subprocess.check_output(
+            ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(script)],
+            stderr=subprocess.STDOUT,
+        ).decode()
+    except OSError as exc:
+        if getattr(exc, 'winerror', None) == 6:
+            pytest.skip('The test runner cannot inherit subprocess handles')
+        raise
+
+    assert f'ACTIVE={os.path.normpath(str(env_path))}' in out
+    assert 'DEACTIVE=' in out
+    assert 'PATH2=C:\\base' in out
 
 
 @pytest.mark.skipif(not on_win, reason="Windows-specific test")
