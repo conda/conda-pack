@@ -544,7 +544,7 @@ class NoArchive(ArchiveBase):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        return self
+        return False
 
     def _absolute_path(self, path):
         return os.path.normpath(os.path.join(self.output, path))
@@ -565,7 +565,16 @@ class NoArchive(ArchiveBase):
                 self.copy_func = partial(shutil.copy2, follow_symlinks=False)
 
         if os.path.isfile(source) or os.path.islink(source):
-            self.copy_func(source, target_abspath)
+            try:
+                self.copy_func(source, target_abspath)
+            except OSError as exc:
+                if exc.errno != errno.EXDEV:
+                    raise
+                # The device check above only inspects the first file, but a
+                # prefix may span several devices; downgrade to a copy for
+                # this and every following file.
+                self.copy_func = partial(shutil.copy2, follow_symlinks=False)
+                self.copy_func(source, target_abspath)
         else:
             os.mkdir(target_abspath)
 
