@@ -1364,35 +1364,35 @@ class Packer:
             for source, target in _scripts:
                 self.archive.add(source, target)
 
-        # Write env vars if present
-        state_path = os.path.join(self.prefix, "conda-meta", "state")
-        if os.path.exists(state_path):
-            with open(state_path) as f:
-                env_vars = json.load(f).get("env_vars", {})
-            if env_vars:
-                if on_win:
-                    self._write_env_var_scripts(
-                        env_vars,
-                        lambda v: v.replace("%", "%%"),
-                        _BAT_ACTIVATE_TEMPLATE,
-                        _BAT_DEACTIVATE_TEMPLATE,
-                        "bat"
-                    )
-                else:
-                    self._write_env_var_scripts(
-                        env_vars,
-                        lambda v: v.replace("'", "'\\''"),
-                        _SH_ACTIVATE_TEMPLATE,
-                        _SH_DEACTIVATE_TEMPLATE,
-                        "sh"
-                    )
-                    self._write_env_var_scripts(
-                        env_vars,
-                        lambda v: v.replace("\\", "\\\\").replace("'", "\\'"),
-                        _FISH_ACTIVATE_TEMPLATE,
-                        _FISH_DEACTIVATE_TEMPLATE,
-                        "fish"
-                    )
+            # Write env vars if present
+            state_path = os.path.join(self.prefix, "conda-meta", "state")
+            if os.path.exists(state_path):
+                with open(state_path) as f:
+                    env_vars = json.load(f).get("env_vars", {})
+                if env_vars:
+                    if on_win:
+                        self._write_env_var_scripts(
+                            env_vars,
+                            lambda v: v.replace("%", "%%"),
+                            _BAT_ACTIVATE_TEMPLATE,
+                            _BAT_DEACTIVATE_TEMPLATE,
+                            "bat"
+                        )
+                    else:
+                        self._write_env_var_scripts(
+                            env_vars,
+                            lambda v: v.replace("'", "'\\''"),
+                            _SH_ACTIVATE_TEMPLATE,
+                            _SH_DEACTIVATE_TEMPLATE,
+                            "sh"
+                        )
+                        self._write_env_var_scripts(
+                            env_vars,
+                            lambda v: v.replace("\\", "\\\\").replace("'", "\\'"),
+                            _FISH_ACTIVATE_TEMPLATE,
+                            _FISH_DEACTIVATE_TEMPLATE,
+                            "fish"
+                        )
 
         # No `conda-unpack` command if dest-prefix specified
         if not self.has_dest:
