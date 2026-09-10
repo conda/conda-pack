@@ -43,13 +43,15 @@ function _activate
 end
 
 function deactivate -d 'Exit conda mode and return to the normal environment.'
-    set -l _script_dir "$CONDA_PREFIX/etc/conda/deactivate.d"
-    if [ -d "$_script_dir" ] && [ -n "(ls -A "$_script_dir")" ]
-        for _path in "$_script_dir"/*.sh
-            sh "$_path"
-        end
-        for _path in "$_script_dir"/*.fish
-            . "$_path"
+    if set -q CONDA_PREFIX
+        set -l _script_dir "$CONDA_PREFIX/etc/conda/deactivate.d"
+        if [ -d "$_script_dir" ] && [ -n "(ls -A "$_script_dir")" ]
+            for _path in "$_script_dir"/*.sh
+                sh "$_path"
+            end
+            for _path in "$_script_dir"/*.fish
+                . "$_path"
+            end
         end
     end
     # reset old environment variables
