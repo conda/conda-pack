@@ -10,4 +10,4 @@ variables:
   MY_EXISTING_VAR: hello
   MY_SPECIAL_VAR: "red=|<>!&^'%123"
   MY_QUOTED_VAR: 'say "hello"'
-  MY_CURLY_VAR: '${some_var}'
+  MY_CURLY_VAR: '${MY_EXISTING_VAR}'

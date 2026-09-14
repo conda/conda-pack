@@ -840,11 +840,12 @@ def test_windows_extended_length_path_normalization_unknown_mode():
 
 
 @pytest.mark.skipif(not on_win, reason="Windows-specific test")
-@pytest.mark.parametrize("special_key,special_val", [
+@pytest.mark.parametrize("env_var_key,env_var_val", [
     ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
-    ("MY_QUOTED_VAR", 'say "hello"')
+    ("MY_QUOTED_VAR", 'say "hello"'),
+    ("MY_CURLY_VAR", "value=${MY_CURLY_VAR}"))
 ])
-def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
+def test_windows_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
     """Verifies core.py reads conda-meta/state, escapes values,
     and writes correct scripts in a full activate/deactivate cycle:
     - pre-existing var is overridden then restored
@@ -862,11 +863,11 @@ def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     commands = "\r\n".join(
         [
             "@ECHO OFF",
-            f'@SET "{special_key}="',
+            f'@SET "{env_var_key}="',
             f'@SET "{existing_key}=preexisting"',
             rf'@CALL "{extract_path}\Scripts\activate.bat"',
             f"@SET {existing_key}",
-            f"@SET {special_key}",
+            f"@SET {env_var_key}",
             rf'@CALL "{extract_path}\Scripts\deactivate.bat"',
             "@ECHO DEACTIVATED",
             f"@SET {existing_key}",
@@ -883,18 +884,19 @@ def test_windows_env_vars_activate_deactivate(tmpdir, special_key, special_val):
     deactivated = lines[lines.index("DEACTIVATED") + 1:]
 
     assert f"{existing_key}={existing_val}" in lines
-    assert f"{special_key}={special_val}" in lines
+    assert f"{env_var_key}={env_var_val}" in lines
 
     assert f"{existing_key}=preexisting" in deactivated
-    assert not any(line.startswith(f"{special_key}=") for line in deactivated)
+    assert not any(line.startswith(f"{env_var_key}=") for line in deactivated)
 
 
 @pytest.mark.skipif(on_win, reason="posix only")
-@pytest.mark.parametrize("special_key,special_val", [
+@pytest.mark.parametrize("env_var_key,env_var_val", [
     ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
-    ("MY_QUOTED_VAR", 'say "hello"')
+    ("MY_QUOTED_VAR", 'say "hello"'),
+    ("MY_CURLY_VAR", '${some_var}')
 ])
-def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
+def test_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
     """Verifies core.py reads conda-meta/state, escapes values,
     and writes correct scripts in a full activate/deactivate cycle:
     - pre-existing var is overridden then restored
@@ -910,14 +912,14 @@ def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
         fil.extractall(extract_path)
 
     command = " && ".join([
-        f"unset {special_key}",
+        f"unset {env_var_key}",
         f'export {existing_key}=preexisting',
         f'. "{extract_path}/bin/activate"',
         f"""printf '{existing_key}=%s\\n' "${{{existing_key}}}" """,
-        f"""printf '{special_key}=%s\\n' "${{{special_key}}}" """,
+        f"""printf '{env_var_key}=%s\\n' "${{{env_var_key}}}" """,
         f'. "{extract_path}/bin/deactivate"',
         f"""printf '{existing_key}=%s\\n' "${{{existing_key}}}" """,
-        f"""printf '{special_key}=%s\\n' "${{{special_key}}}" """,
+        f"""printf '{env_var_key}=%s\\n' "${{{env_var_key}}}" """,
     ])
 
     out = subprocess.check_output(
@@ -929,17 +931,18 @@ def test_env_vars_activate_deactivate(tmpdir, special_key, special_val):
 
     assert f"{existing_key}={existing_val}" in lines
     assert f"{existing_key}=preexisting" in lines
-    assert f"{special_key}={special_val}" in lines
-    assert f"{special_key}=" in lines
+    assert f"{env_var_key}={env_var_val}" in lines
+    assert f"{env_var_key}=" in lines
 
 
 @pytest.mark.skipif(on_win, reason="posix only")
 @pytest.mark.skipif(shutil.which("fish") is None, reason="fish shell not available")
-@pytest.mark.parametrize("special_key,special_val", [
+@pytest.mark.parametrize("env_var_key,env_var_val", [
     ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
-    ("MY_QUOTED_VAR", 'say "hello"')
+    ("MY_QUOTED_VAR", 'say "hello"'),
+    ("MY_CURLY_VAR", '${some_var}')
 ])
-def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
+def test_fish_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
     """Same as test_env_vars_activate_deactivate, but for fish shell"""
     existing_key, existing_val = "MY_EXISTING_VAR", "hello"
 
@@ -955,10 +958,10 @@ def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
         f'set -gx {existing_key} preexisting; '
         f'. "{extract_path}/bin/activate.fish" && '
         f'printf "{existing_key}=%s\\n" "${existing_key}" && '
-        f'printf "{special_key}=%s\\n" "${special_key}" && '
+        f'printf "{env_var_key}=%s\\n" "${env_var_key}" && '
         "deactivate && "
         f'printf "{existing_key}=%s\\n" "${existing_key}" && '
-        f'printf "{special_key}=%s\\n" "${special_key}"'
+        f'printf "{env_var_key}=%s\\n" "${env_var_key}"'
     )
 
     out = subprocess.check_output(
@@ -970,8 +973,8 @@ def test_fish_env_vars_activate_deactivate(tmpdir, special_key, special_val):
 
     assert f"{existing_key}={existing_val}" in lines
     assert f"{existing_key}=preexisting" in lines
-    assert f"{special_key}={special_val}" in lines
-    assert f"{special_key}=" in lines
+    assert f"{env_var_key}={env_var_val}" in lines
+    assert f"{env_var_key}=" in lines
 
 
 def test_no_env_vars_scripts_without_state(tmpdir):
