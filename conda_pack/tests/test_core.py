@@ -840,11 +840,14 @@ def test_windows_extended_length_path_normalization_unknown_mode():
 
 
 @pytest.mark.skipif(not on_win, reason="Windows-specific test")
-@pytest.mark.parametrize("env_var_key,env_var_val", [
-    ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
-    ("MY_QUOTED_VAR", 'say "hello"'),
-    ("MY_CURLY_VAR", "value=${MY_CURLY_VAR}"))
-])
+@pytest.mark.parametrize(
+    "env_var_key,env_var_val",
+    [
+        ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
+        ("MY_QUOTED_VAR", 'say "hello"'),
+        ("MY_CURLY_VAR", "${MY_EXISTING_VAR}"),
+    ],
+)
 def test_windows_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
     """Verifies core.py reads conda-meta/state, escapes values,
     and writes correct scripts in a full activate/deactivate cycle:
@@ -891,11 +894,14 @@ def test_windows_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
 
 
 @pytest.mark.skipif(on_win, reason="posix only")
-@pytest.mark.parametrize("env_var_key,env_var_val", [
-    ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
-    ("MY_QUOTED_VAR", 'say "hello"'),
-    ("MY_CURLY_VAR", '${some_var}')
-])
+@pytest.mark.parametrize(
+    "env_var_key,env_var_val",
+    [
+        ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
+        ("MY_QUOTED_VAR", 'say "hello"'),
+        ("MY_CURLY_VAR", "${MY_EXISTING_VAR}"),
+    ],
+)
 def test_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
     """Verifies core.py reads conda-meta/state, escapes values,
     and writes correct scripts in a full activate/deactivate cycle:
@@ -937,11 +943,14 @@ def test_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
 
 @pytest.mark.skipif(on_win, reason="posix only")
 @pytest.mark.skipif(shutil.which("fish") is None, reason="fish shell not available")
-@pytest.mark.parametrize("env_var_key,env_var_val", [
-    ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
-    ("MY_QUOTED_VAR", 'say "hello"'),
-    ("MY_CURLY_VAR", '${some_var}')
-])
+@pytest.mark.parametrize(
+    "env_var_key,env_var_val",
+    [
+        ("MY_SPECIAL_VAR", "red=|<>!&^'%123"),
+        ("MY_QUOTED_VAR", 'say "hello"'),
+        ("MY_CURLY_VAR", "${MY_EXISTING_VAR}"),
+    ],
+)
 def test_fish_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
     """Same as test_env_vars_activate_deactivate, but for fish shell"""
     existing_key, existing_val = "MY_EXISTING_VAR", "hello"
@@ -954,7 +963,7 @@ def test_fish_env_vars_activate_deactivate(tmpdir, env_var_key, env_var_val):
         fil.extractall(extract_path)
 
     command = (
-        f"set -e {special_key}; "
+        f"set -e {env_var_key}; "
         f'set -gx {existing_key} preexisting; '
         f'. "{extract_path}/bin/activate.fish" && '
         f'printf "{existing_key}=%s\\n" "${existing_key}" && '
