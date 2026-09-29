@@ -17,14 +17,14 @@ if ($env:CONDA_PREFIX) {
 }
 
 $envName = Split-Path -Leaf $newPrefix
-$env:_CONDA_PACK_OLD_PS1 = (Get-Item Function:\prompt -ErrorAction SilentlyContinue).Definition
+Set-Item Function:\global:_conda_pack_prompt_backup -Value (Get-Item Function:\prompt).ScriptBlock
 $env:_CONDA_PACK_PROMPT_MODIFIER = "($envName) "
 $env:CONDA_PREFIX = $newPrefix
 $env:PATH = "$newPrefix;$newPrefix\Library\mingw-w64\bin;$newPrefix\Library\usr\bin;$newPrefix\Library\bin;$newPrefix\Scripts;$env:PATH"
 
 function global:prompt {
-    $prompt = if ($env:_CONDA_PACK_OLD_PS1) {
-        & ([scriptblock]::Create($env:_CONDA_PACK_OLD_PS1))
+    $prompt = if (Test-Path Function:\_conda_pack_prompt_backup) {
+        & (Get-Item Function:\_conda_pack_prompt_backup).ScriptBlock
     } else {
         "PS $($executionContext.SessionState.Path.CurrentLocation)> "
     }

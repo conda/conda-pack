@@ -712,16 +712,26 @@ def test_activate_powershell(tmpdir):
             os.path.join(source_dir, filename),
             str(scripts_path.join(filename)),
         )
+    prompt_module = tmpdir.join("CoolPrompt.psm1")
+    prompt_module.write(
+        "function Get-CoolText { 'COOL' }\n"
+        'Set-Item Function:\\global:prompt -Value { "[$(Get-CoolText)] PS> " }\n'
+        "Export-ModuleMember\n"
+    )
 
     command = (
         "$env:PATH = 'C:\\base'; "
+        "Import-Module '{module}'; "
+        "Write-Output ('BEFORE=' + (prompt)); "
         ". '{path}\\Scripts\\activate.ps1'; "
         "Write-Output ('ACTIVE=' + $env:CONDA_PREFIX); "
+        "Write-Output ('ACTIVE_PROMPT=' + (prompt)); "
         "Write-Output ('PATH=' + $env:PATH); "
         ". '{path}\\Scripts\\deactivate.ps1'; "
         "Write-Output ('DEACTIVE=' + $env:CONDA_PREFIX); "
+        "Write-Output ('RESTORED_PROMPT=' + (prompt)); "
         "Write-Output ('PATH2=' + $env:PATH)"
-    ).format(path=str(env_path))
+    ).format(path=str(env_path), module=str(prompt_module))
     script = tmpdir.join('powershell_test.ps1')
     script.write(command)
 
@@ -735,9 +745,12 @@ def test_activate_powershell(tmpdir):
             pytest.skip('The test runner cannot inherit subprocess handles')
         raise
 
-    assert f'ACTIVE={os.path.normpath(str(env_path))}' in out
-    assert 'DEACTIVE=' in out
-    assert 'PATH2=C:\\base' in out
+    assert f"ACTIVE={os.path.normpath(str(env_path))}" in out
+    assert "BEFORE=[COOL] PS> " in out
+    assert "ACTIVE_PROMPT=(env) [COOL] PS> " in out
+    assert re.search(r"DEACTIVE=\r?\n", out)
+    assert "RESTORED_PROMPT=[COOL] PS> " in out
+    assert "PATH2=C:\\base" in out
 
 
 @pytest.mark.skipif(not on_win, reason="Windows-specific test")

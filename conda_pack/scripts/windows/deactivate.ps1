@@ -25,8 +25,8 @@ $env:PATH = ($env:PATH -split ';' | Where-Object {
 }) -join ';'
 $env:CONDA_PREFIX = $null
 
-if ($env:_CONDA_PACK_OLD_PS1) {
-    Set-Item Function:\global:prompt ([scriptblock]::Create($env:_CONDA_PACK_OLD_PS1))
+if (Test-Path Function:\_conda_pack_prompt_backup) {
+    Set-Item Function:\global:prompt (Get-Item Function:\_conda_pack_prompt_backup).ScriptBlock
+    Remove-Item Function:\_conda_pack_prompt_backup
 }
-$env:_CONDA_PACK_OLD_PS1 = $null
 $env:_CONDA_PACK_PROMPT_MODIFIER = $null
