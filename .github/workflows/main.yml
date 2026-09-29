@@ -60,7 +60,7 @@ jobs:
     steps:
     - name: Retrieve the source code
       uses: actions/checkout@v7.0.1
-    - uses: conda-incubator/setup-miniconda@v4.0.1
+    - uses: conda-incubator/setup-miniconda@v4.1.0
       with:
         auto-update-conda: true
         python-version: '3.9'
