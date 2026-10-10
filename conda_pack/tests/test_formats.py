@@ -1,3 +1,4 @@
+import errno
 import os
 import shutil
 import subprocess
@@ -9,12 +10,13 @@ import zipfile
 from multiprocessing import cpu_count
 from os.path import exists, isdir, isfile, islink, join
 from subprocess import STDOUT, check_output
+from unittest import mock
 
 import pytest
 
 from conda_pack.compat import PY2, on_linux, on_mac, on_win
 from conda_pack.core import CondaPackException
-from conda_pack.formats import _parse_n_threads, archive
+from conda_pack.formats import NoArchive, _parse_n_threads, archive
 
 
 @pytest.fixture(scope="module")
@@ -276,3 +278,41 @@ def test_format_parallel(tmpdir, format, root_and_paths):
             out.extractall(out_dir)
 
     check(out_dir, links=(not on_win), root=root)
+
+
+def test_no_archive_does_not_suppress_errors(tmpdir):
+    out_dir = join(str(tmpdir), "test")
+    os.mkdir(out_dir)
+
+    with pytest.raises(ValueError):
+        with NoArchive(out_dir, ""):
+            raise ValueError("should not be swallowed")
+
+
+def test_no_archive_falls_back_to_copy_on_exdev(tmpdir):
+    root = join(str(tmpdir), "src")
+    out_dir = join(str(tmpdir), "test")
+    os.mkdir(root)
+    os.mkdir(out_dir)
+    for name in ["one", "two"]:
+        with open(join(root, name), mode="wb") as fil:
+            fil.write(b"foo bar")
+
+    real_link = os.link
+
+    def link(src, dst, **kwargs):
+        # Emulate a prefix spanning two devices: the first file links fine,
+        # a later one is on another device.
+        if src.endswith("two"):
+            raise OSError(errno.EXDEV, "Invalid cross-device link")
+        return real_link(src, dst, **kwargs)
+
+    with mock.patch("os.link", link):
+        with NoArchive(out_dir, "") as arc:
+            for name in ["one", "two"]:
+                arc.add(join(root, name), name)
+
+    for name in ["one", "two"]:
+        assert isfile(join(out_dir, name))
+        with open(join(out_dir, name), mode="rb") as fil:
+            assert fil.read() == b"foo bar"
