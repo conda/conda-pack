@@ -111,10 +111,15 @@ def text_replace(data, placeholder, new_prefix):
     new_prefix_bytes = new_prefix.encode('utf-8')
 
     if on_win:
-        # Replace extended-prefix + placeholder as a unit FIRST,
-        # so the prefix doesn't dangle after the standard replacement.
-        data = data.replace(b'\\\\?\\' + placeholder_bytes, new_prefix_bytes)
-        data = data.replace(b'//?/' + placeholder_bytes, new_prefix_bytes)
+        # Replace extended-prefix + placeholder as a unit FIRST so the prefix
+        # doesn't dangle after the standard replacement.
+        # distlib console-script shebangs store the path with forward slashes
+        # (//?/C:/envs/...) while the recorded placeholder uses backslashes
+        # (C:\envs\...).  Try both separator styles for each prefix form.
+        ph_fwd = placeholder_bytes.replace(b'\\', b'/')
+        for prefix in (b'\\\\?\\', b'//?/'):
+            data = data.replace(prefix + placeholder_bytes, new_prefix_bytes)
+            data = data.replace(prefix + ph_fwd, new_prefix_bytes)
 
     # Standard replacement
     data = data.replace(placeholder_bytes, new_prefix_bytes)
