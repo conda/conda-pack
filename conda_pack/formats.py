@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 import threading
 import time
+import warnings
 import zipfile
 import zlib
 from contextlib import closing
@@ -538,13 +539,14 @@ class NoArchive(ArchiveBase):
     def __init__(self, output, arcroot):
         self.output = output
         self.arcroot = arcroot
-        self.copy_func = None
+        self.printed_warning = False
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        return self
+        # Do not suppress exceptions so they are caught in the layers above.
+        pass
 
     def _absolute_path(self, path):
         return os.path.normpath(os.path.join(self.output, path))
@@ -557,15 +559,30 @@ class NoArchive(ArchiveBase):
         target_abspath = self._absolute_path(target)
         self._ensure_parent(target_abspath)
 
-        # hardlink instead of copy is faster, but it doesn't work across devices
-        if self.copy_func is None:
-            if os.lstat(source).st_dev == os.lstat(os.path.dirname(target_abspath)).st_dev:
-                self.copy_func = partial(os.link, follow_symlinks=False)
-            else:
-                self.copy_func = partial(shutil.copy2, follow_symlinks=False)
+        # Delete target if it exists already.
+        if os.path.islink(target_abspath) or os.path.isfile(target_abspath):
+            os.remove(target_abspath)
+        elif os.path.isdir(target_abspath):
+            shutil.rmtree(target_abspath)
 
         if os.path.isfile(source) or os.path.islink(source):
-            self.copy_func(source, target_abspath)
+            # Try hardlinking as it's faster. Fallback to copy if hardlink fails
+            # example: if source and target are on different devices.
+            # An alternative would be to do os.lstat() on source and target and compare st_dev
+            # and call os.link if st_devs are identical. However that approach does not work on
+            # btrfs.
+            # So we just try os.link and fallback in the except block.
+            try:
+                os.link(source, target_abspath, follow_symlinks=False)
+            except OSError as e:
+                if not self.printed_warning:
+                    warnings.warn(f"In creating a conda pack for {self.arcroot} in target directory "
+                                  f"{self.output} we tried to use hardlinks which failed with exception "
+                                  f"{e} when linking {source} to {target_abspath}. We will fall back to "
+                                  f"copying files instead of linking. For faster performance make sure "
+                                  f"the conda root and --output are on the same filesystem.")
+                    self.printed_warning = True
+                shutil.copy2(source, target_abspath, follow_symlinks=False)
         else:
             os.mkdir(target_abspath)
 
